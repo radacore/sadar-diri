@@ -17,7 +17,7 @@ Route::get('/aktivasi/{user}', [\App\Http\Controllers\AuthController::class, 'ac
 
 Route::middleware('auth')->group(function () {
     Route::get('/2fa/challenge', [PageController::class, 'twoFactorChallenge'])->name('2fa.challenge');
-    Route::get('/2fa/enroll', [PageController::class, 'twoFactorEnroll'])->name('2fa.enroll');
+    Route::get('/2fa/enroll', fn () => redirect()->route('2fa.challenge'))->name('2fa.enroll');
 
     Route::get('/onboarding/consent', [PageController::class, 'consent'])->name('onboarding.consent');
 

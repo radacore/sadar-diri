@@ -15,6 +15,7 @@ use App\Services\AuditLogger;
 use App\Services\ReportService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
@@ -125,7 +126,7 @@ class StudentController extends Controller
 
         $profile = StudentProfile::firstOrCreate(['user_id' => $request->user()->id]);
         $profile->fill($data);
-        $profile->completeness_percent = $this->completeness($profile);
+        $profile->completeness_percent = $profile->completeness();
         $profile->save();
 
         return response()->json([
@@ -157,7 +158,7 @@ class StudentController extends Controller
             $profile->published_at = now();
         }
 
-        $profile->completeness_percent = $this->completeness($profile);
+        $profile->completeness_percent = $profile->completeness();
         $profile->save();
 
         StudentProfileVersion::create([
@@ -264,7 +265,13 @@ class StudentController extends Controller
             'mood_reminder_enabled' => ['boolean'],
             'mood_reminder_hour' => ['integer', 'between:6,21'],
             'reflection_reminder_enabled' => ['boolean'],
+            'channel' => ['sometimes', Rule::in(['in_app', 'email_and_in_app'])],
         ]);
+
+        if (isset($data['channel'])) {
+            $data['notification_channel'] = $data['channel'];
+            unset($data['channel']);
+        }
 
         $request->user()->forceFill($data)->save();
 
@@ -312,19 +319,6 @@ class StudentController extends Controller
                 'service_hours' => $this->settings->get('school.service_hours'),
             ],
         ]);
-    }
-
-    private function completeness(StudentProfile $profile): int
-    {
-        $fields = [
-            'birth_date', 'gender', 'address', 'phone', 'height_cm', 'weight_kg',
-            'blood_type', 'medical_history', 'health_notes',
-            'psychological_summary', 'character_summary', 'strengths', 'weaknesses',
-        ];
-
-        $filled = collect($fields)->filter(fn ($field) => ! blank($profile->{$field}))->count();
-
-        return (int) round($filled / count($fields) * 100);
     }
 
     private function moodSummary($user, int $days): array

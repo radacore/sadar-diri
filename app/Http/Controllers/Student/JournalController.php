@@ -10,7 +10,10 @@ use Illuminate\Validation\Rule;
 
 class JournalController extends Controller
 {
-    public function __construct(private readonly AlertEngine $alerts) {}
+    public function __construct(
+        private readonly AlertEngine $alerts,
+        private readonly \App\Services\NotificationService $notifications,
+    ) {}
 
     public function index(Request $request)
     {
@@ -28,7 +31,7 @@ class JournalController extends Controller
             $query->where('entry_date', '<=', $request->date('to'));
         }
 
-        $entries = $query->orderByDesc('entry_date')->orderByDesc('id')->paginate(20);
+        $entries = $query->withCount('replies')->orderByDesc('entry_date')->orderByDesc('id')->paginate(20);
 
         return response()->json([
             'success' => true,
@@ -39,6 +42,8 @@ class JournalController extends Controller
                 'status' => $e->status,
                 'excerpt' => $e->excerpt(),
                 'is_flagged' => $e->is_flagged,
+                'follow_up_requested' => $e->follow_up_requested,
+                'replies_count' => $e->replies_count,
                 'created_at' => $e->created_at?->toIso8601String(),
             ]),
             'meta' => [
@@ -66,12 +71,18 @@ class JournalController extends Controller
             'consequence' => $data['consequence'] ?? null,
             'gratitude_text' => $data['gratitude_text'] ?? null,
             'happiness_text' => $data['happiness_text'] ?? null,
+            'follow_up_requested' => (bool) ($data['follow_up_requested'] ?? false),
+            'follow_up_requested_at' => ($data['follow_up_requested'] ?? false) ? now() : null,
         ]);
 
         $request->user()->forceFill(['last_activity_at' => now()])->save();
 
         if ($entry->status === 'published') {
             $this->alerts->evaluateFor($request->user());
+        }
+
+        if ($entry->follow_up_requested) {
+            $this->notifications->followUpRequested($request->user(), $entry->excerpt(80));
         }
 
         return response()->json([
@@ -84,6 +95,7 @@ class JournalController extends Controller
     public function show(Request $request, JournalEntry $journal)
     {
         $this->authorizeOwnership($request, $journal);
+        $journal->load(['replies.counselor']);
 
         return response()->json([
             'success' => true,
@@ -97,7 +109,15 @@ class JournalController extends Controller
                 'gratitude_text' => $journal->gratitude_text,
                 'happiness_text' => $journal->happiness_text,
                 'status' => $journal->status,
+                'is_flagged' => $journal->is_flagged,
+                'follow_up_requested' => $journal->follow_up_requested,
                 'created_at' => $journal->created_at?->toIso8601String(),
+                'replies' => $journal->replies->map(fn ($r) => [
+                    'id' => $r->id,
+                    'content' => $r->content,
+                    'counselor_name' => $r->counselor?->name,
+                    'created_at' => $r->created_at?->toIso8601String(),
+                ])->values(),
             ],
         ]);
     }
@@ -114,10 +134,18 @@ class JournalController extends Controller
             'consequence' => $data['consequence'] ?? null,
             'gratitude_text' => $data['gratitude_text'] ?? null,
             'happiness_text' => $data['happiness_text'] ?? null,
+            'follow_up_requested' => (bool) ($data['follow_up_requested'] ?? $journal->follow_up_requested),
+            'follow_up_requested_at' => ($data['follow_up_requested'] ?? $journal->follow_up_requested)
+                ? ($journal->follow_up_requested_at ?? now())
+                : null,
         ])->save();
 
         if ($journal->status === 'published') {
             $this->alerts->evaluateFor($request->user());
+        }
+
+        if ($journal->wasChanged('follow_up_requested') && $journal->follow_up_requested) {
+            $this->notifications->followUpRequested($request->user(), $journal->excerpt(80));
         }
 
         return response()->json([
@@ -172,6 +200,7 @@ class JournalController extends Controller
             'consequence' => ['required_if:type,abc', 'nullable', 'string', 'max:5000'],
             'gratitude_text' => ['nullable', 'string', 'max:5000'],
             'happiness_text' => ['nullable', 'string', 'max:5000'],
+            'follow_up_requested' => ['boolean'],
         ]);
     }
 

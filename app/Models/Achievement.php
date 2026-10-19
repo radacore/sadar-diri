@@ -10,6 +10,7 @@ class Achievement extends Model
 {
     protected $fillable = [
         'student_id',
+        'created_by',
         'category',
         'title',
         'organizer',

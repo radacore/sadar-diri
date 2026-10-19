@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, CardTitle, EmptyState, Field, IconButton, Input, Modal, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
+import { Icon } from '../../Components/Icons';
+import { Button, Card, CardTitle, EmptyState, Field, HeroCard, IconButton, Input, ListRow, ProgressRing, Select, Sheet, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate, label } from '../../lib/format';
+import { formatDate } from '../../lib/format';
 
 export default function Plan() {
     const toast = useToast();
@@ -13,6 +14,7 @@ export default function Plan() {
     const [modalOpen, setModalOpen] = useState(false);
     const [targetForm, setTargetForm] = useState({ title: '', success_indicator: '' });
     const [evaluation, setEvaluation] = useState({ evaluation_text: '', improvement_text: '' });
+    const [evaluationOpen, setEvaluationOpen] = useState(false);
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
@@ -159,39 +161,62 @@ export default function Plan() {
         }
     };
 
+    const targets = plan?.targets ?? [];
+    const achieved = targets.filter((target) => target.status === 'achieved').length;
+    const percent = targets.length ? Math.round((achieved / targets.length) * 100) : 0;
+
     return (
         <AppShell
             title="Rencana aksi"
             subtitle={plan ? `${formatDate(plan.period_start)} – ${formatDate(plan.period_end)}` : 'Target bulanan dan rencana masa depan'}
-            actions={<Button onClick={() => setModalOpen(true)} disabled={!plan || plan.targets?.length >= 5}>Tambah target</Button>}
+            actions={<Button className="h-11" onClick={() => setModalOpen(true)} disabled={!plan || plan.targets?.length >= 5}>Tambah target</Button>}
         >
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-                <Card className="lg:col-span-7">
-                    <CardTitle action={<span className="text-[11px] text-[#475569]">{plan?.targets?.length ?? 0}/5 target</span>}>
+            <div className="space-y-5">
+                <HeroCard
+                    eyebrow="Rencana bulan ini"
+                    title={plan ? (targets.length ? `${achieved} dari ${targets.length} target tercapai` : 'Belum ada target bulan ini') : 'Rencana aksi bulanan'}
+                    description={plan ? `Periode ${formatDate(plan.period_start)} – ${formatDate(plan.period_end)}` : 'Tetapkan langkah kecil yang bisa diukur.'}
+                >
+                    <div className="mt-4 flex items-center gap-4">
+                        <ProgressRing value={percent} size={88} stroke={9} label={`${percent}%`} />
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Target tercapai</p>
+                            <p className="tabular mt-0.5 text-[28px] font-extrabold leading-none tracking-tight">
+                                {achieved}
+                                <span className="text-[15px] font-semibold text-[#64748b]">/{targets.length}</span>
+                            </p>
+                            <p className="mt-1 text-[11.5px] leading-snug text-[#64748b]">
+                                Maksimal 5 target per bulan. Perbarui status secara berkala.
+                            </p>
+                        </div>
+                    </div>
+                </HeroCard>
+
+                <Card>
+                    <CardTitle action={<span className="text-[11px] text-[#475569]">{targets.length}/5 target</span>}>
                         Target bulan ini
                     </CardTitle>
-                    {loading ? <Skeleton rows={4} /> : !plan?.targets?.length ? (
+                    {loading ? <Skeleton rows={4} /> : targets.length === 0 ? (
                         <EmptyState
                             title="Belum ada target"
                             description="Tetapkan maksimal lima langkah kecil yang bisa diukur."
-                            action={<Button onClick={() => setModalOpen(true)}>Buat target</Button>}
+                            action={<Button className="mt-2 h-11" onClick={() => setModalOpen(true)}>Buat target</Button>}
                         />
                     ) : (
-                        <ul className="space-y-2">
-                            {plan.targets.map((target) => (
-                                <li key={target.id} className="rounded-[16px] border border-[#e2e8f0] p-3">
-                                    <div className="flex flex-wrap items-start justify-between gap-2">
-                                        <div>
-                                            <p className="text-[13px] font-semibold">{target.title}</p>
-                                            <p className="text-[12px] text-[#475569]">Indikator: {target.success_indicator}</p>
-                                        </div>
-                                        <Badge tone={target.status === 'achieved' ? 'success' : target.status === 'in_progress' ? 'info' : 'neutral'}>
-                                            {label('targetStatus', target.status)}
-                                        </Badge>
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                                        <select
-                                            className="sd-input h-8 w-auto px-2 text-[11px]"
+                        <div className="space-y-2">
+                            {targets.map((target, index) => (
+                                <ListRow
+                                    key={target.id}
+                                    leading={
+                                        <span className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold ${ target.status === 'achieved' ? 'bg-[#d1fae5] text-[#047857]' : 'bg-[#e8edf5] text-[#475569]' }`}>
+                                            {target.status === 'achieved' ? <Icon name="check" size={16} /> : index + 1}
+                                        </span>
+                                    }
+                                    title={target.title}
+                                    subtitle={target.success_indicator ? `Indikator: ${target.success_indicator}` : 'Tanpa indikator'}
+                                    meta={
+                                        <Select
+                                            className="h-11 w-auto min-w-[136px] px-3 text-[12px]"
                                             value={target.status}
                                             onChange={(event) => updateStatus(target, event.target.value)}
                                             aria-label={`Status target ${target.title}`}
@@ -200,59 +225,80 @@ export default function Plan() {
                                             <option value="in_progress">Berjalan</option>
                                             <option value="achieved">Tercapai</option>
                                             <option value="not_achieved">Belum tercapai</option>
-                                        </select>
-                                        <IconButton icon="trash" label={`Hapus ${target.title}`} variant="danger" onClick={() => removeTarget(target)} />
-                                    </div>
-                                </li>
+                                        </Select>
+                                    }
+                                    trailing={
+                                        <IconButton icon="trash" label={`Hapus ${target.title}`} variant="danger" size={44} onClick={() => removeTarget(target)} />
+                                    }
+                                />
                             ))}
-                        </ul>
-                    )}
-                </Card>
-
-                <Card className="lg:col-span-5">
-                    <CardTitle action={!plan?.evaluation ? <Button variant="outline" onClick={loadEvaluation}>Muat evaluasi</Button> : null}>
-                        Evaluasi bulanan
-                    </CardTitle>
-                    {plan?.evaluation?.snapshot ? (
-                        <div className="mb-3 grid grid-cols-2 gap-2 text-[12px]">
-                            <div className="rounded-xl bg-[#f1f5f9] p-2">
-                                <p className="text-[#475569]">Mood</p>
-                                <p className="tabular font-bold">{plan.evaluation.snapshot.mood.positive_days} positif · {plan.evaluation.snapshot.mood.negative_days} negatif</p>
-                            </div>
-                            <div className="rounded-xl bg-[#f1f5f9] p-2">
-                                <p className="text-[#475569]">Jurnal</p>
-                                <p className="tabular font-bold">{plan.evaluation.snapshot.journals.abc} ABC · {plan.evaluation.snapshot.journals.grateful} grateful</p>
-                            </div>
-                            <div className="rounded-xl bg-[#f1f5f9] p-2">
-                                <p className="text-[#475569]">Refleksi</p>
-                                <p className="tabular font-bold">{plan.evaluation.snapshot.reflections}</p>
-                            </div>
-                            <div className="rounded-xl bg-[#f1f5f9] p-2">
-                                <p className="text-[#475569]">Target tercapai</p>
-                                <p className="tabular font-bold">{plan.evaluation.snapshot.targets_achieved}/{plan.evaluation.snapshot.targets_total}</p>
-                            </div>
                         </div>
-                    ) : (
-                        <p className="mb-3 text-[12px] text-[#475569]">Ringkasan data bulan ini belum dibuat.</p>
                     )}
-                    <Field label="Evaluasi kekurangan" htmlFor="evaluation">
-                        <Textarea id="evaluation" rows={2} value={evaluation.evaluation_text} onChange={(event) => setEvaluation({ ...evaluation, evaluation_text: event.target.value })} />
-                    </Field>
-                    <div className="mt-2">
-                        <Field label="Rencana perbaikan" htmlFor="improvement">
-                            <Textarea id="improvement" rows={2} value={evaluation.improvement_text} onChange={(event) => setEvaluation({ ...evaluation, improvement_text: event.target.value })} />
-                        </Field>
-                    </div>
-                    <div className="mt-3 flex justify-end">
-                        <Button onClick={saveEvaluation} disabled={busy || !plan}>Simpan evaluasi</Button>
-                    </div>
                 </Card>
 
-                <Card className="lg:col-span-12">
-                    <CardTitle action={<Button onClick={saveFuture} disabled={busy}>Simpan rencana</Button>}>
-                        Rencana masa depan
-                    </CardTitle>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                <Card>
+                    <button
+                        type="button"
+                        onClick={() => setEvaluationOpen((open) => !open)}
+                        aria-expanded={evaluationOpen}
+                        className="flex min-h-11 w-full items-center justify-between gap-3 text-left"
+                    >
+                        <span>
+                            <span className="block text-[16px] font-bold leading-tight">Evaluasi bulanan</span>
+                            <span className="mt-0.5 block text-[11px] text-[#64748b]">
+                                {plan?.evaluation ? 'Evaluasi tersimpan' : 'Belum diisi'}
+                            </span>
+                        </span>
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f1f5f9] text-[#475569] transition ${evaluationOpen ? 'rotate-180' : ''}`}>
+                            <Icon name="chevron" size={18} />
+                        </span>
+                    </button>
+
+                    {evaluationOpen ? (
+                        <div className="mt-4">
+                            {plan?.evaluation?.snapshot ? (
+                                <div className="mb-3 grid grid-cols-1 gap-2 text-[12px]">
+                                    <div className="rounded-xl bg-[#f1f5f9] p-2.5">
+                                        <p className="text-[11px] text-[#475569]">Mood</p>
+                                        <p className="tabular mt-0.5 text-[12px] font-bold">{plan.evaluation.snapshot.mood.positive_days} positif · {plan.evaluation.snapshot.mood.negative_days} negatif</p>
+                                    </div>
+                                    <div className="rounded-xl bg-[#f1f5f9] p-2.5">
+                                        <p className="text-[11px] text-[#475569]">Jurnal</p>
+                                        <p className="tabular mt-0.5 text-[12px] font-bold">{plan.evaluation.snapshot.journals.abc} ABC · {plan.evaluation.snapshot.journals.grateful} grateful</p>
+                                    </div>
+                                    <div className="rounded-xl bg-[#f1f5f9] p-2.5">
+                                        <p className="text-[11px] text-[#475569]">Refleksi</p>
+                                        <p className="tabular mt-0.5 text-[12px] font-bold">{plan.evaluation.snapshot.reflections}</p>
+                                    </div>
+                                    <div className="rounded-xl bg-[#f1f5f9] p-2.5">
+                                        <p className="text-[11px] text-[#475569]">Target tercapai</p>
+                                        <p className="tabular mt-0.5 text-[12px] font-bold">{plan.evaluation.snapshot.targets_achieved}/{plan.evaluation.snapshot.targets_total}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="mb-3">
+                                    <p className="text-[12px] text-[#475569]">Ringkasan data bulan ini belum dibuat.</p>
+                                    {plan && !plan.evaluation ? (
+                                        <Button variant="outline" className="mt-2 h-11 w-full" onClick={loadEvaluation}>Muat evaluasi</Button>
+                                    ) : null}
+                                </div>
+                            )}
+                            <Field label="Evaluasi kekurangan" htmlFor="evaluation">
+                                <Textarea id="evaluation" rows={3} value={evaluation.evaluation_text} onChange={(event) => setEvaluation({ ...evaluation, evaluation_text: event.target.value })} />
+                            </Field>
+                            <div className="mt-3">
+                                <Field label="Rencana perbaikan" htmlFor="improvement">
+                                    <Textarea id="improvement" rows={3} value={evaluation.improvement_text} onChange={(event) => setEvaluation({ ...evaluation, improvement_text: event.target.value })} />
+                                </Field>
+                            </div>
+                            <Button className="mt-3 h-11 w-full" onClick={saveEvaluation} disabled={busy || !plan}>Simpan evaluasi</Button>
+                        </div>
+                    ) : null}
+                </Card>
+
+                <Card>
+                    <CardTitle>Rencana masa depan</CardTitle>
+                    <div className="space-y-3">
                         <Field label="Cita-cita" htmlFor="dream">
                             <Textarea id="dream" rows={3} value={future.dream ?? ''} onChange={(event) => setFuture({ ...future, dream: event.target.value })} />
                         </Field>
@@ -266,30 +312,31 @@ export default function Plan() {
                             <Textarea id="targets" rows={3} value={future.concrete_targets ?? ''} onChange={(event) => setFuture({ ...future, concrete_targets: event.target.value })} />
                         </Field>
                     </div>
-                    <p className="mt-2 text-[11px] text-[#5b6b7f]">Setiap perubahan disimpan sebagai versi baru.</p>
+                    <p className="mt-3 text-[11px] text-[#5b6b7f]">Setiap perubahan disimpan sebagai versi baru.</p>
+                    <Button className="mt-3 h-11 w-full" onClick={saveFuture} disabled={busy}>Simpan rencana</Button>
                 </Card>
             </div>
 
-            <Modal
+            <Sheet
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 title="Tambah target bulanan"
                 footer={
                     <>
-                        <Button variant="outline" onClick={() => setModalOpen(false)}>Batal</Button>
-                        <Button type="submit" form="target-form" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan target'}</Button>
+                        <Button variant="outline" className="h-11 flex-1" onClick={() => setModalOpen(false)}>Batal</Button>
+                        <Button type="submit" form="target-form" className="h-11 flex-1" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan target'}</Button>
                     </>
                 }
             >
                 <form id="target-form" onSubmit={addTarget} className="space-y-3">
                     <Field label="Target" required htmlFor="title">
-                        <Input id="title" value={targetForm.title} onChange={(event) => setTargetForm({ ...targetForm, title: event.target.value })} required />
+                        <Input id="title" className="h-11" value={targetForm.title} onChange={(event) => setTargetForm({ ...targetForm, title: event.target.value })} required />
                     </Field>
                     <Field label="Indikator keberhasilan" required htmlFor="indicator">
-                        <Textarea id="indicator" rows={2} value={targetForm.success_indicator} onChange={(event) => setTargetForm({ ...targetForm, success_indicator: event.target.value })} required />
+                        <Textarea id="indicator" rows={3} value={targetForm.success_indicator} onChange={(event) => setTargetForm({ ...targetForm, success_indicator: event.target.value })} required />
                     </Field>
                 </form>
-            </Modal>
+            </Sheet>
         </AppShell>
     );
 }

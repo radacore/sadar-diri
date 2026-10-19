@@ -8,10 +8,46 @@ use App\Models\CounselorClass;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class NotificationService
 {
+    /**
+     * Kegagalan kanal email (mis. domain Resend belum terverifikasi) tidak boleh
+     * membatalkan aksi utama; notifikasi dalam aplikasi tetap tersimpan.
+     */
+    private function deliver(object $notifiable, AppNotification $notification): void
+    {
+        $wantsMail = method_exists($notifiable, 'wantsEmailNotifications')
+            ? $notifiable->wantsEmailNotifications()
+            : true;
+
+        if (! $wantsMail) {
+            $notification->sendMail = false;
+        }
+
+        try {
+            $notifiable->notify($notification);
+        } catch (Throwable $e) {
+            Log::warning('Notifikasi gagal dikirim.', [
+                'notifiable' => $notifiable->id ?? null,
+                'type' => $notification->type,
+                'error' => $e->getMessage(),
+            ]);
+
+            $notification->sendMail = false;
+            $notifiable->notify($notification);
+        }
+    }
+
+    private function broadcast(Collection $recipients, AppNotification $notification): void
+    {
+        foreach ($recipients as $recipient) {
+            $this->deliver($recipient, clone $notification);
+        }
+    }
+
     public function alertCreated(Alert $alert): void
     {
         $student = $alert->student;
@@ -29,7 +65,7 @@ class NotificationService
             default => 'Pemantauan siswa',
         };
 
-        Notification::send($recipients, new AppNotification(
+        $this->broadcast($recipients, new AppNotification(
             $title,
             sprintf('%s — %s', $student->name, $alert->label()),
             'alert',
@@ -40,7 +76,7 @@ class NotificationService
 
     public function feedbackReceived(User $student, string $counselorName): void
     {
-        $student->notify(new AppNotification(
+        $this->deliver($student, new AppNotification(
             'Umpan balik baru',
             sprintf('Refleksimu sudah ditanggapi oleh %s.', $counselorName),
             'feedback',
@@ -49,9 +85,33 @@ class NotificationService
         ));
     }
 
+    public function journalReplyReceived(User $student, string $counselorName): void
+    {
+        $this->deliver($student, new AppNotification(
+            'Balasan baru dari Guru BK',
+            sprintf('%s menanggapi curhatmu.', $counselorName),
+            'journal_reply',
+            '/siswa/jurnal',
+            true,
+        ));
+    }
+
+    public function followUpRequested(User $student, string $excerpt): void
+    {
+        $recipients = $this->counselorsForStudent($student);
+
+        $this->broadcast($recipients, new AppNotification(
+            'Permintaan konseling lanjutan',
+            sprintf('%s meminta tindak lanjut: %s', $student->name, $excerpt),
+            'follow_up',
+            '/bk/siswa/'.$student->id,
+            true,
+        ));
+    }
+
     public function achievementVerified(User $student, string $title, string $status): void
     {
-        $student->notify(new AppNotification(
+        $this->deliver($student, new AppNotification(
             'Status prestasi diperbarui',
             sprintf('Prestasi "%s" %s.', $title, $status === 'verified' ? 'telah diverifikasi' : 'ditolak'),
             'achievement',
@@ -61,7 +121,7 @@ class NotificationService
 
     public function sessionAssigned(User $student, string $topic, string $dueAt): void
     {
-        $student->notify(new AppNotification(
+        $this->deliver($student, new AppNotification(
             'Refleksi terbimbing baru',
             sprintf('%s — tenggat %s.', $topic, $dueAt),
             'reflection',
@@ -88,7 +148,7 @@ class NotificationService
             return;
         }
 
-        $counselor->notify(new AppNotification(
+        $this->deliver($counselor, new AppNotification(
             'Ringkasan harian BK',
             implode(', ', $lines).'.',
             'digest',
@@ -103,7 +163,7 @@ class NotificationService
             ? 'Belum mencatat mood hari ini. Luangkan satu menit.'
             : 'Refleksi pekan ini belum diisi. Ceritakan hal paling berkesan.';
 
-        $student->notify(new AppNotification('Pengingat', $message, 'reminder', $kind === 'mood' ? '/siswa/jurnal' : '/siswa/refleksi'));
+        $this->deliver($student, new AppNotification('Pengingat', $message, 'reminder', $kind === 'mood' ? '/siswa/jurnal' : '/siswa/refleksi'));
     }
 
     public function counselorsForStudent(User $student): Collection

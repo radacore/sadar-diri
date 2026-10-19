@@ -1,7 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, CardTitle, Skeleton, Stat, useToast } from '../../Components/UI';
+import {
+    Badge,
+    Button,
+    Card,
+    Chip,
+    HeroCard,
+    ListRow,
+    PageSection,
+    Skeleton,
+    StatTile,
+    useToast,
+} from '../../Components/UI';
+import { Icon } from '../../Components/Icons';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
+import { formatDate, label, relative } from '../../lib/format';
+
+const severityTone = { high: 'danger', medium: 'warning', low: 'info' };
+const severityBubble = {
+    high: 'bg-[#fee2e2] text-[#b91c1c]',
+    medium: 'bg-[#fef3c7] text-[#b45309]',
+    low: 'bg-[#e0f2fe] text-[#0369a1]',
+};
 
 export default function Dashboard() {
     const toast = useToast();
@@ -29,75 +49,167 @@ export default function Dashboard() {
     }, [load]);
 
     const maxTrend = Math.max(1, ...(data?.activity_trend?.map((point) => point.active_students) ?? [1]));
+    const classes = data?.classes ?? [];
+    const totalStudents = classes.reduce((sum, item) => sum + (item.students_count ?? 0), 0);
+    const openAlerts = data ? data.open_alerts.high + data.open_alerts.medium + data.open_alerts.low : 0;
 
     return (
-        <AppShell
-            title="Dashboard BK"
-            subtitle={data?.classes?.map((item) => item.name).join(', ') || 'Kelas binaan Anda'}
-            actions={<Button variant="outline" onClick={() => (window.location.href = '/bk/alert')}>Buka alert</Button>}
-        >
-            {loading ? <Skeleton rows={5} /> : (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-                    <Card className="lg:col-span-3"><Stat label="Siswa aktif 7 hari" value={data.active_students} hint={`${data.inactive_students} belum aktif`} /></Card>
-                    <Card className="lg:col-span-3"><Stat label="Alert terbuka" value={data.open_alerts.high + data.open_alerts.medium + data.open_alerts.low} hint={`${data.open_alerts.high} prioritas tinggi`} tone="danger" /></Card>
-                    <Card className="lg:col-span-3"><Stat label="Refleksi tertunda" value={data.pending_reflections} hint="Menunggu pengisian siswa" /></Card>
-                    <Card className="lg:col-span-3"><Stat label="Prestasi menunggu" value={data.pending_verifications} hint="Perlu verifikasi" tone="warning" /></Card>
-
-                    <Card className="lg:col-span-7">
-                        <CardTitle>Aktivitas 14 hari</CardTitle>
-                        <div className="flex h-[160px] items-end gap-1.5" aria-hidden="true">
-                            {data.activity_trend.map((point) => (
-                                <div key={point.date} className="flex-1" title={`${point.date}: ${point.active_students} siswa`}>
-                                    <div
-                                        className="rounded-t-md bg-[#3f51b5]"
-                                        style={{ height: `${Math.max(4, (point.active_students / maxTrend) * 150)}px` }}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                        <div className="mt-2 flex justify-between text-[10px] text-[#475569]">
-                            <span>{data.activity_trend[0]?.date}</span>
-                            <span>{data.activity_trend[data.activity_trend.length - 1]?.date}</span>
-                        </div>
-                    </Card>
-
-                    <Card className="lg:col-span-5">
-                        <CardTitle action={<Button variant="ghost" onClick={() => (window.location.href = '/bk/alert')}>Lihat semua</Button>}>
-                            Alert terbaru
-                        </CardTitle>
-                        {alerts.length === 0 ? (
-                            <p className="py-6 text-center text-[12px] text-[#475569]">Tidak ada alert baru. Kelas Anda tenang.</p>
-                        ) : (
-                            <ul className="space-y-2">
-                                {alerts.map((alert) => (
-                                    <li key={alert.id} className="rounded-[14px] border-l-4 bg-[#f8fafc] p-3" style={{ borderColor: alert.severity === 'high' ? '#ef4444' : alert.severity === 'medium' ? '#f59e0b' : '#3b82f6' }}>
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className="text-[13px] font-semibold">{alert.student.name}</p>
-                                                <p className="text-[11px] text-[#475569]">{alert.trigger_label}</p>
-                                            </div>
-                                            <Badge tone={alert.severity === 'high' ? 'danger' : alert.severity === 'medium' ? 'warning' : 'info'}>
-                                                {alert.severity === 'high' ? 'Tinggi' : alert.severity === 'medium' ? 'Sedang' : 'Rendah'}
-                                            </Badge>
-                                        </div>
-                                    </li>
+        <AppShell title="Dashboard BK" subtitle="Ringkasan kelas binaan Anda">
+            {loading ? (
+                <div className="space-y-4">
+                    <Skeleton rows={3} />
+                    <Skeleton rows={4} />
+                    <Skeleton rows={4} />
+                </div>
+            ) : (
+                <div className="space-y-5">
+                    <HeroCard
+                        eyebrow="Selamat datang kembali"
+                        title="Pantau kelas binaan"
+                        description={`${classes.length} kelas · ${totalStudents} siswa dampingan`}
+                    >
+                        {classes.length > 0 ? (
+                            <div className="-mx-1 mt-4 flex items-center gap-2 overflow-x-auto px-1 pb-1 [&>button]:min-h-[44px]">
+                                {classes.map((item) => (
+                                    <Chip
+                                        key={item.id}
+                                        onClick={() => (window.location.href = `/bk/siswa?class_id=${item.id}`)}
+                                    >
+                                        {item.name} · {item.students_count}
+                                    </Chip>
                                 ))}
-                            </ul>
-                        )}
-                    </Card>
+                            </div>
+                        ) : null}
+                    </HeroCard>
 
-                    <Card className="lg:col-span-12">
-                        <CardTitle>Kelas binaan</CardTitle>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            {data.classes.map((item) => (
-                                <div key={item.id} className="rounded-[18px] bg-[#f1f5f9] p-4">
-                                    <p className="text-[14px] font-bold">{item.name}</p>
-                                    <p className="text-[12px] text-[#475569]">{item.students_count} siswa</p>
-                                    <Button variant="outline" className="mt-2" onClick={() => (window.location.href = `/bk/siswa?class_id=${item.id}`)}>Lihat siswa</Button>
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatTile
+                            label="Aktif 7 hari"
+                            value={data.active_students}
+                            hint={`${data.inactive_students} belum aktif`}
+                            icon="users"
+                        />
+                        <StatTile
+                            label="Alert terbuka"
+                            value={openAlerts}
+                            hint={`${data.open_alerts.high} prioritas tinggi`}
+                            tone="danger"
+                            icon="alert"
+                        />
+                        <StatTile
+                            label="Refleksi tertunda"
+                            value={data.pending_reflections}
+                            hint="Menunggu siswa"
+                            icon="clock"
+                        />
+                        <StatTile
+                            label="Prestasi menunggu"
+                            value={data.pending_verifications}
+                            hint="Perlu verifikasi"
+                            tone="warning"
+                            icon="sparkle"
+                        />
+                    </div>
+
+                    <div className="grid gap-5">
+                        <PageSection
+                            title="Perlu perhatian"
+                            action={
+                                <Button size="sm" variant="ghost" onClick={() => (window.location.href = '/bk/alert')}>
+                                    Lihat semua
+                                </Button>
+                            }
+                        >
+                            {alerts.length === 0 ? (
+                                <div className="rounded-[18px] border border-[#e2e8f0] bg-white px-4 py-6 text-center text-[12px] text-[#475569]">
+                                    Tidak ada alert baru. Kelas Anda tenang.
                                 </div>
-                            ))}
-                        </div>
-                    </Card>
+                            ) : (
+                                <div className="space-y-2">
+                                    {alerts.slice(0, 3).map((alert) => (
+                                        <ListRow
+                                            key={alert.id}
+                                            href="/bk/alert"
+                                            leading={
+                                                <span className={`flex h-10 w-10 items-center justify-center rounded-full ${severityBubble[alert.severity] ?? severityBubble.low}`}>
+                                                    <Icon name="alert" size={18} />
+                                                </span>
+                                            }
+                                            title={alert.student.name}
+                                            subtitle={`${alert.student.class ?? '—'} · ${alert.trigger_label}`}
+                                            meta={
+                                                <>
+                                                    <Badge tone={severityTone[alert.severity] ?? 'info'}>
+                                                        {label('severity', alert.severity)}
+                                                    </Badge>
+                                                    <span className="text-[11px] text-[#94a3b8]">{relative(alert.detected_at)}</span>
+                                                </>
+                                            }
+                                            trailing={
+                                                <span className="flex items-center gap-0.5 text-[11px] font-semibold text-[#3f51b5]">
+                                                    Buka
+                                                    <Icon name="chevron" size={14} />
+                                                </span>
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </PageSection>
+
+                        <Card>
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-[15px] font-bold leading-tight">Aktivitas 14 hari</h2>
+                                    <p className="mt-0.5 text-[11.5px] text-[#64748b]">Siswa aktif menulis jurnal per hari</p>
+                                </div>
+                                <Badge tone="info">Puncak {maxTrend}</Badge>
+                            </div>
+                            <div className="mt-4 flex h-32 items-end gap-1" aria-hidden="true">
+                                {data.activity_trend.map((point) => (
+                                    <div
+                                        key={point.date}
+                                        className="flex h-full flex-1 items-end"
+                                        title={`${formatDate(point.date)}: ${point.active_students} siswa`}
+                                    >
+                                        <div
+                                            className="w-full rounded-t-[3px] bg-[#3f51b5]"
+                                            style={{ height: `${Math.max(4, (point.active_students / maxTrend) * 100)}%` }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-2 flex justify-between text-[11px] text-[#64748b]">
+                                <span>{formatDate(data.activity_trend[0]?.date)}</span>
+                                <span>{formatDate(data.activity_trend[data.activity_trend.length - 1]?.date)}</span>
+                            </div>
+                        </Card>
+                    </div>
+
+                    <PageSection title="Kelas binaan">
+                        {classes.length === 0 ? (
+                            <div className="rounded-[18px] border border-[#e2e8f0] bg-white px-4 py-6 text-center text-[12px] text-[#475569]">
+                                Belum ada kelas binaan.
+                            </div>
+                        ) : (
+                            <div className="grid gap-2">
+                                {classes.map((item) => (
+                                    <ListRow
+                                        key={item.id}
+                                        href={`/bk/siswa?class_id=${item.id}`}
+                                        leading={
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e8eaf6] text-[#3f51b5]">
+                                                <Icon name="users" size={18} />
+                                            </span>
+                                        }
+                                        title={item.name}
+                                        subtitle={`${item.students_count} siswa`}
+                                        trailing={<Icon name="chevron" size={16} className="text-[#94a3b8]" />}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </PageSection>
                 </div>
             )}
         </AppShell>

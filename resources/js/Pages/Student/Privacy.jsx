@@ -1,10 +1,35 @@
+import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, CardTitle, EmptyState, Field, Input, Skeleton, useConfirm, useToast } from '../../Components/UI';
+import { Icon } from '../../Components/Icons';
+import { Badge, Button, Card, EmptyState, Field, HeroCard, Input, ListRow, PageSection, Skeleton, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
 import { formatDate } from '../../lib/format';
 
+function Switch({ checked, onChange, label, hint, icon }) {
+    return (
+        <label className="flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-2xl bg-[#f8fafc] px-3 py-2">
+            <span className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#3f51b5]">
+                    <Icon name={icon} size={17} />
+                </span>
+                <span className="min-w-0">
+                    <span className="block text-[12.5px] font-semibold leading-snug">{label}</span>
+                    {hint ? <span className="mt-0.5 block text-[11px] leading-snug text-[#64748b]">{hint}</span> : null}
+                </span>
+            </span>
+            <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
+                <input type="checkbox" className="peer sr-only" checked={checked} onChange={onChange} />
+                <span className="absolute inset-0 rounded-full bg-[#cbd5e1] transition peer-checked:bg-[#3f51b5]" aria-hidden="true" />
+                <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" aria-hidden="true" />
+            </span>
+        </label>
+    );
+}
+
 export default function Privacy() {
+    const { auth } = usePage().props;
+    const hasConsent = Boolean(auth?.user?.has_consent);
     const toast = useToast();
     const confirm = useConfirm();
     const [logs, setLogs] = useState([]);
@@ -49,6 +74,7 @@ export default function Privacy() {
                 mood_reminder_enabled: preferences.mood_reminder_enabled,
                 mood_reminder_hour: Number(preferences.mood_reminder_hour),
                 reflection_reminder_enabled: preferences.reflection_reminder_enabled,
+                channel: preferences.channel,
             });
             toast.push('Preferensi pengingat tersimpan.');
         } catch (error) {
@@ -80,103 +106,127 @@ export default function Privacy() {
         }
     };
 
+    const channelEnabled = preferences?.channel !== 'in_app';
+
     return (
         <AppShell title="Privasi & data saya" subtitle="Siapa yang melihat data Anda dan pengaturan pengingat">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-                <Card className="lg:col-span-7">
-                    <CardTitle>Siapa yang melihat data saya</CardTitle>
-                    {loading ? <Skeleton rows={4} /> : logs.length === 0 ? (
-                        <EmptyState title="Belum ada akses" description="Belum ada Guru BK yang membuka data Anda." />
-                    ) : (
-                        <ul className="space-y-2">
-                            {logs.map((log, index) => (
-                                <li key={`${log.action}-${index}`} className="flex items-center justify-between gap-2 border-b border-[#e2e8f0] pb-2 last:border-0">
-                                    <div>
-                                        <p className="text-[13px] font-semibold">
-                                            {log.action === 'journal.viewed' ? 'Jurnal dibuka' : log.action === 'reflection.viewed' ? 'Refleksi dibuka' : 'Catatan dibuka'} oleh {log.actor_name ?? 'sistem'}
-                                        </p>
-                                        <p className="text-[11px] text-[#475569]">{formatDate(log.created_at, true)}</p>
-                                    </div>
-                                    <Badge tone="neutral">Tercatat</Badge>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Card>
+            <div className="space-y-5">
+                <HeroCard
+                    eyebrow="Persetujuan data"
+                    title={hasConsent ? 'Persetujuan aktif' : 'Persetujuan tidak aktif'}
+                    description="Data psikologis diproses untuk layanan BK, dienkripsi, dan hanya dibaca Guru BK kelas Anda."
+                >
+                    <div className="mt-4 flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <Badge tone={hasConsent ? 'success' : 'danger'}>{hasConsent ? 'Aktif' : 'Tidak aktif'}</Badge>
+                            <span className="text-[11px] leading-snug text-[#64748b]">
+                                {hasConsent ? 'Dapat dicabut kapan saja.' : 'Hubungi Guru BK untuk mengaktifkan kembali.'}
+                            </span>
+                        </div>
+                        <Button variant="danger" className="h-11 w-full" onClick={revoke}>Cabut persetujuan</Button>
+                    </div>
+                </HeroCard>
 
-                <Card className="lg:col-span-5">
-                    <CardTitle>Riwayat masalah</CardTitle>
-                    {summaries.length === 0 ? (
-                        <p className="text-[12px] text-[#475569]">Belum ada ringkasan dari Guru BK.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {summaries.map((item) => (
-                                <li key={item.id} className="rounded-[14px] bg-[#f1f5f9] p-3">
-                                    <p className="text-[13px] font-semibold">{item.title}</p>
-                                    <p className="text-[11px] text-[#475569]">{formatDate(item.occurred_at)} · {item.status === 'open' ? 'Berlangsung' : 'Selesai'}</p>
-                                    <p className="mt-1 text-[12px]">{item.summary}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    <p className="mt-3 text-[11px] text-[#5b6b7f]">
-                        Catatan internal Guru BK tidak ditampilkan. Hanya ringkasan yang ditandai dapat dilihat siswa.
-                    </p>
-                </Card>
+                <Card>
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                            <h2 className="text-[16px] font-bold leading-tight">Pengingat</h2>
+                            <p className="mt-0.5 text-[11px] text-[#64748b]">Atur kapan Anda ingin diingatkan.</p>
+                        </div>
+                        <Icon name="bell" size={18} className="mt-0.5 shrink-0 text-[#3f51b5]" />
+                    </div>
 
-                <Card className="lg:col-span-6">
-                    <CardTitle>Pengingat</CardTitle>
-                    {loading || !preferences ? <Skeleton rows={3} /> : (
-                        <div className="space-y-3">
-                            <label className="flex items-center justify-between gap-3 rounded-xl bg-[#f1f5f9] p-3 text-[12px]">
-                                <span>Pengingat mood harian</span>
-                                <input
-                                    type="checkbox"
-                                    checked={Boolean(preferences.mood_reminder_enabled)}
-                                    onChange={(event) => setPreferences({ ...preferences, mood_reminder_enabled: event.target.checked })}
-                                    className="h-[18px] w-[18px] accent-[#3f51b5]"
-                                />
-                            </label>
-                            <Field label="Jam pengingat (06–21)" htmlFor="hour">
-                                <Input
-                                    id="hour"
-                                    type="number"
-                                    min={6}
-                                    max={21}
-                                    value={preferences.mood_reminder_hour}
-                                    onChange={(event) => setPreferences({ ...preferences, mood_reminder_hour: event.target.value })}
-                                />
-                            </Field>
-                            <label className="flex items-center justify-between gap-3 rounded-xl bg-[#f1f5f9] p-3 text-[12px]">
-                                <span>Pengingat refleksi akhir pekan</span>
-                                <input
-                                    type="checkbox"
-                                    checked={Boolean(preferences.reflection_reminder_enabled)}
-                                    onChange={(event) => setPreferences({ ...preferences, reflection_reminder_enabled: event.target.checked })}
-                                    className="h-[18px] w-[18px] accent-[#3f51b5]"
-                                />
-                            </label>
-                            <div className="flex justify-end">
-                                <Button onClick={savePreferences} disabled={busy}>Simpan preferensi</Button>
+                    {loading || !preferences ? <Skeleton rows={4} /> : (
+                        <div className="space-y-2">
+                            <Switch
+                                icon="sparkle"
+                                label="Pengingat mood harian"
+                                hint="Catat mood sekali sehari."
+                                checked={Boolean(preferences.mood_reminder_enabled)}
+                                onChange={(event) => setPreferences({ ...preferences, mood_reminder_enabled: event.target.checked })}
+                            />
+                            <Switch
+                                icon="book"
+                                label="Pengingat refleksi akhir pekan"
+                                hint="Isi refleksi mandiri tiap pekan."
+                                checked={Boolean(preferences.reflection_reminder_enabled)}
+                                onChange={(event) => setPreferences({ ...preferences, reflection_reminder_enabled: event.target.checked })}
+                            />
+                            <Switch
+                                icon="bell"
+                                label="Kanal notifikasi"
+                                hint={channelEnabled ? 'Email dan dalam aplikasi.' : 'Hanya dalam aplikasi.'}
+                                checked={channelEnabled}
+                                onChange={(event) => setPreferences({ ...preferences, channel: event.target.checked ? 'email_and_in_app' : 'in_app' })}
+                            />
+                            <div className="pt-1">
+                                <Field label="Jam pengingat (06–21)" htmlFor="hour">
+                                    <Input
+                                        id="hour"
+                                        className="h-11"
+                                        type="number"
+                                        min={6}
+                                        max={21}
+                                        value={preferences.mood_reminder_hour}
+                                        onChange={(event) => setPreferences({ ...preferences, mood_reminder_hour: event.target.value })}
+                                    />
+                                </Field>
                             </div>
+                            <Button className="mt-1 h-11 w-full" onClick={savePreferences} disabled={busy}>Simpan preferensi</Button>
                         </div>
                     )}
                 </Card>
 
-                <Card className="lg:col-span-6">
-                    <CardTitle>Persetujuan</CardTitle>
-                    <p className="text-[12px] leading-relaxed text-[#475569]">
-                        Anda menyetujui pemrosesan data psikologis untuk layanan BK. Data dienkripsi, hanya dibaca Guru BK
-                        kelas Anda, dan tidak dapat dibuka Superadmin. Pencabutan akan menonaktifkan fitur jurnal dan
-                        mengajukan penghapusan data.
-                    </p>
-                    <div className="mt-3 rounded-xl bg-[#fee2e2] p-3 text-[11px] text-[#991b1b]">
-                        Tindakan ini tidak dapat dibatalkan dari akun Anda. Hubungi Guru BK bila ingin mengaktifkan kembali.
-                    </div>
-                    <div className="mt-3 flex justify-end">
-                        <Button variant="danger" onClick={revoke}>Cabut persetujuan</Button>
-                    </div>
-                </Card>
+                <div>
+                    <PageSection title="Log akses">
+                        {loading ? <Skeleton rows={4} /> : logs.length === 0 ? (
+                            <EmptyState title="Belum ada akses" description="Belum ada Guru BK yang membuka data Anda." />
+                        ) : (
+                            <div className="space-y-2">
+                                {logs.map((log, index) => (
+                                    <ListRow
+                                        key={`${log.action}-${index}`}
+                                        leading={
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f1f5f9] text-[#475569]">
+                                                <Icon name={log.action === 'journal.viewed' ? 'book' : log.action === 'reflection.viewed' ? 'clock' : 'file'} size={17} />
+                                            </span>
+                                        }
+                                        title={log.actor_name ?? 'Sistem'}
+                                        subtitle={log.action === 'journal.viewed' ? 'Membuka jurnal' : log.action === 'reflection.viewed' ? 'Membuka refleksi' : 'Membuka catatan'}
+                                        meta={<span className="text-[11px] text-[#64748b]">{formatDate(log.created_at, true)}</span>}
+                                        trailing={<Badge tone="neutral">Tercatat</Badge>}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </PageSection>
+                </div>
+
+                <div>
+                    <PageSection title="Riwayat masalah">
+                        {summaries.length === 0 ? (
+                            <p className="text-[12px] text-[#475569]">Belum ada ringkasan dari Guru BK.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {summaries.map((item) => (
+                                    <div key={item.id} className="rounded-[18px] border border-[#e2e8f0] bg-white p-3.5">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <p className="text-[13px] font-semibold leading-snug">{item.title}</p>
+                                            <Badge tone={item.status === 'open' ? 'warning' : 'neutral'}>
+                                                {item.status === 'open' ? 'Berlangsung' : 'Selesai'}
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-0.5 text-[11px] text-[#64748b]">{formatDate(item.occurred_at)}</p>
+                                        <p className="mt-1.5 text-[12px] leading-relaxed">{item.summary}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <p className="text-[11px] leading-snug text-[#5b6b7f]">
+                            Catatan internal Guru BK tidak ditampilkan. Hanya ringkasan yang ditandai dapat dilihat siswa.
+                        </p>
+                    </PageSection>
+                </div>
             </div>
         </AppShell>
     );

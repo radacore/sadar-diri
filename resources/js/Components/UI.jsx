@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icons';
 
@@ -31,7 +32,7 @@ export function ToastProvider({ children }) {
     return (
         <ToastContext.Provider value={value}>
             {children}
-            <div className="pointer-events-none fixed bottom-24 left-1/2 z-[60] flex w-[calc(100%-32px)] max-w-sm -translate-x-1/2 flex-col gap-2 lg:bottom-6 lg:left-auto lg:right-6 lg:translate-x-0">
+            <div className="sd-toast-wrap pointer-events-none fixed bottom-24 left-1/2 z-[60] flex w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 flex-col gap-2">
                 {items.map((item) => (
                     <div
                         key={item.id}
@@ -135,7 +136,7 @@ export function ConfirmProvider({ children }) {
             {children}
             {request ? (
                 <div
-                    className="sd-backdrop fixed inset-0 z-[70] flex items-end justify-center bg-[rgba(15,23,42,0.5)] p-0 backdrop-blur-[4px] sm:items-center sm:p-4"
+                    className="sd-backdrop fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(15,23,42,0.5)] p-4 backdrop-blur-[4px]"
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) settle(null);
                     }}
@@ -145,7 +146,7 @@ export function ConfirmProvider({ children }) {
                         aria-modal="true"
                         aria-labelledby="sd-confirm-title"
                         aria-describedby={request.description ? 'sd-confirm-description' : undefined}
-                        className="sd-dialog w-full rounded-t-[26px] bg-white p-6 shadow-[0_24px_48px_-12px_rgba(15,23,42,0.28)] sm:max-w-md sm:rounded-[26px]"
+                        className="sd-confirm sd-dialog w-full max-w-md rounded-[26px] bg-white p-6 shadow-[0_24px_48px_-12px_rgba(15,23,42,0.28)]"
                     >
                         <div className="flex items-start gap-4">
                             <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone.bubble}`} aria-hidden="true">
@@ -281,6 +282,41 @@ export function Field({ label, hint, error, required, children, htmlFor }) {
 
 export function Input({ className = '', ...props }) {
     return <input className={`sd-input ${className}`} {...props} />;
+}
+
+export function PasswordInput({ className = '', disabled = false, ...props }) {
+    const [visible, setVisible] = useState(false);
+
+    return (
+        <div className="relative">
+            <input
+                {...props}
+                type={visible ? 'text' : 'password'}
+                disabled={disabled}
+                className={`sd-input pr-12 ${className}`}
+                autoComplete={props.autoComplete ?? 'new-password'}
+            />
+            <button
+                type="button"
+                onClick={() => setVisible((current) => !current)}
+                aria-label={visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                aria-pressed={visible}
+                title={visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#64748b] transition hover:bg-[#e8eaf6] hover:text-[#3f51b5] active:scale-95"
+            >
+                <Icon name={visible ? 'eye-off' : 'eye'} size={18} />
+            </button>
+        </div>
+    );
+}
+
+export function ReadOnlyValue({ children, mono = false, className = '' }) {
+    return (
+        <div className={`flex h-[42px] items-center gap-2 rounded-xl border border-[#e2e8f0] bg-[#f1f5f9] px-3.5 text-[13px] text-[#475569] ${className}`}>
+            <Icon name="lock" size={15} className="shrink-0 text-[#94a3b8]" />
+            <span className={`min-w-0 flex-1 truncate ${mono ? 'font-mono' : ''}`}>{children}</span>
+        </div>
+    );
 }
 
 export function Textarea({ className = '', ...props }) {
@@ -440,4 +476,192 @@ export function MoodPicker({ value, onChange }) {
 export function ToneDot({ tone }) {
     const map = { success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6' };
     return <span className="inline-block h-2 w-2 rounded-full" style={{ background: map[tone] ?? map.info }} aria-hidden="true" />;
+}
+
+/* ============================================
+   MOBILE-FIRST BUILDING BLOCKS
+   ============================================ */
+
+export function PageSection({ title, action, children, className = '' }) {
+    return (
+        <section className={`space-y-3 ${className}`}>
+            {(title || action) ? (
+                <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-[13px] font-bold uppercase tracking-[0.1em] text-[#64748b]">{title}</h2>
+                    {action}
+                </div>
+            ) : null}
+            {children}
+        </section>
+    );
+}
+
+export function HeroCard({ eyebrow, title, description, children, className = '' }) {
+    return (
+        <section className={`sd-hero ${className}`}>
+            {eyebrow ? <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#5c73db]">{eyebrow}</p> : null}
+            <h2 className="mt-1.5 text-[20px] font-extrabold leading-tight tracking-tight text-[#1e293b]">{title}</h2>
+            {description ? <p className="mt-1 text-[12.5px] leading-relaxed text-[#475569]">{description}</p> : null}
+            {children}
+        </section>
+    );
+}
+
+export function StatTile({ label, value, hint, tone = 'default', icon }) {
+    const tones = {
+        default: 'text-[#1e293b]',
+        primary: 'text-[#3f51b5]',
+        success: 'text-[#047857]',
+        warning: 'text-[#b45309]',
+        danger: 'text-[#b91c1c]',
+    };
+
+    return (
+        <div className="sd-tile">
+            <div className="flex items-start justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">{label}</p>
+                {icon ? <Icon name={icon} size={16} className="shrink-0 text-[#94a3b8]" /> : null}
+            </div>
+            <p className={`tabular mt-1.5 text-[28px] font-extrabold leading-none tracking-tight ${tones[tone] ?? tones.default}`}>{value}</p>
+            {hint ? <p className="mt-1 text-[11px] leading-snug text-[#64748b]">{hint}</p> : null}
+        </div>
+    );
+}
+
+export function ListRow({ leading, title, subtitle, meta, trailing, onClick, href, active = false }) {
+    const content = (
+        <>
+            {leading ? <span className="shrink-0">{leading}</span> : null}
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-semibold leading-snug text-[#1e293b]">{title}</span>
+                {subtitle ? <span className="mt-0.5 block truncate text-[11.5px] text-[#64748b]">{subtitle}</span> : null}
+                {meta ? <span className="mt-1.5 flex flex-wrap items-center gap-1.5">{meta}</span> : null}
+            </span>
+            {trailing ? <span className="shrink-0">{trailing}</span> : null}
+        </>
+    );
+
+    const className = `sd-list-row ${active ? 'sd-list-row-active' : ''}`;
+
+    if (href) {
+        return <Link href={href} className={className}>{content}</Link>;
+    }
+
+    if (onClick) {
+        return <button type="button" onClick={onClick} className={className}>{content}</button>;
+    }
+
+    return <div className={className}>{content}</div>;
+}
+
+export function Chip({ active = false, onClick, children, tone = 'neutral' }) {
+    const tones = {
+        neutral: active ? 'border-[#3f51b5] bg-[#3f51b5] text-white' : 'border-[#e2e8f0] bg-white text-[#475569]',
+        danger: active ? 'border-[#b91c1c] bg-[#b91c1c] text-white' : 'border-[#fecaca] bg-[#fef2f2] text-[#b91c1c]',
+        success: active ? 'border-[#047857] bg-[#047857] text-white' : 'border-[#bbf7d0] bg-[#ecfdf5] text-[#047857]',
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={active}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-[11.5px] font-semibold transition active:scale-95 ${tones[tone] ?? tones.neutral}`}
+        >
+            {children}
+        </button>
+    );
+}
+
+export function Segmented({ options, value, onChange, className = '' }) {
+    return (
+        <div className={`flex gap-1 rounded-full bg-[#e8edf5] p-1 ${className}`} role="tablist">
+            {options.map((option) => {
+                const active = value === option.value;
+
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => onChange(option.value)}
+                        className={`flex-1 rounded-full px-3 py-2 text-[11.5px] font-semibold transition ${
+                            active ? 'bg-white text-[#1e293b] shadow-sm' : 'text-[#64748b]'
+                        }`}
+                    >
+                        {option.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+export function Sheet({ open, onClose, title, children, footer }) {
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const handler = (event) => {
+            if (event.key === 'Escape') onClose?.();
+        };
+
+        document.addEventListener('keydown', handler);
+        const unlock = lockScroll();
+
+        return () => {
+            document.removeEventListener('keydown', handler);
+            unlock();
+        };
+    }, [open, onClose]);
+
+    if (!open) return null;
+
+    return (
+        <div
+            className="sd-backdrop fixed inset-0 z-50 flex items-end justify-center bg-[rgba(15,23,42,0.45)] backdrop-blur-[3px]"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose?.();
+            }}
+        >
+            <div role="dialog" aria-modal="true" aria-label={title} className="sd-sheet sd-dialog max-h-[90vh] w-full max-w-[448px] overflow-y-auto rounded-t-[26px] bg-white px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_40px_-12px_rgba(15,23,42,0.3)] sm:mb-4 sm:rounded-[26px]">
+                <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#e2e8f0]" aria-hidden="true" />
+                <div className="mb-4 flex items-start justify-between gap-3">
+                    <h3 className="text-[16px] font-bold leading-tight">{title}</h3>
+                    <button type="button" onClick={onClose} className="sd-btn sd-btn-ghost h-8 w-8 px-0" aria-label="Tutup">
+                        <Icon name="close" size={16} />
+                    </button>
+                </div>
+                {children}
+                {footer ? <div className="mt-5 flex gap-2">{footer}</div> : null}
+            </div>
+        </div>
+    );
+}
+
+export function ProgressRing({ value = 0, size = 72, stroke = 8, label, tone = '#3f51b5' }) {
+    const clamped = Math.min(100, Math.max(0, value));
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+
+    return (
+        <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e8edf5" strokeWidth={stroke} />
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    fill="none"
+                    stroke={tone}
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - (circumference * clamped) / 100}
+                    style={{ transition: 'stroke-dashoffset 400ms cubic-bezier(0.16, 1, 0.3, 1)' }}
+                />
+            </svg>
+            <span className="absolute text-[13px] font-extrabold tabular">{label ?? `${clamped}%`}</span>
+        </div>
+    );
 }

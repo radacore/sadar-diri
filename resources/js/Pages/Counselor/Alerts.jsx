@@ -1,10 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, CardTitle, EmptyState, Field, Modal, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
+import {
+    Badge,
+    Button,
+    Chip,
+    EmptyState,
+    Field,
+    Sheet,
+    Skeleton,
+    Textarea,
+    useConfirm,
+    useToast,
+} from '../../Components/UI';
+import { Icon } from '../../Components/Icons';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate, label } from '../../lib/format';
+import { formatDate, label, relative } from '../../lib/format';
 
 const severityTone = { high: 'danger', medium: 'warning', low: 'info' };
+const severityStripe = { high: '#ef4444', medium: '#f59e0b', low: '#3b82f6' };
+const statusTone = { new: 'danger', in_progress: 'warning', resolved: 'success' };
+
+const statusFilters = [
+    { value: '', text: 'Semua' },
+    { value: 'new', text: 'Baru' },
+    { value: 'in_progress', text: 'Ditangani' },
+    { value: 'resolved', text: 'Selesai' },
+];
+
+const severityFilters = [
+    { value: '', text: 'Semua prioritas' },
+    { value: 'high', text: 'Tinggi' },
+    { value: 'medium', text: 'Sedang' },
+    { value: 'low', text: 'Rendah' },
+];
 
 export default function Alerts() {
     const toast = useToast();
@@ -74,99 +102,150 @@ export default function Alerts() {
 
     return (
         <AppShell title="Kotak masuk alert" subtitle="Siswa yang perlu perhatian berdasarkan data jurnal dan aktivitas">
-            <div className="mb-4 flex flex-wrap gap-2">
-                {[
-                    { value: 'new', text: 'Baru' },
-                    { value: 'in_progress', text: 'Ditangani' },
-                    { value: 'resolved', text: 'Selesai' },
-                    { value: '', text: 'Semua status' },
-                ].map((item) => (
-                    <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => setStatus(item.value)}
-                        aria-pressed={status === item.value}
-                        className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${
-                            status === item.value ? 'bg-[#3f51b5] text-white' : 'bg-white text-[#1e293b] hover:bg-[#f1f5f9]'
-                        }`}
-                    >
-                        {item.text}
-                    </button>
-                ))}
-                <select className="sd-input h-9 w-auto px-3 text-[12px]" value={severity} onChange={(event) => setSeverity(event.target.value)} aria-label="Filter prioritas">
-                    <option value="">Semua prioritas</option>
-                    <option value="high">Tinggi</option>
-                    <option value="medium">Sedang</option>
-                    <option value="low">Rendah</option>
-                </select>
-            </div>
-
-            {loading ? <Skeleton rows={5} /> : alerts.length === 0 ? (
-                <Card><EmptyState title="Tidak ada alert" description="Semua siswa pada kelas binaan Anda terpantau baik." /></Card>
-            ) : (
-                <div className="space-y-3">
-                    {alerts.map((alert) => (
-                        <Card key={alert.id} className="border-l-4 p-4 sm:p-5" as="article">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                                        <Badge tone={severityTone[alert.severity]}>{label('severity', alert.severity)}</Badge>
-                                        <Badge tone={alert.status === 'resolved' ? 'success' : 'neutral'}>{label('alertStatus', alert.status)}</Badge>
-                                        <span className="text-[11px] text-[#475569]">{formatDate(alert.detected_at, true)}</span>
-                                    </div>
-                                    <p className="text-[14px] font-bold">{alert.student.name}</p>
-                                    <p className="text-[12px] text-[#475569]">
-                                        {alert.student.class ?? '—'} · {alert.trigger_label}
-                                    </p>
-                                </div>
-                                <Button variant="outline" onClick={() => openDetail(alert)}>Tindak lanjuti</Button>
-                            </div>
-                        </Card>
+            <div className="space-y-2">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>button]:min-h-[44px]" role="group" aria-label="Filter status alert">
+                    {statusFilters.map((item) => (
+                        <Chip
+                            key={item.value || 'all'}
+                            active={status === item.value}
+                            onClick={() => setStatus(item.value)}
+                        >
+                            {item.text}
+                        </Chip>
                     ))}
                 </div>
-            )}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>button]:min-h-[44px]" role="group" aria-label="Filter prioritas alert">
+                    {severityFilters.map((item) => (
+                        <Chip
+                            key={item.value || 'all'}
+                            active={severity === item.value}
+                            tone={item.value === 'high' ? 'danger' : 'neutral'}
+                            onClick={() => setSeverity(item.value)}
+                        >
+                            {item.text}
+                        </Chip>
+                    ))}
+                </div>
+            </div>
 
-            <Modal
+            <div className="mt-4">
+                {loading ? (
+                    <Skeleton rows={5} />
+                ) : alerts.length === 0 ? (
+                    <div className="rounded-[22px] border border-dashed border-[#cbd5e1] bg-white/70">
+                        <EmptyState
+                            title="Tidak ada alert"
+                            description="Semua siswa pada kelas binaan Anda terpantau baik."
+                        />
+                    </div>
+                ) : (
+                    <div className="grid gap-3">
+                        {alerts.map((alert) => (
+                            <article
+                                key={alert.id}
+                                className="rounded-[20px] border border-[#e2e8f0] border-l-4 bg-white p-4 shadow-[0_2px_10px_-6px_rgba(15,23,42,0.12)]"
+                                style={{ borderLeftColor: severityStripe[alert.severity] ?? severityStripe.low }}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                                            <Badge tone={severityTone[alert.severity] ?? 'info'}>
+                                                {label('severity', alert.severity)}
+                                            </Badge>
+                                            <Badge tone={statusTone[alert.status] ?? 'neutral'}>
+                                                {label('alertStatus', alert.status)}
+                                            </Badge>
+                                        </div>
+                                        <p className="truncate text-[15px] font-bold leading-tight">{alert.student.name}</p>
+                                        <p className="truncate text-[12px] text-[#475569]">{alert.student.class ?? '—'}</p>
+                                    </div>
+                                    <span className="shrink-0 text-[11px] text-[#94a3b8]">{relative(alert.detected_at)}</span>
+                                </div>
+
+                                <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-snug text-[#475569]">
+                                    <Icon name="alert" size={14} className="mt-0.5 shrink-0 text-[#94a3b8]" />
+                                    <span className="break-words">{alert.trigger_label}</span>
+                                </p>
+
+                                <Button variant="soft" className="mt-3 w-full" onClick={() => openDetail(alert)}>
+                                    Tindak lanjuti
+                                </Button>
+                            </article>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <Sheet
                 open={Boolean(detail)}
                 onClose={() => setDetail(null)}
                 title="Tindak lanjut alert"
                 footer={
-                    <>
-                        <Button variant="outline" onClick={() => setDetail(null)}>Tutup</Button>
+                    <div className="flex w-full flex-col gap-2">
                         {detail?.status !== 'in_progress' && detail?.status !== 'resolved' ? (
-                            <Button variant="info" onClick={() => update('in_progress')} disabled={busy}>Tandai ditangani</Button>
+                            <Button variant="info" className="w-full" onClick={() => update('in_progress')} disabled={busy}>
+                                Tandai ditangani
+                            </Button>
                         ) : null}
                         {detail?.status !== 'resolved' ? (
-                            <Button variant="success" onClick={() => update('resolved')} disabled={busy}>Selesaikan</Button>
+                            <Button variant="success" className="w-full" onClick={() => update('resolved')} disabled={busy}>
+                                Selesaikan
+                            </Button>
                         ) : null}
-                    </>
+                        <Button variant="outline" className="w-full" onClick={() => setDetail(null)}>
+                            Tutup
+                        </Button>
+                    </div>
                 }
             >
                 {detail ? (
-                    <div className="space-y-3">
-                        <div className="rounded-xl bg-[#f1f5f9] p-3 text-[12px]">
-                            <p className="font-semibold">{detail.student.name} · {detail.student.class ?? '—'}</p>
-                            <p className="text-[#475569]">{detail.trigger_label}</p>
-                            <p className="text-[#475569]">Terdeteksi {formatDate(detail.detected_at, true)}</p>
-                            {detail.context?.negative_days ? (
-                                <p className="mt-1 text-[#475569]">
-                                    {detail.context.negative_days} hari mood negatif · intensitas terakhir {detail.context.last_intensity}
-                                </p>
-                            ) : null}
+                    <div className="space-y-4">
+                        <div className="rounded-2xl bg-[#f8fafc] p-3.5">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                    <p className="truncate text-[13.5px] font-bold">{detail.student.name}</p>
+                                    <p className="text-[11.5px] text-[#475569]">{detail.student.class ?? '—'}</p>
+                                </div>
+                                <Badge tone={severityTone[detail.severity] ?? 'info'}>
+                                    {label('severity', detail.severity)}
+                                </Badge>
+                            </div>
+                            <div className="mt-2 space-y-1 text-[12px] text-[#475569]">
+                                <p>{detail.trigger_label}</p>
+                                <p>Terdeteksi {formatDate(detail.detected_at, true)} · {relative(detail.detected_at)}</p>
+                                {detail.context?.negative_days ? (
+                                    <p>
+                                        {detail.context.negative_days} hari mood negatif · intensitas terakhir {detail.context.last_intensity}
+                                    </p>
+                                ) : null}
+                            </div>
                         </div>
+
                         <Field label="Catatan tindak lanjut" required htmlFor="note" hint="Wajib diisi sebelum alert ditutup.">
                             <Textarea id="note" rows={4} value={note} onChange={(event) => setNote(event.target.value)} />
                         </Field>
-                        <p className="text-[11px] text-[#5b6b7f]">
+
+                        <p className="text-[11px] leading-relaxed text-[#5b6b7f]">
                             Alert adalah penanda untuk pendampingan, bukan diagnosis. Membuka jurnal siswa akan tercatat di audit log.
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" onClick={() => (window.location.href = `/bk/siswa/${detail.student.id}`)}>Buka profil siswa</Button>
-                            <Button variant="ghost" onClick={() => (window.location.href = `/bk/catatan?student_id=${detail.student.id}`)}>Tulis catatan</Button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => (window.location.href = `/bk/siswa/${detail.student.id}`)}
+                            >
+                                Profil siswa
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => (window.location.href = `/bk/catatan?student_id=${detail.student.id}`)}
+                            >
+                                Tulis catatan
+                            </Button>
                         </div>
                     </div>
                 ) : null}
-            </Modal>
+            </Sheet>
         </AppShell>
     );
 }

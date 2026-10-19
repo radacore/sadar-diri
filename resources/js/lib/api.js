@@ -49,7 +49,8 @@ export class ApiError extends Error {
         super(message);
         this.status = status;
         this.payload = payload;
-        this.details = payload?.details ?? null;
+        // Laravel mengirim error validasi per field pada `errors`.
+        this.details = payload?.details ?? payload?.errors ?? null;
     }
 }
 

@@ -56,9 +56,8 @@ Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/consent', [AuthController::class, 'consent']);
         Route::delete('/consent', [AuthController::class, 'revokeConsent']);
-        Route::post('/2fa/enroll', [AuthController::class, 'enrollTwoFactor']);
-        Route::post('/2fa/confirm', [AuthController::class, 'confirmTwoFactor']);
-        Route::post('/2fa/verify', [AuthController::class, 'verifyTwoFactor']);
+        Route::post('/2fa/verify', [AuthController::class, 'verifyTwoFactor'])->middleware('throttle:10,1');
+        Route::post('/2fa/resend', [AuthController::class, 'resendOtp'])->middleware('throttle:6,1');
     });
 });
 
@@ -122,6 +121,11 @@ Route::middleware(['auth', 'role:counselor'])->prefix('counselor')->group(functi
     Route::get('/students/{student}/journals', [CounselorController::class, 'journals']);
     Route::get('/students/{student}/reflections', [CounselorController::class, 'reflections']);
     Route::get('/students/{student}/achievements', [CounselorController::class, 'achievements']);
+    Route::post('/students/{student}/achievements', [CounselorController::class, 'storeAchievement']);
+    Route::put('/students/{student}/profile/biodata', [CounselorController::class, 'updateBiodata']);
+    Route::put('/students/{student}/profile/self', [CounselorController::class, 'updateSelfProfile']);
+    Route::get('/students/{student}/action-plan', [CounselorController::class, 'actionPlan']);
+    Route::post('/journals/{journal}/replies', [CounselorController::class, 'replyToJournal']);
     Route::get('/students/{student}/access-logs', [CounselorController::class, 'accessLogs']);
     Route::put('/preferences/notifications', [CounselorController::class, 'updatePreferences']);
 

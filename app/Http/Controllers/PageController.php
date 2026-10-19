@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\EmailOtpService;
 use App\Services\SettingsService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,18 +42,23 @@ class PageController extends Controller
         return Inertia::render('Auth/Reset');
     }
 
-    public function twoFactorChallenge()
+    public function twoFactorChallenge(Request $request)
     {
+        $user = $request->user();
+        $email = (string) $user?->email;
+
         return Inertia::render('Auth/TwoFactor', [
             'mode' => 'challenge',
+            'maskedEmail' => $email && str_contains($email, '@') ? $this->maskEmail($email) : null,
+            'resendSeconds' => $user ? app(EmailOtpService::class)->secondsUntilResend($user) : 0,
         ]);
     }
 
-    public function twoFactorEnroll()
+    private function maskEmail(string $email): string
     {
-        return Inertia::render('Auth/TwoFactor', [
-            'mode' => 'enroll',
-        ]);
+        [$name, $domain] = explode('@', $email, 2);
+
+        return mb_substr($name, 0, 2).str_repeat('•', max(1, mb_strlen($name) - 2)).'@'.$domain;
     }
 
     public function consent()

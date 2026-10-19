@@ -43,6 +43,19 @@ class StudentProfile extends Model
         ];
     }
 
+    public function completeness(): int
+    {
+        $fields = [
+            'birth_date', 'gender', 'address', 'phone', 'height_cm', 'weight_kg',
+            'blood_type', 'medical_history', 'health_notes',
+            'psychological_summary', 'character_summary', 'strengths', 'weaknesses',
+        ];
+
+        $filled = collect($fields)->filter(fn ($field) => ! blank($this->{$field}))->count();
+
+        return (int) round($filled / count($fields) * 100);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

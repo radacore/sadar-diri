@@ -1,8 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Input, Modal, Select, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
+import {
+    Badge,
+    Button,
+    Chip,
+    EmptyState,
+    Field,
+    Input,
+    ListRow,
+    PageSection,
+    Select,
+    Sheet,
+    Skeleton,
+    Textarea,
+    useConfirm,
+    useToast,
+} from '../../Components/UI';
+import { Icon } from '../../Components/Icons';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate } from '../../lib/format';
+import { formatDate, initials } from '../../lib/format';
 
 export default function Notes() {
     const toast = useToast();
@@ -12,6 +28,8 @@ export default function Notes() {
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
+    const [query, setQuery] = useState('');
+    const [studentFilter, setStudentFilter] = useState('');
     const [form, setForm] = useState({
         student_id: '',
         title: '',
@@ -76,52 +94,131 @@ export default function Notes() {
         }
     };
 
+    const term = query.trim().toLowerCase();
+    const visibleNotes = notes.filter((note) => {
+        const matchesTerm = !term || `${note.title} ${note.student.name}`.toLowerCase().includes(term);
+        const matchesStudent = !studentFilter || String(note.student.id) === studentFilter;
+
+        return matchesTerm && matchesStudent;
+    });
+
     return (
         <AppShell
             title="Catatan konseling"
             subtitle="Catatan privat Guru BK, terpisah dari jurnal siswa"
-            actions={<Button onClick={() => setOpen(true)}>Tulis catatan</Button>}
+            actions={<Button className="min-h-[44px]" onClick={() => setOpen(true)}>Tulis catatan</Button>}
         >
-            <Card className="p-0 sm:p-6">
-                {loading ? <div className="p-4"><Skeleton rows={4} /></div> : notes.length === 0 ? (
-                    <EmptyState title="Belum ada catatan" description="Catatan konseling hanya dapat dibaca Guru BK." action={<Button onClick={() => setOpen(true)}>Tulis catatan</Button>} />
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="sd-table">
-                            <thead>
-                                <tr><th>Siswa</th><th>Judul</th><th>Tanggal</th><th>Status</th><th>Visibilitas</th></tr>
-                            </thead>
-                            <tbody>
-                                {notes.map((note) => (
-                                    <tr key={note.id}>
-                                        <td className="font-semibold">{note.student.name}</td>
-                                        <td>{note.title}</td>
-                                        <td className="tabular whitespace-nowrap">{formatDate(note.occurred_at)}</td>
-                                        <td><Badge tone={note.status === 'open' ? 'warning' : 'success'}>{note.status === 'open' ? 'Berlangsung' : 'Selesai'}</Badge></td>
-                                        <td>{note.visible_to_student ? <Badge tone="info">Ringkasan terlihat siswa</Badge> : <span className="text-[11px] text-[#475569]">Privat</span>}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </Card>
+            <div className="space-y-4">
+                <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[#94a3b8]" aria-hidden="true">
+                        <Icon name="search" size={16} />
+                    </span>
+                    <Input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Cari judul atau nama siswa"
+                        className="pl-9"
+                        aria-label="Cari catatan"
+                    />
+                </div>
 
-            <Modal
+                {students.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        <Chip active={!studentFilter} onClick={() => setStudentFilter('')}>Semua siswa</Chip>
+                        {students.map((student) => (
+                            <Chip
+                                key={student.id}
+                                active={String(student.id) === studentFilter}
+                                onClick={() => setStudentFilter(String(student.id))}
+                            >
+                                {student.name}
+                            </Chip>
+                        ))}
+                    </div>
+                ) : null}
+
+                {loading ? <Skeleton rows={5} /> : notes.length === 0 ? (
+                    <div className="rounded-[22px] border border-[#e2e8f0] bg-white">
+                        <EmptyState
+                            title="Belum ada catatan"
+                            description="Catatan konseling hanya dapat dibaca Guru BK."
+                            action={<Button className="min-h-[44px]" onClick={() => setOpen(true)}>Tulis catatan</Button>}
+                        />
+                    </div>
+                ) : visibleNotes.length === 0 ? (
+                    <div className="rounded-[22px] border border-[#e2e8f0] bg-white">
+                        <EmptyState
+                            title="Tidak ada catatan cocok"
+                            description="Ubah kata kunci atau pilih siswa lain."
+                            action={
+                                <Button
+                                    variant="outline"
+                                    className="min-h-[44px]"
+                                    onClick={() => {
+                                        setQuery('');
+                                        setStudentFilter('');
+                                    }}
+                                >
+                                    Reset filter
+                                </Button>
+                            }
+                        />
+                    </div>
+                ) : (
+                    <PageSection
+                        title="Catatan"
+                        action={<span className="text-[11px] font-semibold text-[#64748b]">{visibleNotes.length} catatan</span>}
+                    >
+                        <div className="grid grid-cols-1 gap-2">
+                            {visibleNotes.map((note) => (
+                                <ListRow
+                                    key={note.id}
+                                    leading={
+                                        <span className="sd-avatar flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold">
+                                            {initials(note.student.name)}
+                                        </span>
+                                    }
+                                    title={note.title}
+                                    subtitle={`${note.student.name} · ${formatDate(note.occurred_at)}`}
+                                    meta={
+                                        <>
+                                            <Badge tone={note.status === 'open' ? 'warning' : 'success'}>
+                                                {note.status === 'open' ? 'Berlangsung' : 'Selesai'}
+                                            </Badge>
+                                            <Badge tone={note.visible_to_student ? 'info' : 'neutral'}>
+                                                {note.visible_to_student ? 'Ringkasan terlihat siswa' : 'Privat'}
+                                            </Badge>
+                                            {note.is_sensitive ? <Badge tone="danger">Sensitif</Badge> : null}
+                                        </>
+                                    }
+                                />
+                            ))}
+                        </div>
+                    </PageSection>
+                )}
+            </div>
+
+            <Sheet
                 open={open}
                 onClose={() => setOpen(false)}
                 title="Catatan konseling baru"
-                wide
                 footer={
                     <>
-                        <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-                        <Button type="submit" form="counseling-form" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan catatan'}</Button>
+                        <Button variant="outline" className="flex-1 min-h-[44px]" onClick={() => setOpen(false)}>Batal</Button>
+                        <Button type="submit" form="counseling-form" className="flex-1 min-h-[44px]" disabled={busy}>
+                            {busy ? 'Menyimpan…' : 'Simpan catatan'}
+                        </Button>
                     </>
                 }
             >
                 <form id="counseling-form" onSubmit={submit} className="space-y-3">
                     <Field label="Siswa" required htmlFor="student">
-                        <Select id="student" value={form.student_id} onChange={(event) => setForm({ ...form, student_id: event.target.value })} required>
+                        <Select
+                            id="student"
+                            value={form.student_id}
+                            onChange={(event) => setForm({ ...form, student_id: event.target.value })}
+                            required
+                        >
                             <option value="">Pilih siswa</option>
                             {students.map((item) => <option key={item.id} value={item.id}>{item.name} — {item.class?.name}</option>)}
                         </Select>
@@ -135,18 +232,26 @@ export default function Notes() {
                     <Field label="Isi catatan" required htmlFor="content" hint="Terenkripsi. Hanya Guru BK yang dapat membaca.">
                         <Textarea id="content" rows={5} value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} required />
                     </Field>
-                    <div className="flex flex-wrap gap-4">
-                        <label className="flex items-center gap-2 text-[12px]">
-                            <input type="checkbox" checked={form.visible_to_student} onChange={(event) => setForm({ ...form, visible_to_student: event.target.checked })} className="h-[18px] w-[18px] accent-[#3f51b5]" />
-                            Ringkasan dapat dilihat siswa
-                        </label>
-                        <label className="flex items-center gap-2 text-[12px]">
-                            <input type="checkbox" checked={form.is_sensitive} onChange={(event) => setForm({ ...form, is_sensitive: event.target.checked })} className="h-[18px] w-[18px] accent-[#3f51b5]" />
-                            Tandai sensitif (konfirmasi tambahan saat dibuka)
-                        </label>
-                    </div>
+                    <label className="flex min-h-[44px] items-center gap-2.5 text-[12px]">
+                        <input
+                            type="checkbox"
+                            checked={form.visible_to_student}
+                            onChange={(event) => setForm({ ...form, visible_to_student: event.target.checked })}
+                            className="h-5 w-5 accent-[#3f51b5]"
+                        />
+                        Ringkasan dapat dilihat siswa
+                    </label>
+                    <label className="flex min-h-[44px] items-center gap-2.5 text-[12px]">
+                        <input
+                            type="checkbox"
+                            checked={form.is_sensitive}
+                            onChange={(event) => setForm({ ...form, is_sensitive: event.target.checked })}
+                            className="h-5 w-5 accent-[#3f51b5]"
+                        />
+                        Tandai sensitif (konfirmasi tambahan saat dibuka)
+                    </label>
                 </form>
-            </Modal>
+            </Sheet>
         </AppShell>
     );
 }

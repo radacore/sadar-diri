@@ -34,16 +34,11 @@ class User extends Authenticatable
         'mood_reminder_hour',
         'reflection_reminder_enabled',
         'notification_channel',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
-        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -60,7 +55,6 @@ class User extends Authenticatable
             'mood_reminder_enabled' => 'boolean',
             'mood_reminder_hour' => 'integer',
             'reflection_reminder_enabled' => 'boolean',
-            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -82,6 +76,11 @@ class User extends Authenticatable
     public function hasConsent(): bool
     {
         return $this->consent_version !== null && $this->consented_at !== null;
+    }
+
+    public function wantsEmailNotifications(): bool
+    {
+        return $this->notification_channel !== 'in_app' && filled($this->email);
     }
 
     public function requiresTwoFactor(): bool

@@ -31,18 +31,65 @@ Untuk pengembangan: `npm run dev` + `php artisan serve`.
 
 | Peran | Login | Sandi |
 |---|---|---|
-| Superadmin | `admin@sadar-diri.test` atau `ADM001` | `Password123` |
+| Superadmin | `rahmatdanisyw@gmail.com` atau `ADM001` | `Password123` + kode OTP email |
 | Guru BK | `rina@sadar-diri.test` | `Password123` |
 | Guru BK (koordinator) | `hendra@sadar-diri.test` | `Password123` |
 | Siswa | NIS `2024001`–`2024036` | `Password123` |
 
-Superadmin wajib mengaktifkan TOTP saat login pertama. Secret dan kode pemulihan ditampilkan di halaman `/2fa/enroll`.
+Superadmin masuk dengan kata sandi lalu mengonfirmasi **kode 6 digit yang dikirim ke email** akunnya (berlaku 10 menit, sekali pakai, kirim ulang tiap 60 detik).
+
+## Pemetaan fitur ke dimensi Ryff
+
+| # | Fitur | Pengisi | Guru BK |
+|---|---|---|---|
+| 1 | Sistem Informasi | Siswa & Guru BK | Lihat & ubah biodata/profil diri |
+| 2 | Journaling Emosi (mood + media katarsis) | Siswa | Baca jurnal & **membalas langsung**; tindak lanjut konseling opsional bagi siswa |
+| 3 | Portofolio Prestasi | Siswa & Guru BK | Lihat, verifikasi, tambah prestasi |
+| 4 | Ruang Refleksi & Syukur | Siswa | Lihat, beri umpan balik pada refleksi terbimbing |
+| 5 | Perencanaan Masa Depan | Siswa | Lihat target, evaluasi, dan rencana masa depan |
+
+Balasan jurnal dan perubahan profil oleh Guru BK tercatat di audit log. Siswa dapat memilih **tidak** meminta konseling lanjutan; Guru BK tetap dapat membaca jurnalnya.
 
 ## Pola UI
 
-- **Top nav** (`Layouts/AppShell.jsx`): pencarian halaman (⌘K/Ctrl+K), lonceng notifikasi dengan lencana, dan menu profil berisi nama, peran, serta avatar inisial. Setiap halaman transisi dengan `sd-page`/`sd-card` dan popover memakai `sd-popover` (animasi `prefers-reduced-motion` dihormati).
+- **Mode ponsel permanen**: peran siswa dan Guru BK selalu memakai tata letak ponsel, termasuk saat dibuka di desktop (kolom 480px di tengah dengan bingkai). Halaman mereka tidak memakai breakpoint `sm:`/`lg:`, dan seluruh overlay (sheet, dialog konfirmasi, popover, toast) dibatasi maksimal 448px agar tidak pernah lebih lebar dari layar ponsel. Navigasi utama hanya bottom nav (gaya liquid cutout seperti file desain); tidak ada menu burger, halaman lain diakses lewat menu akun. Peran Superadmin tetap responsif penuh (sidebar di ≥1024px).
+- **Top nav** (`Layouts/AppShell.jsx`): lonceng notifikasi dengan lencana dan menu profil berisi nama, peran, serta avatar inisial. Setiap halaman transisi dengan `sd-page`/`sd-card` dan popover memakai `sd-popover` (animasi `prefers-reduced-motion` dihormati).
 - **Konfirmasi aksi** (`useConfirm` dari `Components/UI.jsx`): semua aksi yang mengubah data atau mengakhiri sesi melewati dialog konfirmasi. `requireReason` menggantikan `window.prompt` untuk aksi yang dicatat di audit log; nilainya tersedia sebagai `decision.reason`.
 - **Warna tombol**: `primary` (simpan/buat), `success` (verifikasi/setujui/selesaikan), `danger` (hapus/tolak/cabut), `warning` (aksi massal & tak dapat dibatalkan), `info` (ekspor/unduh), `outline`/`soft`/`ghost` untuk aksi sekunder. Aksi baris tabel memakai `IconButton` agar tidak membungkus.
+
+## Email (Resend)
+
+Semua email transaksional dikirim lewat [Resend](https://resend.com):
+
+| Email | Pemicu |
+|---|---|
+| `LoginOtpMail` | Login Superadmin — kode OTP 6 digit |
+| `PasswordResetMail` | Lupa kata sandi (siswa, Guru BK, Superadmin) dan reset oleh admin |
+| `AccountInvitationMail` | Admin membuat akun baru |
+
+Konfigurasi di `.env`:
+
+```dotenv
+MAIL_MAILER=resend
+RESEND_API_KEY=re_xxxxxxxxxxxx
+MAIL_FROM_ADDRESS="onboarding@resend.dev"
+```
+
+`onboarding@resend.dev` bisa dipakai tanpa verifikasi domain, tetapi Resend **hanya mengizinkan pengiriman ke email pemilik akun Resend**. Selama domain belum diverifikasi:
+
+- OTP login Superadmin → berhasil (tujuan `rahmatdanisyw@gmail.com`).
+- Reset kata sandi siswa/Guru BK → gagal; admin melihat pesan "Tautan gagal dikirim" dan penyebabnya tercatat di `storage/logs/laravel.log`.
+
+Setelah domain dibeli, verifikasi di dashboard Resend (tambahkan record SPF/DKIM), lalu ubah:
+
+```dotenv
+MAIL_FROM_ADDRESS="no-reply@domain-sekolah.sch.id"
+MAIL_FROM_NAME="SADAR DIRI"
+```
+
+Tidak ada perubahan kode yang diperlukan.
+
+Selama `RESEND_API_KEY` kosong, `AppServiceProvider` otomatis mengalihkan mailer ke `log` supaya alur login dan reset tetap bisa diuji tanpa mengirim email.
 
 ## Privasi & keamanan
 

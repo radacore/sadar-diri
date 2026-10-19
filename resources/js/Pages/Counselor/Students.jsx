@@ -1,8 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Card, CardTitle, EmptyState, Input, Skeleton, useToast } from '../../Components/UI';
+import {
+    Badge,
+    Button,
+    Chip,
+    EmptyState,
+    Input,
+    ListRow,
+    Segmented,
+    Skeleton,
+    useToast,
+} from '../../Components/UI';
+import { Icon } from '../../Components/Icons';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { relative } from '../../lib/format';
+import { initials, relative } from '../../lib/format';
+
+const activityOptions = [
+    { value: '', label: 'Semua' },
+    { value: 'active', label: 'Aktif 7 hari' },
+    { value: 'inactive', label: 'Belum aktif' },
+];
 
 export default function Students() {
     const toast = useToast();
@@ -36,71 +53,101 @@ export default function Students() {
         return () => clearTimeout(timer);
     }, [load]);
 
+    const resetFilters = () => setFilters({ search: '', class_id: '', activity: '' });
+    const hasFilter = Boolean(filters.search || filters.class_id || filters.activity);
+
     return (
         <AppShell title="Siswa binaan" subtitle="Daftar siswa pada kelas yang Anda dampingi">
-            <Card className="p-0 sm:p-6">
-                <div className="flex flex-wrap items-center gap-2 p-4 sm:p-0 sm:pb-4">
-                    <CardTitle>Siswa</CardTitle>
-                    <div className="flex flex-1 flex-wrap justify-end gap-2">
-                        <Input
-                            className="h-9 w-full max-w-[240px] text-[12px]"
-                            placeholder="Cari nama atau NIS"
-                            value={filters.search}
-                            onChange={(event) => setFilters({ ...filters, search: event.target.value })}
-                        />
-                        <select className="sd-input h-9 w-auto px-3 text-[12px]" value={filters.class_id} onChange={(event) => setFilters({ ...filters, class_id: event.target.value })} aria-label="Filter kelas">
-                            <option value="">Semua kelas</option>
-                            {classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                        </select>
-                        <select className="sd-input h-9 w-auto px-3 text-[12px]" value={filters.activity} onChange={(event) => setFilters({ ...filters, activity: event.target.value })} aria-label="Filter aktivitas">
-                            <option value="">Semua aktivitas</option>
-                            <option value="active">Aktif 7 hari</option>
-                            <option value="inactive">Belum aktif</option>
-                        </select>
-                    </div>
+            <div className="sticky top-0 z-20 -mx-4 bg-[#eceff4]/95 px-4 pb-2 pt-1 backdrop-blur">
+                <div className="relative">
+                    <Icon
+                        name="search"
+                        size={17}
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8]"
+                    />
+                    <Input
+                        className="h-11 pl-10 text-[13px]"
+                        placeholder="Cari nama atau NIS"
+                        value={filters.search}
+                        onChange={(event) => setFilters({ ...filters, search: event.target.value })}
+                        aria-label="Cari siswa"
+                    />
                 </div>
+            </div>
 
-                {loading ? <div className="p-4"><Skeleton rows={5} /></div> : students.length === 0 ? (
-                    <EmptyState title="Tidak ada siswa" description="Belum ada siswa yang cocok dengan filter." />
+            <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-1 [&>button]:min-h-[44px]" role="group" aria-label="Filter kelas">
+                <Chip active={!filters.class_id} onClick={() => setFilters({ ...filters, class_id: '' })}>
+                    Semua kelas
+                </Chip>
+                {classes.map((item) => (
+                    <Chip
+                        key={item.id}
+                        active={String(filters.class_id) === String(item.id)}
+                        onClick={() => setFilters({ ...filters, class_id: String(item.id) })}
+                    >
+                        {item.name}
+                    </Chip>
+                ))}
+            </div>
+
+            <Segmented
+                className="mt-2 [&>button]:min-h-[44px]"
+                options={activityOptions}
+                value={filters.activity}
+                onChange={(value) => setFilters({ ...filters, activity: value })}
+            />
+
+            {!loading ? (
+                <p className="mt-3 text-[11.5px] text-[#64748b]">{students.length} siswa ditemukan</p>
+            ) : null}
+
+            <div className="mt-2">
+                {loading ? (
+                    <Skeleton rows={6} />
+                ) : students.length === 0 ? (
+                    <div className="rounded-[22px] border border-dashed border-[#cbd5e1] bg-white/70">
+                        <EmptyState
+                            title="Tidak ada siswa"
+                            description="Belum ada siswa yang cocok dengan filter."
+                            action={
+                                hasFilter ? (
+                                    <Button variant="outline" onClick={resetFilters}>Reset filter</Button>
+                                ) : null
+                            }
+                        />
+                    </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="sd-table">
-                            <thead>
-                                <tr>
-                                    <th>Nama</th>
-                                    <th>Kelas</th>
-                                    <th>Aktivitas</th>
-                                    <th>Mood 7 hari</th>
-                                    <th>Profil</th>
-                                    <th>Alert</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {students.map((student) => (
-                                    <tr key={student.id} className="cursor-pointer" onClick={() => (window.location.href = `/bk/siswa/${student.id}`)}>
-                                        <td className="font-semibold">{student.name}</td>
-                                        <td>{student.class?.name ?? '—'}</td>
-                                        <td>{relative(student.last_activity_at)}</td>
-                                        <td>
-                                            {student.dominant_mood_7d ? (
-                                                <Badge tone={student.dominant_mood_7d === 'positive' ? 'success' : 'warning'}>
-                                                    {student.dominant_mood_7d === 'positive' ? 'Positif' : 'Negatif'}
-                                                </Badge>
-                                            ) : <span className="text-[#475569]">—</span>}
-                                        </td>
-                                        <td className="tabular">{student.profile_completeness}%</td>
-                                        <td>
-                                            <Badge tone={student.alert_status === 'open' ? 'danger' : 'neutral'}>
-                                                {student.alert_status === 'open' ? 'Perlu perhatian' : 'Terpantau'}
+                    <div className="space-y-2">
+                        {students.map((student) => (
+                            <ListRow
+                                key={student.id}
+                                href={`/bk/siswa/${student.id}`}
+                                leading={
+                                    <span className="sd-avatar flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold">
+                                        {initials(student.name)}
+                                    </span>
+                                }
+                                title={student.name}
+                                subtitle={`${student.class?.name ?? '—'} · ${relative(student.last_activity_at)}`}
+                                meta={
+                                    <>
+                                        {student.dominant_mood_7d ? (
+                                            <Badge tone={student.dominant_mood_7d === 'positive' ? 'success' : 'warning'}>
+                                                {student.dominant_mood_7d === 'positive' ? 'Positif' : 'Negatif'}
                                             </Badge>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        ) : null}
+                                        <Badge tone={student.alert_status === 'open' ? 'danger' : 'neutral'}>
+                                            {student.alert_status === 'open' ? 'Perlu perhatian' : 'Terpantau'}
+                                        </Badge>
+                                        <span className="text-[11px] text-[#94a3b8]">Profil {student.profile_completeness}%</span>
+                                    </>
+                                }
+                                trailing={<Icon name="chevron" size={16} className="text-[#94a3b8]" />}
+                            />
+                        ))}
                     </div>
                 )}
-            </Card>
+            </div>
         </AppShell>
     );
 }

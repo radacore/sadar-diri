@@ -108,11 +108,17 @@ class UserController extends Controller
 
         if (($data['send_invitation'] ?? true) && $user->email) {
             $url = \URL::temporarySignedRoute('activate.form', now()->addHours(72), ['user' => $user->id]);
-            \Illuminate\Support\Facades\Mail::raw(
-                "Halo {$user->name},\n\nAkun SADAR DIRI Anda sudah dibuat. Aktifkan akun melalui tautan berikut (berlaku 72 jam):\n{$url}",
-                fn ($message) => $message->to($user->email)->subject('Undangan SADAR DIRI'),
-            );
-            $invitationSent = true;
+
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)
+                    ->send(new \App\Mail\AccountInvitationMail($user, $url));
+                $invitationSent = true;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Gagal mengirim undangan akun.', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         $this->audit->record('user.created', 'users', $user->id, $user->id, null, ['role' => $user->role]);
@@ -204,22 +210,32 @@ class UserController extends Controller
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
 
+        $resetSent = false;
+
         if ($user->email) {
             $token = Password::broker()->createToken($user);
             $url = url('/reset-password?token='.$token.'&email='.urlencode($user->email));
 
-            \Illuminate\Support\Facades\Mail::raw(
-                "Halo {$user->name},\n\nAdmin sekolah meminta reset kata sandi. Gunakan tautan berikut (berlaku 30 menit):\n{$url}",
-                fn ($message) => $message->to($user->email)->subject('Reset kata sandi SADAR DIRI'),
-            );
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)
+                    ->send(new \App\Mail\PasswordResetMail($user, $url, config('auth.passwords.users.expire', 30), true));
+                $resetSent = true;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Gagal mengirim tautan reset.', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         $this->audit->record('user.password_reset', 'users', $user->id, $user->id, $data['reason']);
 
         return response()->json([
             'success' => true,
-            'data' => ['reset_email_sent' => (bool) $user->email],
-            'message' => $user->email ? 'Tautan reset dikirim ke email pengguna' : 'Pengguna tidak memiliki email',
+            'data' => ['reset_email_sent' => $resetSent],
+            'message' => ! $user->email
+                ? 'Pengguna tidak memiliki email'
+                : ($resetSent ? 'Tautan reset dikirim ke email pengguna' : 'Tautan gagal dikirim. Periksa konfigurasi email.'),
         ]);
     }
 

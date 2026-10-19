@@ -7,10 +7,13 @@ use App\Models\Achievement;
 use App\Models\Alert;
 use App\Models\ClassStudent;
 use App\Models\JournalEntry;
+use App\Models\StudentProfile;
+use App\Models\StudentProfileVersion;
 use App\Models\Reflection;
 use App\Models\User;
 use App\Services\AccessScope;
 use App\Services\AuditLogger;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -19,6 +22,7 @@ class CounselorController extends Controller
     public function __construct(
         private readonly AccessScope $access,
         private readonly AuditLogger $audit,
+        private readonly NotificationService $notifications,
     ) {}
 
     public function dashboard(Request $request)
@@ -149,6 +153,7 @@ class CounselorController extends Controller
 
         $items = JournalEntry::query()
             ->where('student_id', $student->id)
+            ->with(['replies.counselor'])
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->query('type')))
             ->orderByDesc('entry_date')
             ->paginate(20);
@@ -167,7 +172,14 @@ class CounselorController extends Controller
                 'gratitude_text' => $e->gratitude_text,
                 'happiness_text' => $e->happiness_text,
                 'is_flagged' => $e->is_flagged,
+                'follow_up_requested' => $e->follow_up_requested,
                 'created_at' => $e->created_at?->toIso8601String(),
+                'replies' => $e->replies->map(fn ($r) => [
+                    'id' => $r->id,
+                    'content' => $r->content,
+                    'counselor_name' => $r->counselor?->name,
+                    'created_at' => $r->created_at?->toIso8601String(),
+                ])->values(),
             ]),
             'meta' => [
                 'current_page' => $items->currentPage(),
@@ -269,6 +281,174 @@ class CounselorController extends Controller
             'data' => [
                 'daily_digest_email' => $request->user()->notification_channel === 'email_and_in_app',
                 'digest_hour' => $request->user()->mood_reminder_hour,
+            ],
+        ]);
+    }
+
+    public function replyToJournal(Request $request, JournalEntry $journal)
+    {
+        $student = $journal->student;
+
+        abort_unless($student && $this->access->counselorCanAccess($request->user(), $student), 403);
+
+        $data = $request->validate([
+            'content' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $reply = $journal->replies()->create([
+            'counselor_id' => $request->user()->id,
+            'content' => $data['content'],
+        ]);
+
+        $this->notifications->journalReplyReceived($student, $request->user()->name);
+        $this->audit->record('journal.replied', 'journal_entries', $journal->id, $student->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $reply->id,
+                'content' => $reply->content,
+                'counselor_name' => $request->user()->name,
+                'created_at' => $reply->created_at?->toIso8601String(),
+            ],
+            'message' => 'Balasan terkirim ke siswa',
+        ], 201);
+    }
+
+    public function updateBiodata(Request $request, User $student)
+    {
+        $this->ensureAccess($request, $student);
+
+        $data = $request->validate([
+            'birth_date' => ['nullable', 'date', 'before:today'],
+            'gender' => ['nullable', 'in:male,female'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'height_cm' => ['nullable', 'integer', 'between:100,250'],
+            'weight_kg' => ['nullable', 'integer', 'between:25,250'],
+            'blood_type' => ['nullable', 'string', 'max:3'],
+            'medical_history' => ['nullable', 'string', 'max:2000'],
+            'health_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $profile = StudentProfile::firstOrCreate(['user_id' => $student->id]);
+        $profile->fill($data);
+        $profile->completeness_percent = $profile->completeness();
+        $profile->save();
+
+        $this->audit->record('profile.biodata_updated_by_counselor', 'student_profiles', $profile->id, $student->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['completeness_percent' => $profile->completeness_percent],
+            'message' => 'Biodata siswa diperbarui',
+        ]);
+    }
+
+    public function updateSelfProfile(Request $request, User $student)
+    {
+        $this->ensureAccess($request, $student);
+
+        $data = $request->validate([
+            'psychological_summary' => ['nullable', 'string', 'max:5000'],
+            'character_summary' => ['nullable', 'string', 'max:5000'],
+            'strengths' => ['nullable', 'string', 'max:5000'],
+            'weaknesses' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $profile = StudentProfile::firstOrCreate(['user_id' => $student->id]);
+        $profile->fill($data);
+        $profile->version = $profile->version + 1;
+        $profile->completeness_percent = $profile->completeness();
+        $profile->save();
+
+        StudentProfileVersion::create([
+            'student_profile_id' => $profile->id,
+            'version' => $profile->version,
+            'snapshot' => $profile->only([
+                'psychological_summary', 'character_summary', 'strengths', 'weaknesses', 'published_at',
+            ]),
+            'created_by' => $request->user()->id,
+            'created_at' => now(),
+        ]);
+
+        $this->audit->record('profile.self_updated_by_counselor', 'student_profiles', $profile->id, $student->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['version' => $profile->version],
+            'message' => 'Profil diri siswa diperbarui',
+        ]);
+    }
+
+    public function storeAchievement(Request $request, User $student)
+    {
+        $this->ensureAccess($request, $student);
+
+        $data = $request->validate([
+            'category' => ['required', \Illuminate\Validation\Rule::in(['academic', 'non_academic', 'competition', 'soft_skill'])],
+            'title' => ['required', 'string', 'max:190'],
+            'organizer' => ['nullable', 'string', 'max:190'],
+            'level' => ['nullable', \Illuminate\Validation\Rule::in(['school', 'district', 'city', 'province', 'national', 'international'])],
+            'achieved_at' => ['required', 'date', 'before_or_equal:today'],
+            'rank' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $achievement = Achievement::create($data + [
+            'student_id' => $student->id,
+            'created_by' => $request->user()->id,
+            'verification_status' => 'verified',
+            'verified_by' => $request->user()->id,
+            'verified_at' => now(),
+        ]);
+
+        $this->notifications->achievementVerified($student, $achievement->title, 'verified');
+        $this->audit->record('achievement.created_by_counselor', 'achievements', $achievement->id, $student->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['id' => $achievement->id, 'verification_status' => $achievement->verification_status],
+            'message' => 'Prestasi ditambahkan untuk siswa',
+        ], 201);
+    }
+
+    public function actionPlan(Request $request, User $student)
+    {
+        $this->ensureAccess($request, $student);
+
+        $plan = $student->actionPlans()
+            ->where('status', 'active')
+            ->with(['targets' => fn ($q) => $q->orderBy('sort_order'), 'evaluation'])
+            ->latest('period_start')
+            ->first();
+
+        $future = $student->futurePlan;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'plan' => $plan ? [
+                    'id' => $plan->id,
+                    'period_start' => $plan->period_start?->toDateString(),
+                    'period_end' => $plan->period_end?->toDateString(),
+                    'targets' => $plan->targets->map(fn ($t) => [
+                        'id' => $t->id,
+                        'title' => $t->title,
+                        'success_indicator' => $t->success_indicator,
+                        'status' => $t->status,
+                    ])->values(),
+                    'evaluation' => $plan->evaluation ? [
+                        'evaluation_text' => $plan->evaluation->evaluation_text,
+                        'improvement_text' => $plan->evaluation->improvement_text,
+                    ] : null,
+                ] : null,
+                'future_plan' => $future ? [
+                    'dream' => $future->dream,
+                    'career_plan' => $future->career_plan,
+                    'education_plan' => $future->education_plan,
+                    'concrete_targets' => $future->concrete_targets,
+                ] : null,
             ],
         ]);
     }

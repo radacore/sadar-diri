@@ -2,24 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PasswordResetMail;
 use App\Models\ConsentRecord;
 use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\EmailOtpService;
 use App\Services\SettingsService;
-use App\Services\TotpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AuthController extends Controller
 {
     public function __construct(
         private readonly AuditLogger $audit,
-        private readonly TotpService $totp,
+        private readonly EmailOtpService $otp,
     ) {}
 
     public function login(Request $request)
@@ -101,17 +106,17 @@ class AuthController extends Controller
         $this->audit->record('auth.login', 'users', $user->id, $user->id, null, [], $user);
 
         if ($user->requiresTwoFactor()) {
-            if (! $user->two_factor_confirmed_at) {
+            if (! $user->email) {
+                Auth::logout();
+
                 return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'user' => $this->userPayload($user),
-                        'redirect_to' => '/2fa/enroll',
-                        'two_factor_required' => true,
-                    ],
-                    'message' => 'Aktifkan verifikasi dua faktor untuk melanjutkan.',
-                ]);
+                    'success' => false,
+                    'error' => 'EMAIL_REQUIRED',
+                    'message' => 'Akun admin belum memiliki email. Hubungi pengelola sistem.',
+                ], 403);
             }
+
+            $sent = $this->sendOtp($user, $request);
 
             return response()->json([
                 'success' => true,
@@ -119,7 +124,12 @@ class AuthController extends Controller
                     'user' => $this->userPayload($user),
                     'redirect_to' => '/2fa/challenge',
                     'two_factor_required' => true,
+                    'otp_sent' => $sent,
+                    'otp_email' => $this->maskedEmail($user->email),
                 ],
+                'message' => $sent
+                    ? 'Kode verifikasi dikirim ke email Anda.'
+                    : 'Kode gagal dikirim. Periksa konfigurasi email atau hubungi admin.',
             ]);
         }
 
@@ -163,7 +173,6 @@ class AuthController extends Controller
                 'consent_version' => $user->consent_version,
                 'consented_at' => $user->consented_at?->toIso8601String(),
                 'must_change_password' => $user->must_change_password,
-                'two_factor_confirmed' => $user->two_factor_confirmed_at !== null,
                 'class' => $class ? ['id' => $class->id, 'name' => $class->name] : null,
                 'permissions' => $this->permissionsFor($user),
             ],
@@ -176,14 +185,15 @@ class AuthController extends Controller
 
         $user = User::firstWhere('email', $data['email']);
 
-        if ($user) {
+        if ($user?->email) {
             $token = app('auth.password.broker')->createToken($user);
             $url = url('/reset-password?token='.$token.'&email='.urlencode($user->email));
 
-            \Illuminate\Support\Facades\Mail::raw(
-                "Halo {$user->name},\n\nGunakan tautan berikut untuk mengatur ulang kata sandi Anda (berlaku 30 menit):\n{$url}\n\nJika Anda tidak meminta ini, abaikan email ini.",
-                fn ($message) => $message->to($user->email)->subject('Reset kata sandi SADAR DIRI'),
-            );
+            try {
+                Mail::to($user->email)->send(new PasswordResetMail($user, $url, config('auth.passwords.users.expire', 30)));
+            } catch (Throwable $e) {
+                Log::error('Gagal mengirim tautan reset kata sandi.', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            }
         }
 
         return response()->json([
@@ -195,11 +205,32 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => ['required', 'email'],
             'token' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'confirmed'],
+            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
+            'password_confirmation' => ['required', 'string', 'same:password'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'token.required' => 'Tautan reset tidak lengkap. Buka kembali tautan dari email Anda.',
+            'password.required' => 'Kata sandi baru wajib diisi.',
+            'password.min' => 'Kata sandi minimal 10 karakter.',
+            'password.regex' => 'Kata sandi harus memuat huruf besar, huruf kecil, dan angka.',
+            'password_confirmation.required' => 'Ulangi kata sandi baru Anda.',
+            'password_confirmation.same' => 'Konfirmasi kata sandi tidak sama dengan kata sandi baru.',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()->toArray(),
+            ], 422);
+        }
+
+        $data = $validator->validated();
 
         $status = app('auth.password.broker')->reset(
             $data,
@@ -313,64 +344,43 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'data' => null, 'message' => 'Persetujuan dicabut']);
     }
 
-    public function enrollTwoFactor(Request $request)
+    public function resendOtp(Request $request)
     {
         $user = $request->user();
 
-        if ($user->two_factor_confirmed_at) {
-            return response()->json(['success' => false, 'error' => 'ALREADY_ENROLLED', 'message' => '2FA sudah aktif.'], 409);
+        if (! $user || ! $user->requiresTwoFactor()) {
+            return response()->json(['success' => false, 'error' => 'FORBIDDEN', 'message' => 'Tidak tersedia untuk akun ini.'], 403);
         }
 
-        // Rahasia yang belum dikonfirmasi dipakai ulang supaya memuat ulang
-        // halaman tidak membatalkan kode yang sudah dipindai ke aplikasi authenticator.
-        $secret = $user->two_factor_secret ?: $this->totp->generateSecret();
-        $codes = $request->session()->get('2fa_pending_recovery_codes');
-
-        if (! $secret || ! $codes) {
-            $codes = $this->totp->recoveryCodes();
-            $user->forceFill([
-                'two_factor_secret' => $secret,
-                'two_factor_recovery_codes' => json_encode(array_map(fn ($c) => Hash::make($c), $codes)),
-            ])->save();
+        if ($request->session()->get('two_factor_passed')) {
+            return response()->json(['success' => true, 'data' => ['redirect_to' => $this->redirectFor($user)]]);
         }
 
-        $request->session()->put('2fa_pending_recovery_codes', $codes);
+        $wait = $this->otp->secondsUntilResend($user);
+
+        if ($wait > 0) {
+            return response()->json([
+                'success' => false,
+                'error' => 'RESEND_COOLDOWN',
+                'message' => "Tunggu {$wait} detik sebelum meminta kode baru.",
+                'data' => ['retry_after' => $wait],
+            ], 429);
+        }
+
+        $sent = $this->sendOtp($user, $request);
 
         return response()->json([
-            'success' => true,
-            'data' => [
-                'secret' => $secret,
-                'otpauth_url' => $this->totp->otpauthUrl(config('app.name'), $user->email ?? $user->identity_number, $secret),
-                'recovery_codes' => $codes,
-            ],
-        ]);
-    }
-
-    public function confirmTwoFactor(Request $request)
-    {
-        $data = $request->validate(['code' => ['required', 'string']]);
-        $user = $request->user();
-
-        if (! $user->two_factor_secret || ! $this->totp->verify($user->two_factor_secret, $data['code'])) {
-            return response()->json(['success' => false, 'error' => 'INVALID_CODE', 'message' => 'Kode verifikasi salah.'], 422);
-        }
-
-        $user->forceFill(['two_factor_confirmed_at' => now()])->save();
-        $request->session()->forget('2fa_pending_recovery_codes');
-        $request->session()->put('two_factor_passed', true);
-        $this->audit->record('auth.2fa_enrolled', 'users', $user->id, $user->id, null, [], $user);
-
-        return response()->json([
-            'success' => true,
-            'data' => ['two_factor_confirmed_at' => $user->two_factor_confirmed_at->toIso8601String(), 'redirect_to' => $this->redirectFor($user)],
-        ]);
+            'success' => $sent,
+            'error' => $sent ? null : 'MAIL_FAILED',
+            'data' => ['retry_after' => EmailOtpService::RESEND_SECONDS, 'otp_email' => $this->maskedEmail($user->email)],
+            'message' => $sent ? 'Kode baru dikirim ke email Anda.' : 'Kode gagal dikirim. Coba lagi nanti.',
+        ], $sent ? 200 : 502);
     }
 
     public function verifyTwoFactor(Request $request)
     {
         $data = $request->validate([
-            'code' => ['nullable', 'string'],
-            'recovery_code' => ['nullable', 'string'],
+            'code' => ['required', 'string', 'digits:6'],
         ]);
 
         $user = $request->user();
@@ -379,46 +389,53 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'error' => 'UNAUTHENTICATED', 'message' => 'Sesi tidak ditemukan.'], 401);
         }
 
-        $key = '2fa:'.$user->id;
+        $key = 'otp:'.$user->id;
+
         if (RateLimiter::tooManyAttempts($key, 5)) {
             Auth::logout();
 
-            return response()->json(['success' => false, 'error' => 'TOO_MANY_REQUESTS', 'message' => 'Terlalu banyak percobaan.'], 429);
+            return response()->json(['success' => false, 'error' => 'TOO_MANY_REQUESTS', 'message' => 'Terlalu banyak percobaan. Silakan masuk kembali.'], 429);
         }
 
-        $valid = false;
-
-        if (! blank($data['code'] ?? null) && $user->two_factor_secret) {
-            $valid = $this->totp->verify($user->two_factor_secret, $data['code']);
-        }
-
-        if (! $valid && ! blank($data['recovery_code'] ?? null)) {
-            $codes = json_decode((string) $user->two_factor_recovery_codes, true) ?: [];
-            foreach ($codes as $index => $hash) {
-                if (Hash::check($data['recovery_code'], $hash)) {
-                    unset($codes[$index]);
-                    $user->forceFill(['two_factor_recovery_codes' => json_encode(array_values($codes))])->save();
-                    $valid = true;
-                    break;
-                }
-            }
-        }
-
-        if (! $valid) {
+        if (! $this->otp->verify($user, $data['code'])) {
             RateLimiter::hit($key, 300);
 
-            return response()->json(['success' => false, 'error' => 'INVALID_CODE', 'message' => 'Kode verifikasi salah.'], 422);
+            return response()->json(['success' => false, 'error' => 'INVALID_CODE', 'message' => 'Kode salah atau sudah kedaluwarsa.'], 422);
         }
 
         RateLimiter::clear($key);
         $request->session()->put('two_factor_passed', true);
-        $this->audit->record('auth.2fa_verified', 'users', $user->id, $user->id, null, [], $user);
+        $this->audit->record('auth.otp_verified', 'users', $user->id, $user->id, null, [], $user);
 
         return response()->json([
             'success' => true,
             'data' => ['redirect_to' => $this->redirectFor($user)],
             'message' => 'Verifikasi berhasil',
         ]);
+    }
+
+    private function sendOtp(User $user, Request $request): bool
+    {
+        try {
+            $this->otp->issue($user, $request->ip());
+
+            return true;
+        } catch (Throwable $e) {
+            Log::error('Gagal mengirim kode OTP.', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    private function maskedEmail(?string $email): ?string
+    {
+        if (! $email || ! str_contains($email, '@')) {
+            return null;
+        }
+
+        [$name, $domain] = explode('@', $email, 2);
+
+        return mb_substr($name, 0, 2).str_repeat('•', max(1, mb_strlen($name) - 2)).'@'.$domain;
     }
 
     public function activationUrl(User $user): string

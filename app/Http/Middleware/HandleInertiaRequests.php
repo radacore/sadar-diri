@@ -31,7 +31,6 @@ class HandleInertiaRequests extends Middleware
                     'identity_number' => $user->identity_number,
                     'avatar_url' => $user->avatar_url ?? null,
                     'has_consent' => $user->hasConsent(),
-                    'two_factor_confirmed' => $user->two_factor_confirmed_at !== null,
                 ] : null,
             ],
             'school' => app(SettingsService::class)->school(),

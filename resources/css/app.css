@@ -402,11 +402,6 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes sd-drawer-in {
-    from { opacity: 0; transform: translateX(24px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
 @keyframes sd-slide-up {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -425,11 +420,11 @@
 
 @layer components {
     .sd-page {
-        animation: sd-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: sd-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     }
 
     .sd-card {
-        animation: sd-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: sd-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     }
 
     .sd-card:nth-child(2) { animation-delay: 60ms; }
@@ -438,7 +433,7 @@
     .sd-card:nth-child(5) { animation-delay: 210ms; }
 
     .sd-topnav {
-        animation: sd-slide-down 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: sd-slide-down 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     }
 
     .sd-popover {
@@ -454,21 +449,13 @@
         animation: sd-pop-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
-    .sd-drawer {
-        animation: sd-drawer-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-
     .sd-mobile-nav {
-        animation: sd-slide-up 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: sd-slide-up 460ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     }
 
-    .sd-toast {
-        animation: sd-toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-
-    /* Liquid cutout: lekuk cekung kiri-kanan tab aktif, warna canvas. */
-    .sd-mobile-well::before,
-    .sd-mobile-well::after {
+    /* Bottom nav: tab aktif berupa lekuk (liquid cutout) mengikuti file desain. */
+    .sd-nav-well::before,
+    .sd-nav-well::after {
         content: '';
         position: absolute;
         top: 0;
@@ -478,20 +465,95 @@
         pointer-events: none;
     }
 
-    .sd-mobile-well::before {
+    .sd-nav-well::before {
         left: -18px;
         border-top-right-radius: 16px;
         box-shadow: 6px -6px 0 5px var(--color-canvas);
     }
 
-    .sd-mobile-well::after {
+    .sd-nav-well::after {
         right: -18px;
         border-top-left-radius: 16px;
         box-shadow: -6px -6px 0 5px var(--color-canvas);
     }
 
+
+    /* Mode ponsel permanen untuk siswa & Guru BK, juga saat dibuka di desktop. */
+    .sd-phone {
+        position: relative;
+        min-height: 100dvh;
+        overscroll-behavior-y: contain;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Kunci dokumen: satu-satunya area yang boleh bergerak adalah .sd-page. */
+    html:has(body.sd-phone-mode),
+    body.sd-phone-mode {
+        overflow: hidden;
+        height: 100%;
+        overscroll-behavior: none;
+    }
+
+    /* Di layar kecil bingkai aplikasi menempel ke viewport, bukan ke dokumen. */
+    @media (max-width: 1023px) {
+        .sd-phone {
+            position: fixed;
+            inset: 0;
+            min-height: 0;
+            height: auto;
+        }
+    }
+
+    /* Tanpa indikator scroll: geser tetap jalan, hanya bar-nya yang disembunyikan. */
+    body.sd-phone-mode .sd-page,
+    body.sd-phone-mode .sd-page *,
+    body.sd-phone-mode .sd-popover,
+    body.sd-phone-mode .sd-popover * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    body.sd-phone-mode .sd-page::-webkit-scrollbar,
+    body.sd-phone-mode .sd-page *::-webkit-scrollbar,
+    body.sd-phone-mode .sd-popover::-webkit-scrollbar,
+    body.sd-phone-mode .sd-popover *::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    /* Top nav berada di luar area scroll, jadi tidak pernah ikut bergeser. */
+    .sd-mobile-bar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        flex: 0 0 auto;
+        padding-top: calc(0.75rem + env(safe-area-inset-top));
+        background: var(--color-canvas);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .sd-action-row {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .sd-action-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sd-action-row > * {
+        flex-shrink: 0;
+    }
+
+
+    .sd-toast {
+        animation: sd-toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+
     .sd-row {
-        animation: sd-fade-in 320ms ease-out both;
+        animation: sd-fade-in 320ms ease-out backwards;
     }
 
     .sd-row:nth-child(2) { animation-delay: 30ms; }
@@ -500,16 +562,57 @@
     .sd-row:nth-child(5) { animation-delay: 120ms; }
     .sd-row:nth-child(6) { animation-delay: 150ms; }
 
-    .sd-search {
-        background: var(--color-surface-soft);
-        border: 1px solid transparent;
-        transition: background-color 150ms, border-color 150ms, box-shadow 150ms;
+
+    .sd-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 26px;
+        background: linear-gradient(150deg, #ffffff 0%, #f7f9ff 55%, #eef1ff 100%);
+        border: 1px solid rgba(92, 115, 219, 0.14);
+        box-shadow: 0 10px 30px -18px rgba(55, 73, 135, 0.5);
+        padding: 20px;
     }
 
-    .sd-search:focus-within {
-        background: #fff;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.16);
+    .sd-tile {
+        border-radius: 20px;
+        background: var(--color-surface);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 2px 10px -6px rgba(15, 23, 42, 0.12);
+        padding: 14px;
+    }
+
+    .sd-list-row {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 12px;
+        border-radius: 18px;
+        background: var(--color-surface);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        padding: 12px 14px;
+        text-align: left;
+        transition: background-color 150ms, border-color 150ms, transform 150ms;
+    }
+
+    .sd-list-row:active {
+        transform: scale(0.99);
+    }
+
+    .sd-list-row-active {
+        border-color: rgba(63, 81, 181, 0.35);
+        background: #f5f7ff;
+    }
+
+    .sd-sheet-list > * + * {
+        margin-top: 8px;
+    }
+
+    @media (max-width: 1023px) {
+        .sd-card,
+        .sd-card-tight {
+            border-radius: 22px;
+            padding: 18px;
+        }
     }
 
     .sd-avatar {
@@ -524,6 +627,51 @@
     .sd-tab[aria-selected='true'] {
         background: var(--color-primary);
         color: #fff;
+    }
+}
+
+
+/* ============================================
+   BINGKAI PONSEL DI DESKTOP (siswa & Guru BK)
+   Ditulis tanpa @layer agar menang atas utility Tailwind
+   (inset-0, bottom-*, max-w-*) yang berada di layer utilities.
+   ============================================ */
+@media (min-width: 1024px) {
+    .sd-phone {
+        margin-block: 20px;
+        height: calc(100dvh - 40px);
+        min-height: calc(100dvh - 40px);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 32px;
+        background: var(--color-canvas);
+        box-shadow: 0 30px 70px -30px rgba(15, 23, 42, 0.35);
+    }
+
+    .sd-phone .sd-mobile-bar {
+        border-bottom: none;
+        border-top-left-radius: 31px;
+        border-top-right-radius: 31px;
+    }
+
+    .sd-phone-mode .sd-overlay-panel {
+        top: 88px;
+    }
+
+    .sd-phone .sd-mobile-nav {
+        bottom: calc(30px + env(safe-area-inset-bottom));
+    }
+
+
+    /* Overlay gelap hanya menutup kolom ponsel, tetap terpusat di viewport. */
+    .sd-phone-mode .sd-backdrop {
+        left: 50%;
+        right: auto;
+        width: min(480px, 100vw);
+        transform: translateX(-50%);
+    }
+
+    .sd-phone-mode .sd-toast-wrap {
+        bottom: calc(112px + env(safe-area-inset-bottom));
     }
 }
 
