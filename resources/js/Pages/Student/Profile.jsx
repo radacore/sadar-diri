@@ -98,6 +98,7 @@ export default function Profile() {
         <AppShell title="Info diri" subtitle="Biodata dan profil diri Anda">
             <div className="space-y-5">
                 <HeroCard
+                    tone="soft"
                     eyebrow="Profil siswa"
                     title={user?.name ?? 'Siswa'}
                     description={`NIS ${user?.identity_number ?? '—'}`}

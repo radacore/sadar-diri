@@ -112,6 +112,7 @@ export default function Privacy() {
         <AppShell title="Privasi & data saya" subtitle="Siapa yang melihat data Anda dan pengaturan pengingat">
             <div className="space-y-5">
                 <HeroCard
+                    tone="soft"
                     eyebrow="Persetujuan data"
                     title={hasConsent ? 'Persetujuan aktif' : 'Persetujuan tidak aktif'}
                     description="Data psikologis diproses untuk layanan BK, dienkripsi, dan hanya dibaca Guru BK kelas Anda."

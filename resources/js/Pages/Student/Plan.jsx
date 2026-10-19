@@ -173,6 +173,7 @@ export default function Plan() {
         >
             <div className="space-y-5">
                 <HeroCard
+                    tone="soft"
                     eyebrow="Rencana bulan ini"
                     title={plan ? (targets.length ? `${achieved} dari ${targets.length} target tercapai` : 'Belum ada target bulan ini') : 'Rencana aksi bulanan'}
                     description={plan ? `Periode ${formatDate(plan.period_start)} – ${formatDate(plan.period_end)}` : 'Tetapkan langkah kecil yang bisa diukur.'}

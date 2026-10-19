@@ -144,20 +144,32 @@ export default function Dashboard() {
                     title={`Halo, ${firstName}`}
                     description={
                         todayMood
-                            ? `Mood ${label('mood', todayMood.valence).toLowerCase()} · ${todayMood.intensity}/5 · ${(todayMood.emotion_tags ?? []).join(', ') || 'tanpa tag'}`
+                            ? `Mood ${label('mood', todayMood.valence).toLowerCase()} · intensitas ${todayMood.intensity}/5`
                             : 'Belum ada catatan mood hari ini. Luangkan satu menit untuk mengenali perasaanmu.'
                     }
+                    aside={
+                        <span className={`sd-hero-status ${todayMood ? '' : 'is-off'}`}>
+                            <span className="sd-hero-status-dot" aria-hidden="true" />
+                            {todayMood ? 'Tercatat' : 'Belum dicatat'}
+                        </span>
+                    }
+                    meta={
+                        (todayMood?.emotion_tags ?? []).length > 0
+                            ? todayMood.emotion_tags.map((tag) => (
+                                  <span key={tag} className="sd-hero-tag">
+                                      {tag}
+                                  </span>
+                              ))
+                            : null
+                    }
                 >
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <Button className="min-h-11" variant={todayMood ? 'soft' : 'primary'} onClick={() => setMoodOpen(true)}>
+                    <div className="sd-hero-actions">
+                        <Button variant="outline" className="min-h-11" onClick={() => setMoodOpen(true)}>
                             <span className="inline-flex items-center gap-1.5">
                                 <Icon name={todayMood ? 'edit' : 'plus'} size={16} />
                                 {todayMood ? 'Ubah mood' : 'Catat mood'}
                             </span>
                         </Button>
-                        <Badge tone={todayMood ? 'success' : 'neutral'}>
-                            {todayMood ? 'Mood tercatat' : 'Belum dicatat'}
-                        </Badge>
                     </div>
                 </HeroCard>
 

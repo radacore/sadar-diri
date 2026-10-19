@@ -496,12 +496,18 @@ export function PageSection({ title, action, children, className = '' }) {
     );
 }
 
-export function HeroCard({ eyebrow, title, description, children, className = '' }) {
+export function HeroCard({ eyebrow, title, description, meta, aside, tone = 'primary', children, className = '' }) {
     return (
-        <section className={`sd-hero ${className}`}>
-            {eyebrow ? <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#5c73db]">{eyebrow}</p> : null}
-            <h2 className="mt-1.5 text-[20px] font-extrabold leading-tight tracking-tight text-[#1e293b]">{title}</h2>
-            {description ? <p className="mt-1 text-[12.5px] leading-relaxed text-[#475569]">{description}</p> : null}
+        <section className={`sd-hero sd-hero--${tone} ${className}`}>
+            {(eyebrow || aside) ? (
+                <div className="sd-hero-head">
+                    {eyebrow ? <p className="sd-hero-eyebrow">{eyebrow}</p> : <span />}
+                    {aside}
+                </div>
+            ) : null}
+            <h2 className="sd-hero-title">{title}</h2>
+            {description ? <p className="sd-hero-desc">{description}</p> : null}
+            {meta ? <div className="sd-hero-meta">{meta}</div> : null}
             {children}
         </section>
     );
