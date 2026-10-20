@@ -7,10 +7,12 @@ use App\Models\Achievement;
 use App\Models\ActionPlan;
 use App\Models\ClassStudent;
 use App\Models\ContentItem;
+use App\Models\CounselorClass;
 use App\Models\JournalEntry;
 use App\Models\MoodEntry;
 use App\Models\Reflection;
 use App\Models\ReflectionSession;
+use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\AlertEngine;
 use Illuminate\Database\Seeder;
@@ -20,14 +22,33 @@ class ActivitySeeder extends Seeder
     public function run(): void
     {
         $students = User::query()->where('role', 'student')->orderBy('id')->get();
-        $counselor = User::query()->where('role', 'counselor')->first();
+        $fallbackCounselor = User::query()->where('role', 'counselor')->orderBy('id')->first();
         $abcPrompt = ContentItem::query()->where('type', 'abc_prompt')->first();
 
-        if ($students->isEmpty() || ! $counselor) {
+        if ($students->isEmpty() || ! $fallbackCounselor) {
             return;
         }
 
+        // Guru BK pendamping ditentukan per kelas, bukan satu guru untuk seluruh sekolah.
+        // Satu kelas bisa punya lebih dari satu Guru BK; urutan id dipakai agar hasil seed deterministik.
+        $counselorsByClass = CounselorClass::query()
+            ->orderBy('counselor_id')
+            ->get()
+            ->groupBy('class_id')
+            ->map(fn ($rows) => $rows->pluck('counselor_id')->all());
+
+        $classByStudent = ClassStudent::query()
+            ->where('status', 'active')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('student_id')
+            ->map(fn ($rows) => $rows->last()->class_id);
+
         foreach ($students as $index => $student) {
+            $classCounselors = $counselorsByClass->get($classByStudent->get($student->id)) ?? [$fallbackCounselor->id];
+            // Hanya entri genap yang diverifikasi, jadi rotasi memakai indeks pasangannya
+            // agar pembagian verifikator tetap bergantian antar Guru BK di kelas yang sama.
+            $counselorId = $classCounselors[intdiv($index, 2) % count($classCounselors)];
             foreach (range(0, 9) as $daysAgo) {
                 $date = now()->subDays($daysAgo);
                 $negative = ($index + $daysAgo) % 5 === 0;
@@ -74,7 +95,7 @@ class ActivitySeeder extends Seeder
                     'rank' => 'Juara '.($index % 3 + 1),
                     'description' => 'Karya tentang pengelolaan sampah sekolah.',
                     'verification_status' => $index % 2 === 0 ? 'verified' : 'pending',
-                    'verified_by' => $index % 2 === 0 ? $counselor->id : null,
+                    'verified_by' => $index % 2 === 0 ? $counselorId : null,
                     'verified_at' => $index % 2 === 0 ? now()->subMonth() : null,
                 ],
             );
@@ -105,11 +126,12 @@ class ActivitySeeder extends Seeder
             );
         }
 
-        $class = \App\Models\SchoolClass::query()->first();
+        foreach (SchoolClass::query()->orderBy('id')->get() as $classIndex => $class) {
+            $options = $counselorsByClass->get($class->id) ?? [$fallbackCounselor->id];
+            $counselorId = $options[$classIndex % count($options)];
 
-        if ($class) {
             ReflectionSession::firstOrCreate(
-                ['counselor_id' => $counselor->id, 'class_id' => $class->id, 'topic' => 'Mengelola kecemasan ujian'],
+                ['counselor_id' => $counselorId, 'class_id' => $class->id, 'topic' => 'Mengelola kecemasan ujian'],
                 [
                     'instructions' => 'Jawab dengan jujur. Tidak ada jawaban yang salah.',
                     'questions' => [

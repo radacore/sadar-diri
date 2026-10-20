@@ -10,6 +10,7 @@ use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ClassController extends Controller
 {
@@ -183,19 +184,62 @@ class ClassController extends Controller
 
     public function removeCounselor(SchoolClass $class, User $counselor)
     {
-        $count = $class->counselorAssignments()->count();
+        $deleted = CounselorClass::query()
+            ->where('class_id', $class->id)
+            ->where('counselor_id', $counselor->id)
+            ->delete();
 
-        if ($count <= 1) {
+        if ($deleted === 0) {
             return response()->json([
                 'success' => false,
-                'error' => 'CONFLICT',
-                'message' => 'Kelas harus memiliki minimal satu Guru BK.',
-            ], 409);
+                'error' => 'NOT_FOUND',
+                'message' => 'Guru BK tidak ditugaskan pada kelas ini.',
+            ], 404);
         }
 
-        CounselorClass::query()->where('class_id', $class->id)->where('counselor_id', $counselor->id)->delete();
         $this->audit->record('class.counselor_removed', 'classes', $class->id, null, null, ['counselor_id' => $counselor->id]);
 
         return response()->json(['success' => true, 'data' => null, 'message' => 'Penugasan diakhiri']);
+    }
+
+    /**
+     * Menugaskan satu Guru BK ke beberapa kelas sekaligus. Satu Guru BK boleh
+     * memegang banyak kelas dan satu kelas boleh punya lebih dari satu Guru BK,
+     * sehingga tidak ada batas jumlah yang ditegakkan di sini.
+     */
+    public function assignCounselorClasses(Request $request, User $counselor)
+    {
+        abort_unless($counselor->isCounselor(), 422, 'Akun bukan Guru BK.');
+
+        $data = $request->validate([
+            'class_ids' => ['required', 'array', 'min:1'],
+            'class_ids.*' => ['integer', 'exists:classes,id'],
+        ]);
+
+        $assigned = 0;
+
+        DB::transaction(function () use ($data, $counselor, &$assigned) {
+            foreach (array_unique($data['class_ids']) as $classId) {
+                $assignment = CounselorClass::firstOrCreate([
+                    'counselor_id' => $counselor->id,
+                    'class_id' => $classId,
+                ], ['assigned_at' => now()]);
+
+                if (! $assignment->wasRecentlyCreated) {
+                    continue;
+                }
+
+                $assigned++;
+                $this->audit->record('class.counselor_assigned', 'classes', $classId, null, null, ['counselor_id' => $counselor->id]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => ['counselor_id' => $counselor->id, 'assigned' => $assigned],
+            'message' => $assigned === 0
+                ? 'Guru BK sudah ditugaskan pada semua kelas yang dipilih.'
+                : "{$assigned} penugasan kelas ditambahkan.",
+        ]);
     }
 }

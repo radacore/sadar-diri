@@ -23,7 +23,7 @@ class DemoSeeder extends Seeder
 
         $classes = [];
 
-        foreach (['X IPA 1', 'XI IPA 2', 'XII IPS 1'] as $index => $name) {
+        foreach (['X IPA 1', 'X IPA 2', 'X IPS 1'] as $index => $name) {
             $classes[$name] = SchoolClass::firstOrCreate(
                 ['academic_year_id' => $year->id, 'name' => $name],
                 [
@@ -34,7 +34,7 @@ class DemoSeeder extends Seeder
             );
         }
 
-        $counselor = User::firstOrCreate(
+        $rina = User::firstOrCreate(
             ['identity_number' => '198501012010'],
             [
                 'name' => 'Rina Wati',
@@ -49,7 +49,7 @@ class DemoSeeder extends Seeder
             ],
         );
 
-        $coordinator = User::firstOrCreate(
+        $hendra = User::firstOrCreate(
             ['identity_number' => '198702022011'],
             [
                 'name' => 'Hendra Saputra',
@@ -64,17 +64,22 @@ class DemoSeeder extends Seeder
             ],
         );
 
+        // Satu angkatan, tiga kelas paralel: kedua Guru BK mendampingi seluruh kelas.
+        // Pola ini mengikuti sekolah dengan banyak kelas per angkatan dan satu tim BK.
         foreach ($classes as $class) {
-            CounselorClass::firstOrCreate([
-                'counselor_id' => $counselor->id,
-                'class_id' => $class->id,
-            ], ['assigned_at' => now()]);
+            foreach ([$rina, $hendra] as $counselor) {
+                CounselorClass::firstOrCreate([
+                    'counselor_id' => $counselor->id,
+                    'class_id' => $class->id,
+                ], ['assigned_at' => now()]);
+            }
         }
 
-        CounselorClass::firstOrCreate([
-            'counselor_id' => $coordinator->id,
-            'class_id' => $classes['XII IPS 1']->id,
-        ], ['assigned_at' => now()]);
+        // Bersihkan penugasan demo lama di luar ketiga kelas di atas agar data uji tidak tumpang tindih.
+        CounselorClass::query()
+            ->whereIn('counselor_id', [$rina->id, $hendra->id])
+            ->whereNotIn('class_id', collect($classes)->pluck('id')->all())
+            ->delete();
 
         $names = [
             'Ayu Lestari', 'Bima Pratama', 'Citra Dewi', 'Dimas Anggara', 'Eka Putri',

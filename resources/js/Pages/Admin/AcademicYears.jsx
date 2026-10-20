@@ -13,6 +13,7 @@ export default function AcademicYears() {
     const [open, setOpen] = useState(false);
     const [promoteFor, setPromoteFor] = useState(null);
     const [mapping, setMapping] = useState([]);
+    const [carryCounselors, setCarryCounselors] = useState(true);
     const [preview, setPreview] = useState(null);
     const [busy, setBusy] = useState(false);
     const [form, setForm] = useState({ name: '', starts_on: '', ends_on: '' });
@@ -83,6 +84,7 @@ export default function AcademicYears() {
     const startPromote = (year) => {
         setPromoteFor(year);
         setPreview(null);
+        setCarryCounselors(true);
         setMapping(classes.filter((item) => item.is_active).map((item) => ({
             from_class_id: item.id,
             from_name: item.name,
@@ -104,6 +106,7 @@ export default function AcademicYears() {
             details: preview ? [
                 { label: 'Siswa dipindahkan', value: String(preview.students_moved) },
                 { label: 'Siswa diluluskan', value: String(preview.students_graduated) },
+                { label: 'Penugasan Guru BK disalin', value: String(preview.counselors_carried ?? 0) },
             ] : undefined,
             confirmLabel: 'Eksekusi kenaikan kelas',
             tone: 'warning',
@@ -115,6 +118,7 @@ export default function AcademicYears() {
         try {
             const response = await api.post(`/api/admin/academic-years/${promoteFor.id}/promote`, {
                 preview: isPreview,
+                carry_counselors: carryCounselors,
                 mapping: mapping.map((item) => ({
                     from_class_id: item.from_class_id,
                     to_class_id: item.to_class_id ? Number(item.to_class_id) : null,
@@ -124,7 +128,7 @@ export default function AcademicYears() {
             setPreview(response.data);
 
             if (!isPreview) {
-                toast.push(`Kenaikan kelas selesai: ${response.data.students_moved} dipindahkan, ${response.data.students_graduated} lulus.`);
+                toast.push(`Kenaikan kelas selesai: ${response.data.students_moved} dipindahkan, ${response.data.students_graduated} lulus, ${response.data.counselors_carried ?? 0} penugasan Guru BK disalin.`);
                 setPromoteFor(null);
                 await load();
             }
@@ -208,6 +212,22 @@ export default function AcademicYears() {
                     <p className="text-[12px] text-[#475569]">
                         Tentukan kelas tujuan untuk setiap kelas. Pilih "Luluskan" untuk siswa tingkat akhir.
                     </p>
+                    <label className="flex items-start gap-2 rounded-xl border border-[#e2e8f0] bg-white p-3 text-[12px] text-[#475569]">
+                        <input
+                            type="checkbox"
+                            checked={carryCounselors}
+                            onChange={(event) => {
+                                setCarryCounselors(event.target.checked);
+                                setPreview(null);
+                            }}
+                            className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#3f51b5]"
+                        />
+                        <span>
+                            <span className="font-semibold text-[#1e293b]">Ikutkan Guru BK pendamping</span>
+                            <br />
+                            Penugasan Guru BK pada kelas asal disalin ke kelas tujuan. Penugasan lama tetap tersimpan sebagai riwayat akses.
+                        </span>
+                    </label>
                     {mapping.map((item, index) => (
                         <div key={item.from_class_id} className="grid items-end gap-2 rounded-xl bg-[#f1f5f9] p-3 sm:grid-cols-[1fr_1fr_auto]">
                             <p className="text-[13px] font-semibold">{item.from_name}</p>
@@ -236,7 +256,7 @@ export default function AcademicYears() {
                     ))}
                     {preview ? (
                         <div className="rounded-xl bg-[#e8eaf6] p-3 text-[12px] text-[#303f9f]">
-                            Pratinjau: {preview.students_moved} siswa dipindahkan, {preview.students_graduated} siswa diluluskan.
+                            Pratinjau: {preview.students_moved} siswa dipindahkan, {preview.students_graduated} siswa diluluskan, {preview.counselors_carried ?? 0} penugasan Guru BK disalin.
                         </div>
                     ) : null}
                 </div>

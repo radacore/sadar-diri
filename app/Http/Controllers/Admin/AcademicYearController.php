@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\ClassStudent;
+use App\Models\CounselorClass;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -62,15 +63,19 @@ class AcademicYearController extends Controller
     {
         $data = $request->validate([
             'preview' => ['boolean'],
+            'carry_counselors' => ['boolean'],
             'mapping' => ['required', 'array', 'min:1'],
             'mapping.*.from_class_id' => ['required', 'exists:classes,id'],
             'mapping.*.to_class_id' => ['nullable', 'exists:classes,id'],
             'mapping.*.graduate' => ['boolean'],
         ]);
 
+        $carryCounselors = $data['carry_counselors'] ?? true;
+
         $conflicts = [];
         $previewMoved = 0;
         $previewGraduated = 0;
+        $previewCounselors = 0;
 
         foreach ($data['mapping'] as $map) {
             $from = SchoolClass::findOrFail($map['from_class_id']);
@@ -95,6 +100,10 @@ class AcademicYearController extends Controller
                 }
 
                 $previewMoved += $count;
+
+                if ($carryCounselors) {
+                    $previewCounselors += $this->carryCounselors($from->id, $to->id, true);
+                }
             } else {
                 $previewGraduated += $count;
             }
@@ -116,6 +125,7 @@ class AcademicYearController extends Controller
                     'preview' => true,
                     'students_moved' => $previewMoved,
                     'students_graduated' => $previewGraduated,
+                    'counselors_carried' => $previewCounselors,
                     'conflicts' => [],
                 ],
             ]);
@@ -123,8 +133,9 @@ class AcademicYearController extends Controller
 
         $moved = 0;
         $graduated = 0;
+        $carried = 0;
 
-        DB::transaction(function () use ($data, $academicYear, &$moved, &$graduated) {
+        DB::transaction(function () use ($data, $academicYear, $carryCounselors, &$moved, &$graduated, &$carried) {
             foreach ($data['mapping'] as $map) {
                 $from = SchoolClass::findOrFail($map['from_class_id']);
 
@@ -153,17 +164,65 @@ class AcademicYearController extends Controller
                         $moved++;
                     }
                 }
+
+                if ($carryCounselors && ($map['graduate'] ?? false) === false && ! empty($map['to_class_id'])) {
+                    $carried += $this->carryCounselors($from->id, (int) $map['to_class_id']);
+                }
             }
         });
 
         $this->audit->record('academic_year.promoted', 'academic_years', $academicYear->id, null, null, [
             'moved' => $moved,
             'graduated' => $graduated,
+            'counselors_carried' => $carried,
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => ['preview' => false, 'students_moved' => $moved, 'students_graduated' => $graduated, 'conflicts' => []],
+            'data' => [
+                'preview' => false,
+                'students_moved' => $moved,
+                'students_graduated' => $graduated,
+                'counselors_carried' => $carried,
+                'conflicts' => [],
+            ],
         ]);
+    }
+
+    /**
+     * Penugasan Guru BK mengikuti siswanya saat naik kelas: penugasan kelas asal
+     * disalin ke kelas tujuan, sedangkan penugasan lama tetap tersimpan sebagai
+     * riwayat agar Guru BK masih bisa membaca data masa dampingannya.
+     */
+    private function carryCounselors(int $fromClassId, int $toClassId, bool $dryRun = false): int
+    {
+        $counselorIds = CounselorClass::query()
+            ->where('class_id', $fromClassId)
+            ->pluck('counselor_id');
+
+        if ($counselorIds->isEmpty()) {
+            return 0;
+        }
+
+        $alreadyAssigned = CounselorClass::query()
+            ->where('class_id', $toClassId)
+            ->whereIn('counselor_id', $counselorIds)
+            ->pluck('counselor_id');
+
+        $pending = $counselorIds->diff($alreadyAssigned);
+
+        if ($dryRun) {
+            return $pending->count();
+        }
+
+        foreach ($pending as $counselorId) {
+            CounselorClass::create([
+                'counselor_id' => $counselorId,
+                'class_id' => $toClassId,
+                'assigned_at' => now(),
+            ]);
+        }
+
+        return $pending->count();
     }
 }
