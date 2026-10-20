@@ -128,7 +128,7 @@ class UserManagementTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_new_account_is_active_and_can_log_in_right_away(): void
+    public function test_new_student_uses_identity_number_as_initial_password(): void
     {
         $this->actingAs($this->admin())
             ->withSession(['two_factor_passed' => true])
@@ -137,14 +137,32 @@ class UserManagementTest extends TestCase
                 'identity_number' => '2024100',
                 'email' => 'siswa.baru@example.test',
                 'role' => 'student',
-                'password' => 'Password123',
                 'class_id' => $this->schoolClass('X IPA 1')->id,
             ])
             ->assertCreated()
             ->assertJsonPath('data.status', 'active')
-            ->assertJsonPath('message', 'Akun dibuat dan langsung aktif.');
+            ->assertJsonPath('data.initial_password', '2024100');
 
         $user = User::where('identity_number', '2024100')->firstOrFail();
+
+        $this->assertTrue(Hash::check('2024100', $user->password));
+        $this->assertTrue($user->must_change_password);
+    }
+
+    public function test_explicit_initial_password_is_kept(): void
+    {
+        $this->actingAs($this->admin())
+            ->withSession(['two_factor_passed' => true])
+            ->postJson('/api/admin/users', [
+                'name' => 'Guru BK Kedua',
+                'identity_number' => '198801012021',
+                'role' => 'counselor',
+                'password' => 'Password123',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.initial_password', null);
+
+        $user = User::where('identity_number', '198801012021')->firstOrFail();
 
         $this->assertTrue(Hash::check('Password123', $user->password));
     }
@@ -180,15 +198,15 @@ class UserManagementTest extends TestCase
             ->assertJsonPath('data.0.classes.1.name', 'X IPA 2');
     }
 
-    public function test_initial_password_is_required(): void
+    public function test_weak_explicit_password_is_rejected(): void
     {
         $this->actingAs($this->admin())
             ->withSession(['two_factor_passed' => true])
             ->postJson('/api/admin/users', [
-                'name' => 'Tanpa Sandi',
+                'name' => 'Sandi Lemah',
                 'identity_number' => '2024101',
-                'role' => 'student',
-                'class_id' => $this->schoolClass('X IPA 1')->id,
+                'role' => 'counselor',
+                'password' => 'rahasia',
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('password');

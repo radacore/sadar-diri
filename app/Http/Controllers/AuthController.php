@@ -74,7 +74,7 @@ class AuthController extends Controller
             ]);
 
             $message = $user->status === 'pending'
-                ? 'Akun belum diaktivasi. Buka tautan undangan di email Anda.'
+                ? 'Akun belum diaktivasi. Hubungi admin sekolah.'
                 : 'Akun tidak aktif. Hubungi Guru BK atau admin sekolah.';
 
             return response()->json([
@@ -250,6 +250,53 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'data' => null, 'message' => 'Kata sandi berhasil diperbarui']);
     }
 
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'confirmed'],
+        ], [
+            'current_password.required' => 'Kata sandi saat ini wajib diisi.',
+            'password.required' => 'Kata sandi baru wajib diisi.',
+            'password.min' => 'Kata sandi minimal 10 karakter.',
+            'password.regex' => 'Kata sandi harus memuat huruf besar, huruf kecil, dan angka.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak sama dengan kata sandi baru.',
+        ]);
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'INVALID_PASSWORD',
+                'message' => 'Kata sandi saat ini tidak sesuai.',
+                'errors' => ['current_password' => ['Kata sandi saat ini tidak sesuai.']],
+            ], 422);
+        }
+
+        if (Hash::check($data['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'SAME_PASSWORD',
+                'message' => 'Kata sandi baru tidak boleh sama dengan kata sandi sebelumnya.',
+                'errors' => ['password' => ['Gunakan kata sandi yang berbeda dari kata sandi awal.']],
+            ], 422);
+        }
+
+        $user->forceFill([
+            'password' => $data['password'],
+            'must_change_password' => false,
+        ])->save();
+
+        $this->audit->record('auth.password_changed', 'users', $user->id, $user->id, null, [], $user);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['redirect_to' => $this->redirectFor($user)],
+            'message' => 'Kata sandi diperbarui.',
+        ]);
+    }
+
     public function consent(Request $request)
     {
         $data = $request->validate([
@@ -396,6 +443,10 @@ class AuthController extends Controller
 
     private function redirectFor(User $user): string
     {
+        if ($user->must_change_password) {
+            return '/ganti-sandi';
+        }
+
         return match ($user->role) {
             'student' => '/siswa/beranda',
             'counselor' => '/bk/dashboard',

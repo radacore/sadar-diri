@@ -17,7 +17,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/onboarding/consent', [PageController::class, 'consent'])->name('onboarding.consent');
 
-    Route::middleware('role:student')->prefix('siswa')->group(function () {
+    Route::get('/ganti-sandi', [PageController::class, 'changePassword'])->name('password.change');
+
+    Route::middleware(['password.changed', 'role:student'])->prefix('siswa')->group(function () {
         Route::get('/beranda', fn (PageController $page) => $page->student('Dashboard'));
         Route::get('/profil', fn (PageController $page) => $page->student('Profile'));
         Route::get('/jurnal', fn (PageController $page) => $page->student('Journal'));
@@ -27,7 +29,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/privasi', fn (PageController $page) => $page->student('Privacy'));
     });
 
-    Route::middleware('role:counselor')->prefix('bk')->group(function () {
+    Route::middleware(['password.changed', 'role:counselor'])->prefix('bk')->group(function () {
         Route::get('/dashboard', fn (PageController $page) => $page->counselor('Dashboard'));
         Route::get('/alert', fn (PageController $page) => $page->counselor('Alerts'));
         Route::get('/siswa', fn (PageController $page) => $page->counselor('Students'));
@@ -38,7 +40,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan', fn (PageController $page) => $page->counselor('Reports'));
     });
 
-    Route::middleware(['role:superadmin', 'twofactor'])->prefix('admin')->group(function () {
+    Route::middleware(['password.changed', 'role:superadmin', 'twofactor'])->prefix('admin')->group(function () {
         Route::get('/dashboard', fn (PageController $page) => $page->admin('Dashboard'));
         Route::get('/pengguna', fn (PageController $page) => $page->admin('Users'));
         Route::get('/kelas', fn (PageController $page) => $page->admin('Classes'));

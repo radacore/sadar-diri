@@ -31,7 +31,7 @@ Tujuan produk, sesuai pemetaan ke enam dimensi kesejahteraan Ryff: penerimaan di
 | Guru BK | `counselor` | `/bk/*` | Dashboard kelas binaan, alert risiko, detail siswa, baca jurnal + balas, catatan konseling, sesi refleksi terbimbing + umpan balik, verifikasi prestasi, laporan kelas (CSV/PDF) |
 | Superadmin | `superadmin` | `/admin/*` | Pengguna & impor CSV, kelas, tahun ajaran & kenaikan kelas, konten & versi, pengumuman, laporan agregat, audit log, retensi, pengaturan sekolah. **Tidak punya rute untuk membaca konten psikologis.** |
 
-Status akun: `pending`, `active`, `inactive`, `archived`, `alumni`. Hanya `active` yang boleh masuk. Akun baru dari halaman Pengguna maupun impor CSV langsung dibuat `active` dengan kata sandi awal yang ditentukan admin (impor: kolom opsional `password`, jika kosong memakai NIS/NIP). Alur undangan aktivasi via email sudah dihapus.
+Status akun: `pending`, `active`, `inactive`, `archived`, `alumni`. Hanya `active` yang boleh masuk. Akun baru dari halaman Pengguna maupun impor CSV langsung dibuat `active` dengan kata sandi awal **NIS/NIP** (Guru BK boleh memakai kata sandi sendiri atau hasil "Buat kata sandi otomatis"; impor bisa mengisi kolom opsional `password`). Semua akun baru menyimpan `must_change_password = true`, sehingga pengguna dipaksa mengganti kata sandi di `/ganti-sandi` sebelum bisa membuka halaman mana pun. Alur undangan aktivasi via email sudah dihapus.
 
 ### Batas akses yang ditegakkan kode
 
@@ -257,6 +257,7 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 | POST | `/api/auth/login` | `10,1` | Login via email **atau** NIS/NIP; 5 percobaan/menit per identity+IP; superadmin menerima OTP |
 | POST | `/api/auth/forgot-password` | `5,15` | Kirim tautan reset; tidak membocorkan keberadaan akun |
 | POST | `/api/auth/reset-password` | `10,15` | Atur ulang dengan token; aturan sandi sama dengan ganti sandi siswa |
+| PUT | `/api/auth/password` | `10,1` | Ganti kata sandi semua peran (wajib `current_password`), dipakai halaman `/ganti-sandi` |
 | POST | `/api/auth/logout` | — | Catat audit, hapus sesi |
 | GET | `/api/auth/me` | — | Payload pengguna + izin |
 | POST | `/api/auth/consent` | — | Catat persetujuan (versi, IP, UA) |
@@ -272,7 +273,7 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 | GET | `/api/student/profile` | `biodata`, `self_profile`, `completeness_percent` |
 | PUT | `/api/student/profile/biodata` | Field tertutup (daftar tetap); mengabaikan field lain |
 | PUT | `/api/student/profile/self` | Simpan draf atau publikasikan (`publish`), menaikkan `version` |
-| PUT | `/api/student/account/password` | `throttle:10,1` — ganti sandi mandiri, wajib `current_password` |
+| PUT | `/api/student/account/password` | `throttle:10,1` — alias lama, ditangani `AuthController::updatePassword` |
 | GET | `/api/student/profile/versions` | Riwayat versi profil diri |
 | GET | `/api/student/counseling-summaries` | Ringkasan catatan konseling yang boleh dilihat |
 | GET | `/api/student/privacy/access-log` | Jejak akses Guru BK ke data siswa |
@@ -361,12 +362,14 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 - Password diverifikasi dengan `Hash::check`; cast `hashed` menangani penulisan.
 - Setelah login: `session()->regenerate()`, `last_login_at`/`last_activity_at` diperbarui, audit `auth.login`.
 - **2FA hanya untuk superadmin** (`requiresTwoFactor()` = `isSuperadmin()`). Kode 6 digit, TTL 10 menit, sekali pakai, cooldown kirim ulang 60 detik, disimpan sebagai hash di `login_otp_codes`. Keberhasilan menandai session `two_factor_passed`.
-- Akun non-`active` tidak bisa login. Akun baru dibuat langsung `active` dengan kata sandi awal dari admin, sehingga tidak ada lagi alur aktivasi lewat tautan bertanda tangan.
+- Akun non-`active` tidak bisa login. Akun baru dibuat langsung `active` dengan kata sandi awal NIS/NIP (Guru BK: kata sandi dari admin), sehingga tidak ada lagi alur aktivasi lewat tautan bertanda tangan.
+- Jika `must_change_password = true`, `redirectFor()` mengarahkan ke `/ganti-sandi` dan middleware `password.changed` memblokir seluruh halaman peran sampai kata sandi diganti.
 - Reset sandi: tautan via email; respons selalu sama untuk email tidak dikenal (anti-enumerasi).
 
-### 7.2 Ganti kata sandi mandiri (siswa)
+### 7.2 Ganti kata sandi mandiri (semua peran)
 
-- Endpoint: `PUT /api/student/account/password` (`throttle:10,1`).
+- Endpoint: `PUT /api/auth/password` (`throttle:10,1`); `PUT /api/student/account/password` dipertahankan sebagai alias.
+- Halaman paksa ganti sandi: `/ganti-sandi` (middleware `password.changed` pada grup `/siswa`, `/bk`, `/admin`).
 - Wajib `current_password` yang benar → jika salah: 422 `INVALID_PASSWORD`, `errors.current_password[0]`.
 - Sandi baru: `min:10`, harus memuat huruf kecil, huruf besar, dan angka, serta `confirmed`.
 - Sukses menyetel `must_change_password = false` dan mencatat audit `auth.password_changed`.
@@ -433,7 +436,7 @@ Setiap alert memakai `dedupe_key` berformat `{student_id}:{trigger_type}:{YYYY-M
 
 Kolom wajib: `name`, `identity_number`, `role`. Opsional: `email`, `class_name`.
 Kolom opsional tambahan: `password`.
-Validasi per baris: peran dikenal (`student`/`counselor`), format email, NIS/NIP belum terdaftar, email belum terdaftar, dan **siswa wajib punya `class_name` yang ada**. Hasil per baris disimpan di `import_batch_rows` (sukses/gagal + pesan), ringkasan di `import_batches`. Akun hasil impor langsung `status = active`; kata sandi diambil dari kolom `password` bila ada, jika tidak memakai `identity_number` (NIS/NIP), dengan `must_change_password = true`. Pemrosesan berjalan sinkron di dalam request meski responsnya `202`.
+Validasi per baris: peran dikenal (`student`/`counselor`), format email, NIS/NIP belum terdaftar, email belum terdaftar, dan **siswa wajib punya `class_name` yang ada**. Hasil per baris disimpan di `import_batch_rows` (sukses/gagal + pesan), ringkasan di `import_batches`. Akun hasil impor langsung `status = active`; kata sandi diambil dari kolom `password` bila ada, jika tidak memakai `identity_number` (NIS/NIP), dengan `must_change_password = true` sehingga wajib diganti saat masuk pertama. Pemrosesan berjalan sinkron di dalam request meski responsnya `202`.
 
 ### 7.12 Pengaturan sekolah
 

@@ -17,6 +17,10 @@ class PageController extends Controller
     {
         $user = auth()->user();
 
+        if ($user?->must_change_password) {
+            return redirect('/ganti-sandi');
+        }
+
         return match ($user?->role) {
             'student' => redirect('/siswa/beranda'),
             'counselor' => redirect('/bk/dashboard'),
@@ -65,6 +69,13 @@ class PageController extends Controller
     {
         return Inertia::render('Onboarding/Consent', [
             'version' => $this->settings->get('privacy.consent_version', '2026-08-01'),
+        ]);
+    }
+
+    public function changePassword()
+    {
+        return Inertia::render('Auth/ChangePassword', [
+            'identityNumber' => auth()->user()?->identity_number,
         ]);
     }
 

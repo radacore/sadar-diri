@@ -72,11 +72,16 @@ export default function Users() {
 
         const decision = await confirm({
             title: 'Buat akun baru?',
-            description: 'Akun langsung aktif dan bisa dipakai masuk dengan kata sandi awal yang Anda isi.',
+            description: form.role === 'student'
+                ? 'Akun langsung aktif dengan kata sandi awal NIS, lalu siswa wajib menggantinya saat masuk pertama.'
+                : 'Akun langsung aktif dan bisa dipakai masuk dengan kata sandi awal yang Anda isi.',
             details: [
                 { label: 'Nama', value: form.name },
                 { label: 'Peran', value: label('role', form.role) },
                 { label: 'NIS/NIP', value: form.identity_number },
+                ...(form.role === 'student'
+                    ? [{ label: 'Kata sandi awal', value: form.identity_number }]
+                    : []),
                 ...(form.role === 'counselor' && form.class_ids.length
                     ? [{ label: 'Kelas', value: `${form.class_ids.length} kelas` }]
                     : []),
@@ -92,6 +97,7 @@ export default function Users() {
         try {
             const response = await api.post('/api/admin/users', {
                 ...form,
+                password: form.role === 'counselor' ? form.password : null,
                 class_id: form.role === 'student' ? Number(form.class_id) : null,
                 class_ids: form.role === 'counselor' ? form.class_ids : [],
             });
@@ -170,6 +176,7 @@ export default function Users() {
     const importCsv = async (file) => {
         const decision = await confirm({
             title: 'Impor akun dari CSV?',
+            description: 'Akun hasil impor langsung aktif. Kata sandi awal memakai NIS/NIP, atau kolom "password" bila diisi.',
             details: [{ label: 'Berkas', value: file.name }],
             confirmLabel: 'Impor',
             tone: 'warning',
@@ -330,7 +337,7 @@ export default function Users() {
                             <Input id="identity" value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} required />
                         </Field>
                         <Field label="Peran" required htmlFor="role">
-                            <Select id="role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value, class_id: '', class_ids: [] })}>
+                            <Select id="role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value, class_id: '', class_ids: [], password: '' })}>
                                 <option value="student">Siswa</option>
                                 <option value="counselor">Guru BK</option>
                             </Select>
@@ -339,16 +346,22 @@ export default function Users() {
                     <Field label="Email" htmlFor="email" hint="Dipakai untuk reset kata sandi dan notifikasi email.">
                         <Input id="email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
                     </Field>
-                    <Field label="Kata sandi awal" required htmlFor="password" hint="Minimal 10 karakter, memuat huruf besar, huruf kecil, dan angka. Sampaikan ke pengguna setelah akun dibuat.">
-                        <PasswordInput id="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required minLength={10} />
-                        <button
-                            type="button"
-                            className="mt-1.5 text-[11.5px] font-semibold text-[#3f51b5] hover:underline"
-                            onClick={() => setForm({ ...form, password: randomPassword() })}
-                        >
-                            Buat kata sandi otomatis
-                        </button>
-                    </Field>
+                    {form.role === 'counselor' ? (
+                        <Field label="Kata sandi awal" required htmlFor="password" hint="Minimal 10 karakter, memuat huruf besar, huruf kecil, dan angka. Wajib diganti saat Guru BK masuk pertama.">
+                            <PasswordInput id="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required minLength={10} />
+                            <button
+                                type="button"
+                                className="mt-1.5 text-[11.5px] font-semibold text-[#3f51b5] hover:underline"
+                                onClick={() => setForm({ ...form, password: randomPassword() })}
+                            >
+                                Buat kata sandi otomatis
+                            </button>
+                        </Field>
+                    ) : (
+                        <p className="rounded-[10px] bg-[#f1f5f9] px-3 py-2 text-[11.5px] text-[#475569]">
+                            Kata sandi awal otomatis memakai <strong>NIS</strong> yang diisi di atas. Siswa wajib menggantinya saat masuk pertama.
+                        </p>
+                    )}
                     {form.role === 'student' ? (
                         <Field label="Kelas" required htmlFor="class">
                             <Select id="class" value={form.class_id} onChange={(event) => setForm({ ...form, class_id: event.target.value })} required>

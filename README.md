@@ -40,6 +40,8 @@ Kedua akun Guru BK punya hak akses yang sama dan sama-sama mendampingi ketiga ke
 
 Superadmin masuk dengan kata sandi lalu mengonfirmasi **kode 6 digit yang dikirim ke email** akunnya (berlaku 10 menit, sekali pakai, kirim ulang tiap 60 detik).
 
+Akun baru yang dibuat lewat **Pengguna** atau **Impor CSV** langsung aktif dengan kata sandi awal NIS/NIP (Guru BK memakai kata sandi yang diisi admin atau tombol *Buat kata sandi otomatis*). Saat masuk pertama, pengguna dipaksa mengganti kata sandi di `/ganti-sandi` sebelum bisa membuka halaman lain.
+
 ## Pemetaan fitur ke dimensi Ryff
 
 | # | Fitur | Pengisi | Guru BK |

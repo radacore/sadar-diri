@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureConsent;
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureTwoFactor;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'consent' => EnsureConsent::class,
             'twofactor' => EnsureTwoFactor::class,
+            'password.changed' => EnsurePasswordChanged::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

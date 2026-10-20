@@ -100,12 +100,11 @@ class UserController extends Controller
             'email' => ['nullable', 'email', 'max:190', 'unique:users,email'],
             'identity_number' => ['required', 'string', 'max:30', 'unique:users,identity_number'],
             'role' => ['required', Rule::in(['student', 'counselor'])],
-            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
+            'password' => ['nullable', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
             'class_id' => ['nullable', 'exists:classes,id', 'required_if:role,student'],
             'class_ids' => ['nullable', 'array'],
             'class_ids.*' => ['integer', 'exists:classes,id'],
         ], [
-            'password.required' => 'Kata sandi awal wajib diisi.',
             'password.min' => 'Kata sandi minimal 10 karakter.',
             'password.regex' => 'Kata sandi harus memuat huruf besar, huruf kecil, dan angka.',
         ]);
@@ -115,7 +114,8 @@ class UserController extends Controller
                 'name' => $data['name'],
                 'email' => $data['email'] ?? null,
                 'identity_number' => $data['identity_number'],
-                'password' => $data['password'],
+                // Tanpa kata sandi eksplisit, akun memakai NIS/NIP sebagai kata sandi awal.
+                'password' => $data['password'] ?? $data['identity_number'],
                 'role' => $data['role'],
                 'status' => 'active',
                 'must_change_password' => true,
@@ -148,10 +148,18 @@ class UserController extends Controller
 
         $this->audit->record('user.created', 'users', $user->id, $user->id, null, ['role' => $user->role]);
 
+        $usesIdentity = ! isset($data['password']);
+
         return response()->json([
             'success' => true,
-            'data' => ['id' => $user->id, 'status' => $user->status],
-            'message' => 'Akun dibuat dan langsung aktif.',
+            'data' => [
+                'id' => $user->id,
+                'status' => $user->status,
+                'initial_password' => $usesIdentity ? $user->identity_number : null,
+            ],
+            'message' => $usesIdentity
+                ? 'Akun dibuat dan langsung aktif. Kata sandi awal: '.$user->identity_number.' (wajib diganti saat masuk pertama).'
+                : 'Akun dibuat dan langsung aktif.',
         ], 201);
     }
 
