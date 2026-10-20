@@ -51,13 +51,17 @@ export default function Announcements() {
 
         setBusy(true);
 
+        // `datetime-local` menghasilkan waktu lokal tanpa zona; kirim sebagai UTC
+        // agar tidak bergeser sebesar offset server (APP_TIMEZONE=UTC).
+        const toUtc = (value) => (value ? new Date(value).toISOString() : null);
+
         try {
             await api.post('/api/admin/announcements', {
                 ...form,
                 audience_role: form.audience === 'role' ? form.audience_role : null,
                 audience_class_id: form.audience === 'class' ? Number(form.audience_class_id) : null,
-                published_at: form.published_at || null,
-                expires_at: form.expires_at || null,
+                published_at: toUtc(form.published_at),
+                expires_at: toUtc(form.expires_at),
             });
             toast.push('Pengumuman disimpan.');
             setOpen(false);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class AnnouncementController extends Controller
@@ -38,11 +39,11 @@ class AnnouncementController extends Controller
         $publishedAt = $data['published_at'] ?? now();
         $status = $publishedAt->isFuture() ? 'scheduled' : 'published';
 
-        $announcement = Announcement::create($data + [
+        $announcement = Announcement::create(array_merge($data, [
             'status' => $status,
             'published_at' => $publishedAt,
             'created_by' => $request->user()->id,
-        ]);
+        ]));
 
         $this->audit->record('announcement.created', 'announcements', $announcement->id);
 
@@ -57,8 +58,8 @@ class AnnouncementController extends Controller
         $data = $this->validated($request);
         $announcement->fill($data);
 
-        if (isset($data['published_at'])) {
-            $announcement->status = $data['published_at']->isFuture() ? 'scheduled' : 'published';
+        if (array_key_exists('published_at', $data)) {
+            $announcement->status = $announcement->published_at->isFuture() ? 'scheduled' : 'published';
         }
 
         $announcement->save();
@@ -77,6 +78,12 @@ class AnnouncementController extends Controller
 
     private function validated(Request $request): array
     {
+        // Tanggal kosong berarti "terbit sekarang", bukan NULL: published_at NULL
+        // tidak akan pernah lolos filter `published_at <= now()` di sisi siswa.
+        if ($request->exists('published_at') && blank($request->input('published_at'))) {
+            $request->merge(['published_at' => now()->toIso8601String()]);
+        }
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:190'],
             'body' => ['required', 'string', 'max:5000'],
@@ -87,8 +94,16 @@ class AnnouncementController extends Controller
             'expires_at' => ['nullable', 'date', 'after:published_at'],
         ]);
 
+        // Simpan dalam timezone aplikasi: kolom DATETIME tidak menyimpan offset,
+        // jadi "+07:00" harus dikonversi dulu atau jamnya bergeser.
+        $timezone = config('app.timezone');
+
         if (isset($data['published_at'])) {
-            $data['published_at'] = \Illuminate\Support\Carbon::parse($data['published_at']);
+            $data['published_at'] = Carbon::parse($data['published_at'])->setTimezone($timezone);
+        }
+
+        if (isset($data['expires_at'])) {
+            $data['expires_at'] = Carbon::parse($data['expires_at'])->setTimezone($timezone);
         }
 
         return $data;
