@@ -94,7 +94,8 @@ Selama `RESEND_API_KEY` kosong, `AppServiceProvider` otomatis mengalihkan mailer
 - Data sensitif (jurnal, refleksi, catatan konseling, profil psikologis) dienkripsi di database dengan `APP_KEY`.
 - Guru BK hanya dapat mengakses siswa yang pernah/sedang berada di kelas binaannya (`AccessScope`).
 - Setiap akses guru BK ke data siswa dicatat di audit log dan dapat dilihat siswa pada halaman Privasi.
-- Superadmin tidak memiliki rute untuk membaca konten psikologis; aksi sensitif (reset sandi, paksa logout, nonaktifkan akun, retensi) mewajibkan alasan dan tercatat.
+- Superadmin tidak memiliki rute untuk membaca konten psikologis; aksi sensitif (paksa logout, nonaktifkan akun, retensi) mewajibkan alasan dan tercatat.
+- Tombol *Reset kata sandi* di menu **Pengguna** langsung mengganti kata sandi menjadi NIS/NIP (tanpa email) dan memutus sesi aktif; pengguna wajib menggantinya saat masuk berikutnya. Lupa sandi mandiri lewat email tetap tersedia di halaman masuk untuk semua peran.
 - Laporan agregat menyembunyikan kelas dengan kurang dari 10 siswa.
 - Retensi: alumni dianonimkan dan jurnal/refleksinya dihapus setelah 3 tahun (dapat diubah di Pengaturan).
 

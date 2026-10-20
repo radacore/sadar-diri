@@ -17,7 +17,6 @@ class PasswordResetMail extends Mailable
         public readonly User $user,
         public readonly string $url,
         public readonly int $ttlMinutes,
-        public readonly bool $requestedByAdmin = false,
     ) {}
 
     public function envelope(): Envelope

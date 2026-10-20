@@ -13,7 +13,6 @@ use App\Services\ImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -239,36 +238,40 @@ class UserController extends Controller
         ]);
     }
 
-    public function resetPassword(Request $request, User $user)
+    /**
+     * Reset langsung ke NIS/NIP tanpa email. Alur lupa sandi mandiri di halaman
+     * login tetap memakai tautan email.
+     */
+    public function resetPassword(User $user)
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
-
-        $resetSent = false;
-
-        if ($user->email) {
-            $token = Password::broker()->createToken($user);
-            $url = url('/reset-password?token='.$token.'&email='.urlencode($user->email));
-
-            try {
-                \Illuminate\Support\Facades\Mail::to($user->email)
-                    ->send(new \App\Mail\PasswordResetMail($user, $url, config('auth.passwords.users.expire', 30), true));
-                $resetSent = true;
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Gagal mengirim tautan reset.', [
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        if ($user->isSuperadmin()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'CONFLICT',
+                'message' => 'Kata sandi Superadmin tidak dapat direset dari halaman ini.',
+            ], 409);
         }
 
-        $this->audit->record('user.password_reset', 'users', $user->id, $user->id, $data['reason']);
+        $user->forceFill([
+            'password' => $user->identity_number,
+            'must_change_password' => true,
+            'remember_token' => null,
+        ])->save();
+
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
+        $this->audit->record('user.password_reset', 'users', $user->id, $user->id, 'Reset kata sandi ke NIS/NIP oleh admin', [
+            'method' => 'identity_number',
+        ]);
 
         return response()->json([
             'success' => true,
-            'data' => ['reset_email_sent' => $resetSent],
-            'message' => ! $user->email
-                ? 'Pengguna tidak memiliki email'
-                : ($resetSent ? 'Tautan reset dikirim ke email pengguna' : 'Tautan gagal dikirim. Periksa konfigurasi email.'),
+            'data' => [
+                'id' => $user->id,
+                'initial_password' => $user->identity_number,
+            ],
+            'message' => 'Kata sandi direset ke NIS/NIP ('.$user->identity_number.'). Sesi aktif diputus dan pengguna wajib menggantinya saat masuk.',
         ]);
     }
 

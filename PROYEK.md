@@ -319,7 +319,7 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 | GET | `/api/admin/classes/options` | Opsi kelas |
 | GET/POST | `/api/admin/users`, `/users/import`, `/users/{user}` | CRUD pengguna & impor CSV. Daftar: paginasi `page`/`per_page` (default 20, maksimum 100), akun `superadmin` selalu dikecualikan |
 | PATCH | `/api/admin/users/{user}/status` | Ubah status |
-| POST | `/api/admin/users/{user}/reset-password` | Reset sandi (wajib alasan, kirim email) |
+| POST | `/api/admin/users/{user}/reset-password` | Reset sandi langsung ke NIS/NIP tanpa email, memutus sesi aktif, `must_change_password = true`; superadmin ditolak |
 | POST | `/api/admin/users/{user}/force-logout` | Paksa logout |
 | POST | `/api/admin/users/{user}/anonymize` | Anonimisasi |
 | CRUD | `/api/admin/classes/*` | Kelas + penugasan siswa & Guru BK |
@@ -364,7 +364,8 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 - **2FA hanya untuk superadmin** (`requiresTwoFactor()` = `isSuperadmin()`). Kode 6 digit, TTL 10 menit, sekali pakai, cooldown kirim ulang 60 detik, disimpan sebagai hash di `login_otp_codes`. Keberhasilan menandai session `two_factor_passed`.
 - Akun non-`active` tidak bisa login. Akun baru dibuat langsung `active` dengan kata sandi awal NIS/NIP (Guru BK: kata sandi dari admin), sehingga tidak ada lagi alur aktivasi lewat tautan bertanda tangan.
 - Jika `must_change_password = true`, `redirectFor()` mengarahkan ke `/ganti-sandi` dan middleware `password.changed` memblokir seluruh halaman peran sampai kata sandi diganti.
-- Reset sandi: tautan via email; respons selalu sama untuk email tidak dikenal (anti-enumerasi).
+- Reset sandi mandiri (halaman login, semua peran): tautan via email; respons selalu sama untuk email tidak dikenal (anti-enumerasi).
+- Reset sandi oleh admin di halaman Pengguna tidak mengirim email: kata sandi langsung diisi NIS/NIP, seluruh sesi pengguna diputus, token reset lama dihapus, dan `must_change_password = true` sehingga pengguna wajib mengganti sandi saat masuk berikutnya. Superadmin tidak dapat direset dari halaman ini.
 
 ### 7.2 Ganti kata sandi mandiri (semua peran)
 
@@ -484,7 +485,7 @@ Semua email transaksional lewat Resend.
 | Mailable | Pemicu |
 |---|---|
 | `LoginOtpMail` | Login superadmin (kode 6 digit) |
-| `PasswordResetMail` | Lupa sandi (semua peran) dan reset oleh admin |
+| `PasswordResetMail` | Lupa sandi mandiri (semua peran) lewat halaman login |
 
 Konfigurasi:
 

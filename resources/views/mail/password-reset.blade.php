@@ -4,11 +4,7 @@
     <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;letter-spacing:-0.01em;">Atur ulang kata sandi</h1>
     <p style="margin:0 0 20px;font-size:13px;line-height:1.6;color:#475569;">
         Halo {{ $user->name }},
-        @if ($requestedByAdmin)
-            admin sekolah meminta pengaturan ulang kata sandi akun Anda. Tekan tombol di bawah untuk membuat kata sandi baru.
-        @else
-            kami menerima permintaan untuk mengatur ulang kata sandi akun Anda. Tekan tombol di bawah untuk membuat kata sandi baru.
-        @endif
+        kami menerima permintaan untuk mengatur ulang kata sandi akun Anda. Tekan tombol di bawah untuk membuat kata sandi baru.
     </p>
 
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">

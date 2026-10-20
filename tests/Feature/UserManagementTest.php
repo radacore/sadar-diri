@@ -7,6 +7,7 @@ use App\Models\CounselorClass;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -210,5 +211,62 @@ class UserManagementTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('password');
+    }
+
+    public function test_reset_password_sets_identity_number_without_email(): void
+    {
+        $admin = $this->admin();
+        $student = $this->user('student', '2024009');
+        $student->forceFill(['password' => 'Password123'])->save();
+
+        DB::table('sessions')->insert([
+            'id' => 'sesi-uji-1',
+            'user_id' => $student->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'phpunit',
+            'payload' => 'x',
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['two_factor_passed' => true])
+            ->postJson("/api/admin/users/{$student->id}/reset-password")
+            ->assertOk()
+            ->assertJsonPath('data.initial_password', '2024009')
+            ->assertJsonPath('success', true);
+
+        $student->refresh();
+
+        $this->assertTrue(Hash::check('2024009', $student->password));
+        $this->assertTrue($student->must_change_password);
+        $this->assertNull($student->remember_token);
+        $this->assertSame(0, DB::table('sessions')->where('user_id', $student->id)->count());
+    }
+
+    public function test_reset_password_requires_no_reason(): void
+    {
+        $admin = $this->admin();
+        $counselor = $this->user('counselor', '198801012099');
+
+        $this->actingAs($admin)
+            ->withSession(['two_factor_passed' => true])
+            ->postJson("/api/admin/users/{$counselor->id}/reset-password", [])
+            ->assertOk();
+
+        $this->assertTrue(Hash::check('198801012099', $counselor->fresh()->password));
+    }
+
+    public function test_superadmin_password_cannot_be_reset_from_user_page(): void
+    {
+        $admin = $this->admin();
+        $other = $this->user('superadmin', 'admin2');
+
+        $this->actingAs($admin)
+            ->withSession(['two_factor_passed' => true])
+            ->postJson("/api/admin/users/{$other->id}/reset-password")
+            ->assertStatus(409)
+            ->assertJsonPath('error', 'CONFLICT');
+
+        $this->assertTrue(Hash::check('Password123', $other->fresh()->password));
     }
 }

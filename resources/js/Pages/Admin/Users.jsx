@@ -136,17 +136,21 @@ export default function Users() {
 
     const resetPassword = async (user) => {
         const decision = await confirm({
-            title: 'Kirim tautan reset kata sandi?',
-            details: [{ label: 'Pengguna', value: user.name }],
-            confirmLabel: 'Kirim tautan',
+            title: 'Reset kata sandi ke NIS/NIP?',
+            description: 'Kata sandi langsung diganti, sesi aktif diputus, dan tidak ada email yang dikirim.',
+            details: [
+                { label: 'Pengguna', value: user.name },
+                { label: 'Kata sandi baru', value: user.identity_number },
+                { label: 'Catatan', value: 'Wajib diganti saat pengguna masuk berikutnya.' },
+            ],
+            confirmLabel: 'Reset kata sandi',
             tone: 'warning',
-            icon: 'send',
-            requireReason: 'Alasan reset kata sandi',
+            icon: 'key',
         });
         if (!decision) return;
 
         try {
-            const response = await api.post(`/api/admin/users/${user.id}/reset-password`, { reason: decision.reason });
+            const response = await api.post(`/api/admin/users/${user.id}/reset-password`);
             toast.push(response.message);
         } catch (error) {
             toast.push(error.message, 'error');
