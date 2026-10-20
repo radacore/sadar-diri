@@ -449,34 +449,10 @@
         animation: sd-pop-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
+    /* Bottom nav: cekungan tab aktif dibuat lewat SVG mask (lihat AppShell.jsx). */
     .sd-mobile-nav {
         animation: sd-slide-up 460ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     }
-
-    /* Bottom nav: tab aktif berupa lekuk (liquid cutout) mengikuti file desain. */
-    .sd-nav-well::before,
-    .sd-nav-well::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        width: 18px;
-        height: 18px;
-        background: transparent;
-        pointer-events: none;
-    }
-
-    .sd-nav-well::before {
-        left: -18px;
-        border-top-right-radius: 16px;
-        box-shadow: 6px -6px 0 5px var(--color-canvas);
-    }
-
-    .sd-nav-well::after {
-        right: -18px;
-        border-top-left-radius: 16px;
-        box-shadow: -6px -6px 0 5px var(--color-canvas);
-    }
-
 
     /* Mode ponsel permanen untuk siswa & Guru BK, juga saat dibuka di desktop. */
     .sd-phone {

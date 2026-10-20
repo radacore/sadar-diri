@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '../Components/Icons';
 import { Button, Sheet, useConfirm } from '../Components/UI';
 import { api } from '../lib/api';
@@ -54,6 +54,32 @@ const roleLabels = {
 
 function isActive(pathname, href) {
     return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/* Geometri bar bawah: lekukan (liquid cutout) dibuat sebagai lubang asli lewat <mask>,
+   jadi apa pun yang berada di belakang bar tetap terlihat di dalam cekungan. */
+const NAV_BAR = { height: 68, radius: 20, notchHalf: 20, notchStraight: 20, notchFillet: 6 };
+
+function navNotchPath(center) {
+    const { notchHalf: half, notchStraight: straight, notchFillet: fillet } = NAV_BAR;
+    const k = fillet * 0.5523; // pendekatan kuartal lingkaran dengan kurva Bézier
+    const left = center - half;
+    const right = center + half;
+
+    return [
+        `M${left - fillet} 0`,
+        `C${left - fillet + k} 0 ${left} ${fillet - k} ${left} ${fillet}`,
+        `V${straight}`,
+        `A${half} ${half} 0 0 0 ${right} ${straight}`,
+        `V${fillet}`,
+        `C${right} ${fillet - k} ${right + fillet - k} 0 ${right + fillet} 0`,
+    ].join(' ');
+}
+
+function navTopRail(width) {
+    const { radius } = NAV_BAR;
+
+    return `M0 ${radius} A${radius} ${radius} 0 0 1 ${radius} 0 H${width - radius} A${radius} ${radius} 0 0 1 ${width} ${radius}`;
 }
 
 function Avatar({ name, url, size = 36, className = '' }) {
@@ -165,6 +191,36 @@ export default function AppShell({ children, title, subtitle, actions }) {
     const [activeAnnouncement, setActiveAnnouncement] = useState(null);
     const menuRef = useRef(null);
     const mobileMenuRef = useRef(null);
+    const navBarRef = useRef(null);
+    const [navBar, setNavBar] = useState({ width: 0, center: null });
+
+    // Ukur lebar bar dan titik tengah tab aktif supaya cekungan pas di posisinya.
+    useLayoutEffect(() => {
+        const element = navBarRef.current;
+
+        if (!element) {
+            return;
+        }
+
+        const measure = () => {
+            const bar = element.getBoundingClientRect();
+            const nodes = element.querySelectorAll('[data-nav-item]');
+            const index = mobileItems.findIndex((item) => isActive(pathname, item.href));
+            const rect = index >= 0 ? nodes[index]?.getBoundingClientRect() : null;
+
+            setNavBar({
+                width: bar.width,
+                center: rect ? rect.left - bar.left + rect.width / 2 : null,
+            });
+        };
+
+        measure();
+
+        const observer = new ResizeObserver(measure);
+        observer.observe(element);
+
+        return () => observer.disconnect();
+    }, [pathname, mobileItems.length]);
 
     useEffect(() => {
         document.body.classList.toggle('sd-phone-mode', mobileOnly);
@@ -587,45 +643,98 @@ export default function AppShell({ children, title, subtitle, actions }) {
                 className={`sd-mobile-nav fixed bottom-[calc(10px+env(safe-area-inset-bottom))] left-1/2 z-40 w-[calc(100%-24px)] max-w-[448px] -translate-x-1/2 ${mobileOnly ? '' : 'lg:hidden'}`}
                 aria-label="Navigasi utama"
             >
-                <div className="flex h-[68px] items-center justify-around overflow-visible rounded-[26px] border-t-[3px] border-[#5c73db] bg-[#374987] px-2 shadow-[0_12px_30px_-6px_rgba(24,34,53,0.35)]">
-                    {mobileItems.map((item) => {
-                        const active = isActive(pathname, item.href);
+                <div
+                    ref={navBarRef}
+                    className="relative h-[68px] rounded-[20px] shadow-[0_12px_30px_-6px_rgba(24,34,53,0.35)]"
+                >
+                    {navBar.width > 0 ? (
+                        <svg
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0"
+                            width={navBar.width}
+                            height={NAV_BAR.height}
+                            viewBox={`0 0 ${navBar.width} ${NAV_BAR.height}`}
+                        >
+                            <defs>
+                                <mask
+                                    id="sd-nav-mask"
+                                    maskUnits="userSpaceOnUse"
+                                    x="0"
+                                    y="0"
+                                    width={navBar.width}
+                                    height={NAV_BAR.height}
+                                >
+                                    <rect
+                                        width={navBar.width}
+                                        height={NAV_BAR.height}
+                                        rx={NAV_BAR.radius}
+                                        fill="#fff"
+                                    />
+                                    {navBar.center !== null ? (
+                                        <path d={navNotchPath(navBar.center)} fill="#000" />
+                                    ) : null}
+                                </mask>
+                            </defs>
+                            <g mask="url(#sd-nav-mask)">
+                                <rect width={navBar.width} height={NAV_BAR.height} fill="#374987" />
+                                <path
+                                    d={navTopRail(navBar.width)}
+                                    fill="none"
+                                    stroke="#5c73db"
+                                    strokeWidth={6}
+                                />
+                                {navBar.center !== null ? (
+                                    <path
+                                        d={navNotchPath(navBar.center)}
+                                        fill="none"
+                                        stroke="#5c73db"
+                                        strokeWidth={6}
+                                    />
+                                ) : null}
+                            </g>
+                        </svg>
+                    ) : null}
 
-                        if (active) {
+                    <div className="relative flex h-full items-center justify-around px-[24px]">
+                        {mobileItems.map((item) => {
+                            const active = isActive(pathname, item.href);
+
+                            if (active) {
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        data-nav-item
+                                        aria-current="page"
+                                        aria-label={item.label}
+                                        className="relative flex h-full flex-1 select-none flex-col items-center justify-end pb-[13px] touch-manipulation"
+                                    >
+                                        <span className="mb-[9px] flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#5c73db] text-white">
+                                            <Icon name={item.icon} size={17} strokeWidth={2.3} />
+                                        </span>
+                                        <span className="max-w-full truncate px-1 text-[10px] font-bold leading-none text-white">
+                                            {item.short}
+                                        </span>
+                                    </Link>
+                                );
+                            }
+
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    aria-current="page"
+                                    data-nav-item
                                     aria-label={item.label}
-                                    className="relative flex h-full flex-1 select-none flex-col items-center justify-start touch-manipulation"
+                                    className="flex h-full flex-1 select-none flex-col items-center justify-end pb-[13px] text-white/75 transition-colors active:text-white touch-manipulation"
                                 >
-                                    <span className="sd-nav-well relative z-20 -mt-[3px] flex h-[44px] w-[54px] items-center justify-center rounded-b-full bg-[#eceff4]">
-                                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5c73db] text-white shadow-md">
-                                            <Icon name={item.icon} size={18} strokeWidth={2.3} />
-                                        </span>
-                                    </span>
-                                    <span className="mt-1 max-w-full truncate px-1 text-[10px] font-bold leading-none text-white">
+                                    <Icon name={item.icon} size={19} />
+                                    <span className="mt-1 max-w-full truncate px-1 text-[10px] font-medium leading-none">
                                         {item.short}
                                     </span>
                                 </Link>
                             );
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                aria-label={item.label}
-                                className="flex h-full flex-1 select-none flex-col items-center justify-center text-white/75 transition-colors active:text-white touch-manipulation"
-                            >
-                                <Icon name={item.icon} size={19} />
-                                <span className="mt-1 max-w-full truncate px-1 text-[10px] font-medium leading-none">
-                                    {item.short}
-                                </span>
-                            </Link>
-                        );
-                    })}
+                        })}
+                    </div>
                 </div>
             </nav>
 
