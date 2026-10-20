@@ -1,9 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Components/Icons';
-import { useConfirm } from '../Components/UI';
+import { Button, Sheet, useConfirm } from '../Components/UI';
 import { api } from '../lib/api';
-import { initials } from '../lib/format';
+import { formatDate, initials } from '../lib/format';
 
 const navigation = {
     student: [
@@ -72,6 +72,70 @@ function Avatar({ name, url, size = 36, className = '' }) {
     );
 }
 
+function NotificationPanel({ announcements, notifications, onOpenAnnouncement, scrollClass = '' }) {
+    const empty = announcements.length === 0 && notifications.length === 0;
+
+    return (
+        <div className={`space-y-2.5 overflow-y-auto ${scrollClass}`}>
+            {empty ? (
+                <p className="py-6 text-center text-[12px] text-[#475569]">Belum ada notifikasi.</p>
+            ) : null}
+
+            {announcements.length ? (
+                <div className="space-y-1.5">
+                    <p className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">Pengumuman</p>
+                    {announcements.map((item) => (
+                        <button
+                            key={`announcement-${item.id}`}
+                            type="button"
+                            onClick={() => onOpenAnnouncement(item)}
+                            className={`flex w-full gap-2.5 rounded-2xl p-2.5 text-left transition active:scale-[0.99] ${
+                                item.read_at ? 'bg-white hover:bg-[#f8fafc]' : 'bg-[#eef2ff] hover:bg-[#e8eaf6]'
+                            }`}
+                        >
+                            <span
+                                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                                    item.read_at ? 'bg-[#f1f5f9] text-[#64748b]' : 'bg-[#5c73db] text-white'
+                                }`}
+                            >
+                                <Icon name="bell" size={15} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className={`block text-[12px] leading-snug ${item.read_at ? 'font-semibold' : 'font-bold'}`}>
+                                    {item.title}
+                                </span>
+                                <span className="mt-0.5 line-clamp-2 block text-[11px] leading-snug text-[#475569]">{item.body}</span>
+                                <span className="mt-1 block text-[10px] text-[#94a3b8]">{formatDate(item.published_at)}</span>
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+
+            {notifications.length ? (
+                <div className="space-y-1.5">
+                    <p className="px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">Notifikasi</p>
+                    {notifications.map((item) => (
+                        <div key={item.id} className={`flex gap-2.5 rounded-2xl p-2.5 ${item.read_at ? 'bg-white' : 'bg-[#f1f5f9]'}`}>
+                            <span
+                                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                                    item.read_at ? 'bg-[#f1f5f9] text-[#64748b]' : 'bg-[#e8eaf6] text-[#3f51b5]'
+                                }`}
+                            >
+                                <Icon name="bell" size={15} />
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[12px] font-semibold leading-snug">{item.title}</p>
+                                <p className="text-[11px] leading-snug text-[#475569]">{item.body}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 export default function AppShell({ children, title, subtitle, actions }) {
     const page = usePage();
     const { auth } = page.props;
@@ -91,10 +155,14 @@ export default function AppShell({ children, title, subtitle, actions }) {
     const bottomNavHrefs = new Set(mobileItems.map((item) => item.href));
     const profileItems = mobileOnly ? items.filter((item) => !bottomNavHrefs.has(item.href)) : items;
 
-    const [unread, setUnread] = useState(0);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
+    const unread = unreadNotifications + unreadAnnouncements;
     const [notifOpen, setNotifOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    const [announcements, setAnnouncements] = useState([]);
+    const [activeAnnouncement, setActiveAnnouncement] = useState(null);
     const menuRef = useRef(null);
     const mobileMenuRef = useRef(null);
 
@@ -107,11 +175,20 @@ export default function AppShell({ children, title, subtitle, actions }) {
     useEffect(() => {
         let active = true;
 
-        api.get('/api/notifications?unread=true&per_page=1')
-            .then((response) => {
-                if (active) setUnread(response.meta?.unread ?? 0);
-            })
-            .catch(() => {});
+        Promise.allSettled([
+            api.get('/api/notifications?unread=true&per_page=1'),
+            api.get('/api/announcements'),
+        ]).then(([notifResult, announcementResult]) => {
+            if (!active) return;
+
+            if (notifResult.status === 'fulfilled') {
+                setUnreadNotifications(notifResult.value.meta?.unread ?? 0);
+            }
+
+            if (announcementResult.status === 'fulfilled') {
+                setUnreadAnnouncements(announcementResult.value.meta?.unread ?? 0);
+            }
+        });
 
         return () => {
             active = false;
@@ -157,19 +234,34 @@ export default function AppShell({ children, title, subtitle, actions }) {
 
         if (!next) return;
 
-        try {
-            const response = await api.get('/api/notifications?per_page=10');
-            setNotifications(response.data ?? []);
-            setUnread(response.meta?.unread ?? 0);
-        } catch {
-            setNotifications([]);
-        }
+        const [notifResult, announcementResult] = await Promise.allSettled([
+            api.get('/api/notifications?per_page=10'),
+            api.get('/api/announcements'),
+        ]);
+
+        setNotifications(notifResult.status === 'fulfilled' ? notifResult.value.data ?? [] : []);
+        setAnnouncements(announcementResult.status === 'fulfilled' ? announcementResult.value.data ?? [] : []);
+        setUnreadNotifications(notifResult.status === 'fulfilled' ? notifResult.value.meta?.unread ?? 0 : 0);
+        setUnreadAnnouncements(announcementResult.status === 'fulfilled' ? announcementResult.value.meta?.unread ?? 0 : 0);
+    };
+
+    const openAnnouncement = (item) => {
+        setNotifOpen(false);
+        setActiveAnnouncement(item);
+
+        if (item.read_at) return;
+
+        const stamp = new Date().toISOString();
+        setAnnouncements((current) => current.map((row) => (row.id === item.id ? { ...row, read_at: stamp } : row)));
+        setUnreadAnnouncements((current) => Math.max(0, current - 1));
+
+        api.post(`/api/announcements/${item.id}/read`).catch(() => {});
     };
 
     const readAll = async () => {
         const decision = await confirm({
-            title: 'Tandai semua notifikasi dibaca?',
-            description: 'Semua notifikasi akan ditandai sudah dibaca dan lencana pada lonceng hilang.',
+            title: 'Tandai semua dibaca?',
+            description: 'Semua notifikasi dan pengumuman akan ditandai sudah dibaca, lalu lencana pada lonceng hilang.',
             confirmLabel: 'Tandai dibaca',
             tone: 'info',
             icon: 'bell',
@@ -178,9 +270,16 @@ export default function AppShell({ children, title, subtitle, actions }) {
         if (!decision) return;
 
         try {
-            await api.post('/api/notifications/read-all');
-            setUnread(0);
-            setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? new Date().toISOString() })));
+            await Promise.all([
+                api.post('/api/notifications/read-all'),
+                api.post('/api/announcements/read-all'),
+            ]);
+
+            const stamp = new Date().toISOString();
+            setUnreadNotifications(0);
+            setUnreadAnnouncements(0);
+            setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? stamp })));
+            setAnnouncements((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? stamp })));
         } catch {
             /* abaikan */
         }
@@ -312,28 +411,17 @@ export default function AppShell({ children, title, subtitle, actions }) {
                     {notifOpen ? (
                         <div className="sd-popover sd-overlay-panel fixed left-1/2 top-[76px] z-50 w-[calc(100%-24px)] max-w-[448px] -translate-x-1/2 rounded-[22px] border border-[#e2e8f0] bg-white p-3 shadow-[0_24px_44px_-16px_rgba(15,23,42,0.28)]">
                             <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                                <p className="text-[13px] font-bold">Notifikasi</p>
+                                <p className="text-[13px] font-bold">Notifikasi &amp; Pengumuman</p>
                                 <button type="button" onClick={readAll} className="rounded-full bg-[#e8eaf6] px-2.5 py-1 text-[10.5px] font-semibold text-[#3f51b5]">
                                     Tandai dibaca
                                 </button>
                             </div>
-                            <div className="max-h-[52vh] space-y-1.5 overflow-y-auto">
-                                {notifications.length === 0 ? (
-                                    <p className="py-6 text-center text-[12px] text-[#475569]">Belum ada notifikasi.</p>
-                                ) : (
-                                    notifications.map((item) => (
-                                        <div key={item.id} className={`flex gap-2.5 rounded-2xl p-2.5 ${item.read_at ? 'bg-white' : 'bg-[#f1f5f9]'}`}>
-                                            <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.read_at ? 'bg-[#f1f5f9] text-[#64748b]' : 'bg-[#e8eaf6] text-[#3f51b5]'}`}>
-                                                <Icon name="bell" size={15} />
-                                            </span>
-                                            <div className="min-w-0">
-                                                <p className="text-[12px] font-semibold leading-snug">{item.title}</p>
-                                                <p className="text-[11px] leading-snug text-[#475569]">{item.body}</p>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                            <NotificationPanel
+                                announcements={announcements}
+                                notifications={notifications}
+                                onOpenAnnouncement={openAnnouncement}
+                                scrollClass="max-h-[52vh]"
+                            />
                         </div>
                     ) : null}
 
@@ -399,28 +487,17 @@ export default function AppShell({ children, title, subtitle, actions }) {
                             {notifOpen ? (
                                 <div className="sd-popover absolute right-0 top-[calc(100%+10px)] z-50 w-[330px] max-w-[calc(100vw-28px)] rounded-[22px] border border-[#e2e8f0] bg-white p-3 shadow-[0_24px_44px_-16px_rgba(15,23,42,0.28)]">
                                     <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                                        <p className="text-[13px] font-bold">Notifikasi</p>
+                                        <p className="text-[13px] font-bold">Notifikasi &amp; Pengumuman</p>
                                         <button type="button" onClick={readAll} className="rounded-full bg-[#e8eaf6] px-2.5 py-1 text-[10.5px] font-semibold text-[#3f51b5] transition hover:bg-[#d7dcf5]">
                                             Tandai dibaca
                                         </button>
                                     </div>
-                                    <div className="max-h-[340px] space-y-1.5 overflow-y-auto">
-                                        {notifications.length === 0 ? (
-                                            <p className="py-6 text-center text-[12px] text-[#475569]">Belum ada notifikasi.</p>
-                                        ) : (
-                                            notifications.map((item) => (
-                                                <div key={item.id} className={`flex gap-2.5 rounded-2xl p-2.5 ${item.read_at ? 'bg-white' : 'bg-[#f1f5f9]'}`}>
-                                                    <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.read_at ? 'bg-[#f1f5f9] text-[#64748b]' : 'bg-[#e8eaf6] text-[#3f51b5]'}`}>
-                                                        <Icon name="bell" size={15} />
-                                                    </span>
-                                                    <div className="min-w-0">
-                                                        <p className="text-[12px] font-semibold leading-snug">{item.title}</p>
-                                                        <p className="text-[11px] leading-snug text-[#475569]">{item.body}</p>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
+                                    <NotificationPanel
+                                        announcements={announcements}
+                                        notifications={notifications}
+                                        onOpenAnnouncement={openAnnouncement}
+                                        scrollClass="max-h-[340px]"
+                                    />
                                 </div>
                             ) : null}
                         </div>
@@ -551,6 +628,33 @@ export default function AppShell({ children, title, subtitle, actions }) {
                     })}
                 </div>
             </nav>
+
+            <Sheet
+                open={Boolean(activeAnnouncement)}
+                onClose={() => setActiveAnnouncement(null)}
+                title={activeAnnouncement?.title ?? 'Pengumuman'}
+                footer={
+                    <Button variant="outline" className="min-h-11 flex-1" onClick={() => setActiveAnnouncement(null)}>
+                        Tutup
+                    </Button>
+                }
+            >
+                {activeAnnouncement ? (
+                    <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-[#e8eaf6] px-2.5 py-1 text-[10.5px] font-semibold text-[#3f51b5]">
+                                Pengumuman
+                            </span>
+                            <span className="text-[11px] text-[#64748b]">
+                                {formatDate(activeAnnouncement.published_at, true)}
+                            </span>
+                        </div>
+                        <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#1e293b]">
+                            {activeAnnouncement.body}
+                        </p>
+                    </div>
+                ) : null}
+            </Sheet>
         </div>
     );
 }

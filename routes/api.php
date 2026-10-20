@@ -206,6 +206,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::get('/announcements', [NotificationController::class, 'announcements']);
+    Route::post('/announcements/read-all', [NotificationController::class, 'markAllAnnouncementsRead']);
+    Route::post('/announcements/{announcement}/read', [NotificationController::class, 'markAnnouncementRead']);
 });
 
 Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])

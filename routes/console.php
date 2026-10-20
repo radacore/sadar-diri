@@ -17,7 +17,7 @@ Artisan::command('sadar:alerts', function () {
 Artisan::command('sadar:digest', function () {
     $notifications = app(NotificationService::class);
 
-    User::query()->where('role', 'counselor')->where('status', 'active')->each(function (User $counselor) use ($reports, $notifications) {
+    User::query()->where('role', 'counselor')->where('status', 'active')->each(function (User $counselor) use ($notifications) {
         $studentIds = \App\Models\ClassStudent::query()
             ->whereIn('class_id', $counselor->counselorAssignments()->pluck('class_id'))
             ->where('status', 'active')
@@ -59,6 +59,15 @@ Artisan::command('sadar:reminders', function () {
     $this->info('Pengingat diproses.');
 })->purpose('Kirim pengingat mood sesuai preferensi siswa');
 
+Artisan::command('sadar:announcements', function () {
+    $count = \App\Models\Announcement::query()
+        ->where('status', 'scheduled')
+        ->where('published_at', '<=', now())
+        ->update(['status' => 'published']);
+
+    $this->info("{$count} pengumuman diterbitkan.");
+})->purpose('Terbitkan pengumuman yang jadwalnya sudah lewat');
+
 Artisan::command('sadar:overdue', function () {
     ReflectionSession::query()
         ->whereIn('status', ['scheduled', 'ongoing'])
@@ -70,6 +79,7 @@ Artisan::command('sadar:overdue', function () {
 })->purpose('Tandai sesi refleksi lewat tenggat dan evaluasi alert');
 
 Schedule::command('sadar:alerts')->dailyAt('00:10');
+Schedule::command('sadar:announcements')->everyMinute();
 Schedule::command('sadar:overdue')->hourly();
 Schedule::command('sadar:reminders')->hourly();
 Schedule::command('sadar:digest')->dailyAt('07:00');

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Announcement;
+use App\Services\AnnouncementFeed;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    public function __construct(private readonly AnnouncementFeed $announcements) {}
+
     public function index(Request $request)
     {
         $query = $request->user()->notifications();
@@ -56,32 +58,41 @@ class NotificationController extends Controller
     public function announcements(Request $request)
     {
         $user = $request->user();
-        $classId = $user->isStudent() ? $user->activeClass()?->id : null;
-
-        $items = Announcement::query()
-            ->where('status', 'published')
-            ->where('published_at', '<=', now())
-            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
-            ->where(function ($query) use ($user, $classId) {
-                $query->where('audience', 'all')
-                    ->orWhere(fn ($q) => $q->where('audience', 'role')->where('audience_role', $user->role));
-
-                if ($classId) {
-                    $query->orWhere(fn ($q) => $q->where('audience', 'class')->where('audience_class_id', $classId));
-                }
-            })
-            ->orderByDesc('published_at')
-            ->get();
+        $items = $this->announcements->listFor($user, $request->integer('limit') ?: null);
 
         return response()->json([
             'success' => true,
-            'data' => $items->map(fn ($a) => [
-                'id' => $a->id,
-                'title' => $a->title,
-                'body' => $a->body,
-                'published_at' => $a->published_at?->toIso8601String(),
-                'expires_at' => $a->expires_at?->toIso8601String(),
-            ]),
+            'data' => $items,
+            'meta' => [
+                'total' => $items->count(),
+                'unread' => $this->announcements->unreadCount($user),
+            ],
+        ]);
+    }
+
+    public function markAnnouncementRead(Request $request, int $announcement)
+    {
+        $user = $request->user();
+        $item = $this->announcements->visible($user)->whereKey($announcement)->firstOrFail();
+
+        $this->announcements->markRead($user, $item);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['id' => $item->id, 'read_at' => now()->toIso8601String()],
+            'meta' => ['unread' => $this->announcements->unreadCount($user)],
+        ]);
+    }
+
+    public function markAllAnnouncementsRead(Request $request)
+    {
+        $user = $request->user();
+        $count = $this->announcements->markAllRead($user);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['marked' => $count],
+            'meta' => ['unread' => 0],
         ]);
     }
 }

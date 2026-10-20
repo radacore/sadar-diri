@@ -19,7 +19,7 @@ import {
 } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate, label, relative } from '../../lib/format';
+import { formatDate, label } from '../../lib/format';
 
 const TAGS = ['senang', 'tenang', 'sedih', 'marah', 'cemas', 'takut', 'kecewa', 'bersemangat'];
 
@@ -278,38 +278,14 @@ export default function Dashboard() {
                     )}
                 </PageSection>
 
-                <PageSection title="Pengumuman">
-                    {data?.announcements?.length ? (
-                        <div className="space-y-2">
-                            {data.announcements.map((item) => (
-                                <ListRow
-                                    key={item.id}
-                                    leading={
-                                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e0f2fe] text-[#0369a1]">
-                                            <Icon name="bell" size={18} />
-                                        </span>
-                                    }
-                                    title={item.title}
-                                    subtitle={item.body}
-                                    meta={<span className="text-[11px] text-[#64748b]">{relative(item.published_at)}</span>}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="rounded-[18px] border border-[#e2e8f0] bg-white py-6 text-center text-[12px] text-[#475569]">
-                            Belum ada pengumuman.
-                        </p>
-                    )}
-
-                    <div className="rounded-[18px] bg-[#e8eaf6] p-4">
-                        <p className="flex items-center gap-2 text-[12px] font-semibold text-[#303f9f]">
-                            <Icon name="shield" size={16} /> Data Anda terlindungi
-                        </p>
-                        <p className="mt-1 text-[11.5px] leading-relaxed text-[#303f9f]">
-                            Hanya Guru BK kelas Anda yang dapat membaca jurnal. Setiap akses tercatat.
-                        </p>
-                    </div>
-                </PageSection>
+                <div className="rounded-[18px] bg-[#e8eaf6] p-4">
+                    <p className="flex items-center gap-2 text-[12px] font-semibold text-[#303f9f]">
+                        <Icon name="shield" size={16} /> Data Anda terlindungi
+                    </p>
+                    <p className="mt-1 text-[11.5px] leading-relaxed text-[#303f9f]">
+                        Hanya Guru BK kelas Anda yang dapat membaca jurnal. Setiap akses tercatat.
+                    </p>
+                </div>
             </div>
 
             <Sheet

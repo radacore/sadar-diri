@@ -46,8 +46,6 @@ class StudentController extends Controller
             ->latest('period_start')
             ->first();
 
-        $announcements = $this->announcementsFor($user);
-
         return response()->json([
             'success' => true,
             'data' => [
@@ -66,8 +64,6 @@ class StudentController extends Controller
                     'success_indicator' => $t->success_indicator,
                 ])->all() ?? [],
                 'reflection_due' => $this->reports->pendingReflections($user) > 0,
-                'unread_announcements' => count($announcements),
-                'announcements' => $announcements,
                 'last_journal' => $lastJournal ? [
                     'id' => $lastJournal->id,
                     'type' => $lastJournal->type,
@@ -378,34 +374,5 @@ class StudentController extends Controller
             'positive_days' => $entries->where('valence', 'positive')->count(),
             'negative_days' => $entries->where('valence', 'negative')->count(),
         ];
-    }
-
-    private function announcementsFor($user): array
-    {
-        $classId = $user->activeClass()?->id;
-
-        return \App\Models\Announcement::query()
-            ->where('status', 'published')
-            ->where('published_at', '<=', now())
-            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
-            ->where(function ($query) use ($classId) {
-                $query->where('audience', 'all')
-                    ->orWhere(fn ($q) => $q->where('audience', 'role')->where('audience_role', 'student'));
-
-                if ($classId) {
-                    $query->orWhere(fn ($q) => $q->where('audience', 'class')->where('audience_class_id', $classId));
-                }
-            })
-            ->orderByDesc('published_at')
-            ->limit(5)
-            ->get()
-            ->map(fn ($a) => [
-                'id' => $a->id,
-                'title' => $a->title,
-                'body' => $a->body,
-                'published_at' => $a->published_at?->toIso8601String(),
-                'expires_at' => $a->expires_at?->toIso8601String(),
-            ])
-            ->all();
     }
 }
