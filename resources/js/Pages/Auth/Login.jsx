@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { Button, Field, Input } from '../../Components/UI';
+import { Button, Field, Input, PasswordInput } from '../../Components/UI';
 import AuthLayout from '../../Layouts/AuthLayout';
 import { api } from '../../lib/api';
 
@@ -49,9 +49,8 @@ export default function Login() {
                     />
                 </Field>
                 <Field label="Kata sandi" required htmlFor="password" error={errors.password?.[0]}>
-                    <Input
+                    <PasswordInput
                         id="password"
-                        type="password"
                         autoComplete="current-password"
                         value={form.password}
                         onChange={(event) => setForm({ ...form, password: event.target.value })}
