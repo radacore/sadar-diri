@@ -11,10 +11,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/reset-password', [PageController::class, 'reset'])->name('password.reset');
 });
 
-Route::get('/aktivasi/{user}', [\App\Http\Controllers\AuthController::class, 'activationForm'])
-    ->middleware('signed')
-    ->name('activate.form');
-
 Route::middleware('auth')->group(function () {
     Route::get('/2fa/challenge', [PageController::class, 'twoFactorChallenge'])->name('2fa.challenge');
     Route::get('/2fa/enroll', fn () => redirect()->route('2fa.challenge'))->name('2fa.enroll');

@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClassStudent;
+use App\Models\CounselorClass;
 use App\Models\ImportBatch;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\ImportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -24,7 +26,10 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::query()->with('profile');
+        // Akun superadmin hanya dibuat lewat seeder, jadi tidak pernah muncul di daftar pengguna.
+        $query = User::query()
+            ->with(['profile', 'counselorAssignments.schoolClass'])
+            ->where('role', '!=', User::ROLE_SUPERADMIN);
 
         if ($request->filled('role')) {
             $query->where('role', $request->query('role'));
@@ -45,29 +50,45 @@ class UserController extends Controller
                 ->orWhere('identity_number', 'like', "%{$search}%"));
         }
 
-        $users = $query->orderBy('name')->paginate(25);
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = $perPage >= 5 && $perPage <= 100 ? $perPage : 20;
+
+        $users = $query->orderBy('name')->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'data' => collect($users->items())->map(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'identity_number' => $user->identity_number,
-                'role' => $user->role,
-                'status' => $user->status,
-                'class' => $user->isStudent() && $user->activeClass() ? [
-                    'id' => $user->activeClass()->id,
-                    'name' => $user->activeClass()->name,
-                ] : null,
-                'last_login_at' => $user->last_login_at?->toIso8601String(),
-                'created_at' => $user->created_at?->toIso8601String(),
-            ]),
+            'data' => collect($users->items())->map(function (User $user) {
+                $class = $user->isStudent() ? $user->activeClass() : null;
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'identity_number' => $user->identity_number,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'class' => $class ? ['id' => $class->id, 'name' => $class->name] : null,
+                    'classes' => $user->isCounselor()
+                        ? $user->counselorAssignments
+                            ->filter(fn (CounselorClass $assignment) => $assignment->schoolClass !== null)
+                            ->map(fn (CounselorClass $assignment) => [
+                                'id' => $assignment->class_id,
+                                'name' => $assignment->schoolClass->name,
+                            ])
+                            ->sortBy('name')
+                            ->values()
+                        : [],
+                    'last_login_at' => $user->last_login_at?->toIso8601String(),
+                    'created_at' => $user->created_at?->toIso8601String(),
+                ];
+            }),
             'meta' => [
                 'current_page' => $users->currentPage(),
                 'per_page' => $users->perPage(),
                 'total' => $users->total(),
                 'last_page' => $users->lastPage(),
+                'from' => $users->firstItem(),
+                'to' => $users->lastItem(),
             ],
         ]);
     }
@@ -78,55 +99,59 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190', 'unique:users,email'],
             'identity_number' => ['required', 'string', 'max:30', 'unique:users,identity_number'],
-            'role' => ['required', Rule::in(['student', 'counselor', 'superadmin'])],
+            'role' => ['required', Rule::in(['student', 'counselor'])],
+            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
             'class_id' => ['nullable', 'exists:classes,id', 'required_if:role,student'],
-            'send_invitation' => ['boolean'],
+            'class_ids' => ['nullable', 'array'],
+            'class_ids.*' => ['integer', 'exists:classes,id'],
+        ], [
+            'password.required' => 'Kata sandi awal wajib diisi.',
+            'password.min' => 'Kata sandi minimal 10 karakter.',
+            'password.regex' => 'Kata sandi harus memuat huruf besar, huruf kecil, dan angka.',
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'] ?? null,
-            'identity_number' => $data['identity_number'],
-            'password' => Str::random(20),
-            'role' => $data['role'],
-            'status' => 'pending',
-            'must_change_password' => true,
-        ]);
-
-        if (($data['class_id'] ?? null) && $user->isStudent()) {
-            $class = SchoolClass::findOrFail($data['class_id']);
-            ClassStudent::create([
-                'class_id' => $class->id,
-                'student_id' => $user->id,
-                'academic_year_id' => $class->academic_year_id,
-                'joined_at' => now()->toDateString(),
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'] ?? null,
+                'identity_number' => $data['identity_number'],
+                'password' => $data['password'],
+                'role' => $data['role'],
                 'status' => 'active',
+                'must_change_password' => true,
             ]);
-        }
 
-        $invitationSent = false;
-
-        if (($data['send_invitation'] ?? true) && $user->email) {
-            $url = \URL::temporarySignedRoute('activate.form', now()->addHours(72), ['user' => $user->id]);
-
-            try {
-                \Illuminate\Support\Facades\Mail::to($user->email)
-                    ->send(new \App\Mail\AccountInvitationMail($user, $url));
-                $invitationSent = true;
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Gagal mengirim undangan akun.', [
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
+            if (($data['class_id'] ?? null) && $user->isStudent()) {
+                $class = SchoolClass::findOrFail($data['class_id']);
+                ClassStudent::create([
+                    'class_id' => $class->id,
+                    'student_id' => $user->id,
+                    'academic_year_id' => $class->academic_year_id,
+                    'joined_at' => now()->toDateString(),
+                    'status' => 'active',
                 ]);
             }
-        }
+
+            if ($user->isCounselor()) {
+                foreach (array_unique($data['class_ids'] ?? []) as $classId) {
+                    CounselorClass::firstOrCreate(
+                        ['counselor_id' => $user->id, 'class_id' => $classId],
+                        ['assigned_at' => now()],
+                    );
+
+                    $this->audit->record('class.counselor_assigned', 'classes', $classId, null, null, ['counselor_id' => $user->id]);
+                }
+            }
+
+            return $user;
+        });
 
         $this->audit->record('user.created', 'users', $user->id, $user->id, null, ['role' => $user->role]);
 
         return response()->json([
             'success' => true,
-            'data' => ['id' => $user->id, 'status' => $user->status, 'invitation_sent' => $invitationSent],
-            'message' => 'Akun dibuat dan undangan dikirim',
+            'data' => ['id' => $user->id, 'status' => $user->status],
+            'message' => 'Akun dibuat dan langsung aktif.',
         ], 201);
     }
 
@@ -158,7 +183,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => ['sometimes', Rule::in(['student', 'counselor', 'superadmin'])],
+            'role' => ['sometimes', Rule::in(['student', 'counselor'])],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 

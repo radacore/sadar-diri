@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -251,49 +250,6 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'data' => null, 'message' => 'Kata sandi berhasil diperbarui']);
     }
 
-    public function activationForm(Request $request, User $user)
-    {
-        return \Inertia\Inertia::render('Auth/Activate', [
-            'userId' => $user->id,
-            'name' => $user->name,
-            'signature' => $request->query('signature'),
-            'expires' => $request->query('expires'),
-        ]);
-    }
-
-    public function activate(Request $request)
-    {
-        $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'confirmed'],
-        ]);
-
-        $user = User::findOrFail($data['user_id']);
-
-        if (! $request->hasValidSignature()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'INVALID_SIGNATURE',
-                'message' => 'Tautan aktivasi tidak valid atau kedaluwarsa.',
-            ], 410);
-        }
-
-        $user->forceFill([
-            'password' => $data['password'],
-            'status' => 'active',
-            'must_change_password' => false,
-            'email_verified_at' => now(),
-        ])->save();
-
-        $this->audit->record('auth.activated', 'users', $user->id, $user->id, null, [], $user);
-
-        return response()->json([
-            'success' => true,
-            'data' => ['redirect_to' => '/masuk'],
-            'message' => 'Akun berhasil diaktifkan',
-        ]);
-    }
-
     public function consent(Request $request)
     {
         $data = $request->validate([
@@ -436,11 +392,6 @@ class AuthController extends Controller
         [$name, $domain] = explode('@', $email, 2);
 
         return mb_substr($name, 0, 2).str_repeat('•', max(1, mb_strlen($name) - 2)).'@'.$domain;
-    }
-
-    public function activationUrl(User $user): string
-    {
-        return URL::temporarySignedRoute('activate.form', now()->addHours(72), ['user' => $user->id]);
     }
 
     private function redirectFor(User $user): string

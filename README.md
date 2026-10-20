@@ -32,9 +32,11 @@ Untuk pengembangan: `npm run dev` + `php artisan serve`.
 | Peran | Login | Sandi |
 |---|---|---|
 | Superadmin | `rahmatdanisyw@gmail.com` atau `ADM001` | `Password123` + kode OTP email |
-| Guru BK | `rina@sadar-diri.test` | `Password123` |
-| Guru BK (koordinator) | `hendra@sadar-diri.test` | `Password123` |
+| Guru BK (X IPA 1, X IPA 2, X IPS 1) | `rina@sadar-diri.test` | `Password123` |
+| Guru BK (X IPA 1, X IPA 2, X IPS 1) | `hendra@sadar-diri.test` | `Password123` |
 | Siswa | NIS `2024001`–`2024036` | `Password123` |
+
+Kedua akun Guru BK punya hak akses yang sama dan sama-sama mendampingi ketiga kelas di satu angkatan. Ini memperagakan pola sekolah dengan banyak kelas paralel dan satu tim BK: satu Guru BK boleh memegang banyak kelas, dan satu kelas boleh punya lebih dari satu Guru BK. Superadmin mengatur sendiri pembagiannya di menu **Kelas** (tombol *Tugaskan Guru BK* memakai pilihan banyak kelas sekaligus).
 
 Superadmin masuk dengan kata sandi lalu mengonfirmasi **kode 6 digit yang dikirim ke email** akunnya (berlaku 10 menit, sekali pakai, kirim ulang tiap 60 detik).
 
@@ -65,7 +67,6 @@ Semua email transaksional dikirim lewat [Resend](https://resend.com):
 |---|---|
 | `LoginOtpMail` | Login Superadmin — kode OTP 6 digit |
 | `PasswordResetMail` | Lupa kata sandi (siswa, Guru BK, Superadmin) dan reset oleh admin |
-| `AccountInvitationMail` | Admin membuat akun baru |
 
 Konfigurasi di `.env`:
 
@@ -78,7 +79,7 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 Domain `sadar-diri.my.id` sudah terverifikasi di Resend (region `ap-northeast-1`), sehingga pengiriman bisa dilakukan ke alamat mana pun, bukan hanya email pemilik akun Resend.
 
-Alamat pengirim **tidak** ditulis di Mailable, Notification, maupun Controller. Ketiga Mailable (`LoginOtpMail`, `PasswordResetMail`, `AccountInvitationMail`) hanya menetapkan subjek, sehingga `from` selalu diambil dari `mail.from` di `config/mail.php`. Untuk mengganti pengirim cukup ubah `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` di `.env` lalu jalankan `php artisan config:clear`.
+Alamat pengirim **tidak** ditulis di Mailable, Notification, maupun Controller. Kedua Mailable (`LoginOtpMail`, `PasswordResetMail`) hanya menetapkan subjek, sehingga `from` selalu diambil dari `mail.from` di `config/mail.php`. Untuk mengganti pengirim cukup ubah `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` di `.env` lalu jalankan `php artisan config:clear`.
 
 Alamat `notifikasi@` khusus untuk email keluar (kode verifikasi dan tautan reset kata sandi). Footer setiap email memuat keterangan "Jangan balas email ini" karena kotak masuk alamat tersebut tidak dipantau; email yang masuk ke sana akan memantul (domain belum punya record MX).
 
@@ -116,3 +117,5 @@ php artisan test
 ```
 
 Cakupan: kontrol akses antar peran, isolasi jurnal per kelas, 2FA superadmin, siklus sesi refleksi terbimbing, enkripsi jawaban, retensi alumni, dan ambang privasi laporan agregat.
+
+Dokumentasi lengkap (arsitektur, skema data, seluruh endpoint, aturan bisnis, keputusan privasi): [`PROYEK.md`](PROYEK.md).

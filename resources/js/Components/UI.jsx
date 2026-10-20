@@ -400,8 +400,102 @@ export function EmptyState({ title, description, action }) {
     );
 }
 
-export function Skeleton({ rows = 4 }) {
+export function Pagination({
+    page = 1,
+    lastPage = 1,
+    total = 0,
+    from = null,
+    to = null,
+    perPage = 20,
+    perPageOptions = [20, 50, 100],
+    onPageChange,
+    onPerPageChange,
+    unit = 'data',
+}) {
+    const pageItems = useMemo(() => {
+        const pages = [];
+        const push = (value) => pages.push(value);
+        const start = Math.max(1, Math.min(page - 1, lastPage - 4));
+        const end = Math.min(lastPage, start + 4);
+
+        if (start > 1) {
+            push(1);
+            if (start > 2) push('…');
+        }
+
+        for (let index = start; index <= end; index++) push(index);
+
+        if (end < lastPage) {
+            if (end < lastPage - 1) push('…');
+            push(lastPage);
+        }
+
+        return pages;
+    }, [page, lastPage]);
+
     return (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e2e8f0] px-4 py-3 sm:px-0">
+            <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-[#475569]">
+                <span>
+                    {total === 0 ? `Tidak ada ${unit}` : `Menampilkan ${from ?? 0}–${to ?? 0} dari ${total} ${unit}`}
+                </span>
+                {onPerPageChange ? (
+                    <label className="flex items-center gap-1.5">
+                        <span className="sr-only">Baris per halaman</span>
+                        <select
+                            className="sd-input h-8 w-auto px-2 text-[11.5px]"
+                            value={perPage}
+                            onChange={(event) => onPerPageChange(Number(event.target.value))}
+                        >
+                            {perPageOptions.map((option) => <option key={option} value={option}>{option} / halaman</option>)}
+                        </select>
+                    </label>
+                ) : null}
+            </div>
+            {lastPage > 1 ? (
+                <nav className="flex items-center gap-1" aria-label="Navigasi halaman">
+                    <button
+                        type="button"
+                        className="sd-btn sd-btn-outline h-8 px-2 text-[11.5px]"
+                        onClick={() => onPageChange?.(page - 1)}
+                        disabled={page <= 1}
+                        aria-label="Halaman sebelumnya"
+                    >
+                        <Icon name="chevron" size={14} className="rotate-90" />
+                        <span className="hidden sm:inline">Sebelumnya</span>
+                    </button>
+                    {pageItems.map((item, index) => item === '…' ? (
+                        <span key={`gap-${index}`} className="px-1 text-[11.5px] text-[#94a3b8]">…</span>
+                    ) : (
+                        <button
+                            key={item}
+                            type="button"
+                            onClick={() => onPageChange?.(item)}
+                            aria-current={item === page ? 'page' : undefined}
+                            className={`h-8 min-w-[32px] rounded-full px-2 text-[11.5px] font-semibold transition ${
+                                item === page ? 'bg-[#3f51b5] text-white' : 'text-[#475569] hover:bg-[#e8eaf6]'
+                            }`}
+                        >
+                            {item}
+                        </button>
+                    ))}
+                    <button
+                        type="button"
+                        className="sd-btn sd-btn-outline h-8 px-2 text-[11.5px]"
+                        onClick={() => onPageChange?.(page + 1)}
+                        disabled={page >= lastPage}
+                        aria-label="Halaman berikutnya"
+                    >
+                        <span className="hidden sm:inline">Berikutnya</span>
+                        <Icon name="chevron" size={14} className="-rotate-90" />
+                    </button>
+                </nav>
+            ) : null}
+        </div>
+    );
+}
+
+export function Skeleton({ rows = 4 }) {    return (
         <div className="space-y-2" aria-hidden="true">
             {Array.from({ length: rows }).map((_, index) => (
                 <div key={index} className="h-10 animate-pulse rounded-lg bg-[#f1f5f9]" />

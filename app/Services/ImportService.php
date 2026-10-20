@@ -61,9 +61,9 @@ class ImportService
                     'name' => $payload['name'],
                     'email' => $payload['email'] ?: null,
                     'identity_number' => $payload['identity_number'],
-                    'password' => Str::random(16),
+                    'password' => ($payload['password'] ?? null) ?: $payload['identity_number'],
                     'role' => $payload['role'],
-                    'status' => 'pending',
+                    'status' => 'active',
                     'must_change_password' => true,
                 ]);
 
@@ -114,7 +114,7 @@ class ImportService
             }
         }
 
-        if (! in_array($payload['role'], ['student', 'counselor', 'superadmin'], true)) {
+        if (! in_array($payload['role'], ['student', 'counselor'], true)) {
             return 'Peran tidak dikenal';
         }
 
