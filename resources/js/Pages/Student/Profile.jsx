@@ -1,7 +1,7 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '../../Components/Icons';
-import { Button, Card, Field, HeroCard, Input, ListRow, PageSection, ProgressRing, Select, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
+import { Button, Card, Field, HeroCard, Input, ListRow, PageSection, PasswordInput, ProgressRing, ReadOnlyValue, Select, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
 import { formatDate, initials } from '../../lib/format';
@@ -18,6 +18,9 @@ export default function Profile() {
     const [versions, setVersions] = useState([]);
     const [openSection, setOpenSection] = useState('biodata');
     const [busy, setBusy] = useState(false);
+    const [password, setPassword] = useState({ current_password: '', password: '', password_confirmation: '' });
+    const [passwordErrors, setPasswordErrors] = useState({});
+    const [passwordBusy, setPasswordBusy] = useState(false);
 
     const load = useCallback(async () => {
         try {
@@ -87,6 +90,22 @@ export default function Profile() {
             toast.push(error.message, 'error');
         } finally {
             setBusy(false);
+        }
+    };
+
+    const savePassword = async (event) => {
+        event.preventDefault();
+        setPasswordErrors({});
+        setPasswordBusy(true);
+        try {
+            const response = await api.put('/api/student/account/password', password);
+            setPassword({ current_password: '', password: '', password_confirmation: '' });
+            toast.push(response.message ?? 'Kata sandi diperbarui.');
+        } catch (error) {
+            setPasswordErrors(error.details ?? {});
+            toast.push(error.message, 'error');
+        } finally {
+            setPasswordBusy(false);
         }
     };
 
@@ -229,6 +248,58 @@ export default function Profile() {
                                         </p>
                                     </div>
                                 )}
+                            </div>
+                        ) : null}
+                    </Card>
+
+                    <Card>
+                        <button
+                            type="button"
+                            onClick={() => toggleSection('akun')}
+                            aria-expanded={openSection === 'akun'}
+                            className="flex min-h-11 w-full items-center gap-3 text-left"
+                        >
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8eaf6] text-[#3f51b5]">
+                                <Icon name="lock" size={18} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-[15px] font-bold leading-tight">Akun & keamanan</span>
+                                <span className="mt-0.5 block truncate text-[11px] text-[#64748b]">{user?.email ?? 'Email belum diisi'}</span>
+                            </span>
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f1f5f9] text-[#475569] transition ${openSection === 'akun' ? 'rotate-180' : ''}`}>
+                                <Icon name="chevron" size={18} />
+                            </span>
+                        </button>
+
+                        {openSection === 'akun' ? (
+                            <div className="mt-4 space-y-5">
+                                <div>
+                                    <p className="sd-label">Email</p>
+                                    <ReadOnlyValue>{user?.email ?? 'Belum diisi'}</ReadOnlyValue>
+                                    <p className="sd-hint">
+                                        Email ini dipakai untuk tautan reset kata sandi. Hubungi Guru BK bila perlu diubah.
+                                    </p>
+                                </div>
+
+                                <div className="h-px bg-[#e2e8f0]" />
+
+                                <form onSubmit={savePassword} className="space-y-3">
+                                    <p className="text-[13px] font-bold">Ganti kata sandi</p>
+                                    <Field label="Kata sandi saat ini" htmlFor="current_password" error={passwordErrors.current_password?.[0]}>
+                                        <PasswordInput id="current_password" className="h-11" autoComplete="current-password" value={password.current_password} onChange={(event) => setPassword({ ...password, current_password: event.target.value })} />
+                                    </Field>
+                                    <Field label="Kata sandi baru" htmlFor="new_password" error={passwordErrors.password?.[0]} hint="Minimal 10 karakter, memuat huruf besar, huruf kecil, dan angka.">
+                                        <PasswordInput id="new_password" className="h-11" value={password.password} onChange={(event) => setPassword({ ...password, password: event.target.value })} />
+                                    </Field>
+                                    <Field label="Ulangi kata sandi baru" htmlFor="new_password_confirmation" error={passwordErrors.password_confirmation?.[0]}>
+                                        <PasswordInput id="new_password_confirmation" className="h-11" value={password.password_confirmation} onChange={(event) => setPassword({ ...password, password_confirmation: event.target.value })} />
+                                    </Field>
+                                    <Button type="submit" className="h-11 w-full" disabled={passwordBusy}>{passwordBusy ? 'Menyimpan…' : 'Ubah kata sandi'}</Button>
+                                </form>
+
+                                <p className="text-[11px] leading-snug text-[#5b6b7f]">
+                                    Lupa kata sandi? <Link href="/lupa-sandi" className="font-semibold text-[#3f51b5]">Kirim tautan reset ke email Anda</Link>.
+                                </p>
                             </div>
                         ) : null}
                     </Card>

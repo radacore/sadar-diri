@@ -66,6 +66,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::get('/profile', [StudentController::class, 'profile']);
     Route::put('/profile/biodata', [StudentController::class, 'updateBiodata']);
     Route::put('/profile/self', [StudentController::class, 'updateSelfProfile']);
+    Route::put('/account/password', [StudentController::class, 'updatePassword'])->middleware('throttle:10,1');
     Route::get('/profile/versions', [StudentController::class, 'profileVersions']);
     Route::get('/counseling-summaries', [StudentController::class, 'counselingSummaries']);
     Route::get('/privacy/access-log', [StudentController::class, 'accessLog']);

@@ -15,8 +15,9 @@ use App\Services\AuditLogger;
 use App\Services\ReportService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
@@ -178,6 +179,44 @@ class StudentController extends Controller
                 'published_at' => $profile->published_at?->toIso8601String(),
             ],
             'message' => 'Profil diri disimpan',
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'confirmed'],
+        ], [
+            'current_password.required' => 'Kata sandi saat ini wajib diisi.',
+            'password.required' => 'Kata sandi baru wajib diisi.',
+            'password.min' => 'Kata sandi minimal 10 karakter.',
+            'password.regex' => 'Kata sandi harus memuat huruf besar, huruf kecil, dan angka.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak sama dengan kata sandi baru.',
+        ]);
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'INVALID_PASSWORD',
+                'message' => 'Kata sandi saat ini tidak sesuai.',
+                'errors' => ['current_password' => ['Kata sandi saat ini tidak sesuai.']],
+            ], 422);
+        }
+
+        $user->forceFill([
+            'password' => $data['password'],
+            'must_change_password' => false,
+        ])->save();
+
+        $this->audit->record('auth.password_changed', 'users', $user->id, $user->id, null, [], $user);
+
+        return response()->json([
+            'success' => true,
+            'data' => null,
+            'message' => 'Kata sandi diperbarui.',
         ]);
     }
 
