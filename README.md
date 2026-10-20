@@ -72,22 +72,17 @@ Konfigurasi di `.env`:
 ```dotenv
 MAIL_MAILER=resend
 RESEND_API_KEY=re_xxxxxxxxxxxx
-MAIL_FROM_ADDRESS="onboarding@resend.dev"
+MAIL_FROM_ADDRESS="notifikasi@sadar-diri.my.id"
+MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-`onboarding@resend.dev` bisa dipakai tanpa verifikasi domain, tetapi Resend **hanya mengizinkan pengiriman ke email pemilik akun Resend**. Selama domain belum diverifikasi:
+Domain `sadar-diri.my.id` sudah terverifikasi di Resend (region `ap-northeast-1`), sehingga pengiriman bisa dilakukan ke alamat mana pun, bukan hanya email pemilik akun Resend.
 
-- OTP login Superadmin → berhasil (tujuan `rahmatdanisyw@gmail.com`).
-- Reset kata sandi siswa/Guru BK → gagal; admin melihat pesan "Tautan gagal dikirim" dan penyebabnya tercatat di `storage/logs/laravel.log`.
+Alamat pengirim **tidak** ditulis di Mailable, Notification, maupun Controller. Ketiga Mailable (`LoginOtpMail`, `PasswordResetMail`, `AccountInvitationMail`) hanya menetapkan subjek, sehingga `from` selalu diambil dari `mail.from` di `config/mail.php`. Untuk mengganti pengirim cukup ubah `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` di `.env` lalu jalankan `php artisan config:clear`.
 
-Setelah domain dibeli, verifikasi di dashboard Resend (tambahkan record SPF/DKIM), lalu ubah:
+Alamat `notifikasi@` khusus untuk email keluar (kode verifikasi dan tautan reset kata sandi). Footer setiap email memuat keterangan "Jangan balas email ini" karena kotak masuk alamat tersebut tidak dipantau; email yang masuk ke sana akan memantul (domain belum punya record MX).
 
-```dotenv
-MAIL_FROM_ADDRESS="no-reply@domain-sekolah.sch.id"
-MAIL_FROM_NAME="SADAR DIRI"
-```
-
-Tidak ada perubahan kode yang diperlukan.
+Kalau memakai domain lain, verifikasi dulu di dashboard Resend (record SPF/DKIM), lalu ganti `MAIL_FROM_ADDRESS` ke alamat di domain tersebut.
 
 Selama `RESEND_API_KEY` kosong, `AppServiceProvider` otomatis mengalihkan mailer ke `log` supaya alur login dan reset tetap bisa diuji tanpa mengirim email.
 

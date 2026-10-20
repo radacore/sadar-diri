@@ -23,8 +23,11 @@
                     </tr>
                     <tr>
                         <td style="padding:0 28px 26px;">
-                            <p style="margin:0;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;line-height:1.6;color:#64748b;">
-                                Email ini dikirim otomatis oleh SADAR DIRI. Jangan bagikan tautan atau kode di dalamnya kepada siapa pun, termasuk yang mengaku pihak sekolah.
+                            <p style="margin:0 0 6px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;font-weight:700;line-height:1.6;color:#475569;">
+                                Jangan balas email ini.
+                            </p>
+                            <p style="margin:0;font-size:11px;line-height:1.6;color:#64748b;">
+                                Email ini dikirim otomatis oleh SADAR DIRI dan hanya digunakan untuk kode verifikasi serta tautan reset kata sandi. Pesan yang dikirim ke alamat ini tidak akan dibaca. Jangan bagikan tautan atau kode di dalamnya kepada siapa pun, termasuk yang mengaku pihak sekolah.
                             </p>
                         </td>
                     </tr>
