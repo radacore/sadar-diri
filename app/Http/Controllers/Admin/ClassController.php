@@ -34,6 +34,7 @@ class ClassController extends Controller
                 'level' => $class->level,
                 'academic_year' => $class->academicYear?->name,
                 'students_count' => $class->students_count,
+                'homeroom_teacher_name' => $class->homeroom_teacher_name,
                 'counselors' => $class->counselorAssignments->map(fn ($a) => [
                     'id' => $a->counselor->id,
                     'name' => $a->counselor->name,
@@ -79,10 +80,44 @@ class ClassController extends Controller
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $class->fill($data)->save();
-        $this->audit->record('class.updated', 'classes', $class->id);
+        if (isset($data['name']) && $data['name'] !== $class->name) {
+            $duplicate = SchoolClass::query()
+                ->where('academic_year_id', $class->academic_year_id)
+                ->where('name', $data['name'])
+                ->where('id', '!=', $class->id)
+                ->exists();
 
-        return response()->json(['success' => true, 'data' => ['id' => $class->id, 'updated_at' => $class->updated_at?->toIso8601String()]]);
+            if ($duplicate) {
+                return response()->json(['success' => false, 'error' => 'CONFLICT', 'message' => 'Nama kelas sudah ada pada tahun ajaran ini.'], 409);
+            }
+        }
+
+        $before = [
+            'name' => $class->name,
+            'level' => $class->level,
+            'homeroom_teacher_name' => $class->homeroom_teacher_name,
+            'is_active' => $class->is_active,
+        ];
+
+        $class->fill($data)->save();
+
+        $changes = collect($data)
+            ->mapWithKeys(fn ($value, $key) => [$key => ['from' => $before[$key] ?? null, 'to' => $class->{$key}]])
+            ->all();
+
+        $this->audit->record('class.updated', 'classes', $class->id, null, null, ['changes' => $changes]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $class->id,
+                'name' => $class->name,
+                'level' => $class->level,
+                'homeroom_teacher_name' => $class->homeroom_teacher_name,
+                'is_active' => $class->is_active,
+                'updated_at' => $class->updated_at?->toIso8601String(),
+            ],
+        ]);
     }
 
     public function destroy(SchoolClass $class)

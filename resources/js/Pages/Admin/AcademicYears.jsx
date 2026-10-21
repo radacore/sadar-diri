@@ -14,6 +14,7 @@ export default function AcademicYears() {
     const [promoteFor, setPromoteFor] = useState(null);
     const [mapping, setMapping] = useState([]);
     const [carryCounselors, setCarryCounselors] = useState(true);
+    const [carryHomeroom, setCarryHomeroom] = useState(true);
     const [preview, setPreview] = useState(null);
     const [busy, setBusy] = useState(false);
     const [form, setForm] = useState({ name: '', starts_on: '', ends_on: '' });
@@ -81,13 +82,27 @@ export default function AcademicYears() {
         }
     };
 
+    // Tahun yang dipilih adalah tahun tujuan: siswa dipindahkan dari kelas
+    // tahun ajaran sebelumnya ke kelas di tahun ini.
+    const sourceClassesFor = (year) => classes.filter((item) => {
+        if (!item.is_active || (item.students_count ?? 0) === 0) return false;
+        const sourceYear = years.find((candidate) => candidate.name === item.academic_year);
+        return sourceYear && year && sourceYear.starts_on < year.starts_on;
+    });
+
+    const targetClassesFor = (fromClassId) => classes.filter(
+        (item) => item.id !== fromClassId && item.is_active && item.academic_year === promoteFor?.name,
+    );
+
     const startPromote = (year) => {
         setPromoteFor(year);
         setPreview(null);
         setCarryCounselors(true);
-        setMapping(classes.filter((item) => item.is_active).map((item) => ({
+        setCarryHomeroom(true);
+        setMapping(sourceClassesFor(year).map((item) => ({
             from_class_id: item.id,
             from_name: item.name,
+            from_homeroom: item.homeroom_teacher_name ?? '',
             to_class_id: '',
             graduate: false,
         })));
@@ -107,6 +122,7 @@ export default function AcademicYears() {
                 { label: 'Siswa dipindahkan', value: String(preview.students_moved) },
                 { label: 'Siswa diluluskan', value: String(preview.students_graduated) },
                 { label: 'Penugasan Guru BK disalin', value: String(preview.counselors_carried ?? 0) },
+                { label: 'Wali kelas disalin', value: String(preview.homerooms_carried ?? 0) },
             ] : undefined,
             confirmLabel: 'Eksekusi kenaikan kelas',
             tone: 'warning',
@@ -119,6 +135,7 @@ export default function AcademicYears() {
             const response = await api.post(`/api/admin/academic-years/${promoteFor.id}/promote`, {
                 preview: isPreview,
                 carry_counselors: carryCounselors,
+                carry_homeroom: carryHomeroom,
                 mapping: mapping.map((item) => ({
                     from_class_id: item.from_class_id,
                     to_class_id: item.to_class_id ? Number(item.to_class_id) : null,
@@ -128,7 +145,7 @@ export default function AcademicYears() {
             setPreview(response.data);
 
             if (!isPreview) {
-                toast.push(`Kenaikan kelas selesai: ${response.data.students_moved} dipindahkan, ${response.data.students_graduated} lulus, ${response.data.counselors_carried ?? 0} penugasan Guru BK disalin.`);
+                toast.push(`Kenaikan kelas selesai: ${response.data.students_moved} dipindahkan, ${response.data.students_graduated} lulus, ${response.data.counselors_carried ?? 0} penugasan Guru BK dan ${response.data.homerooms_carried ?? 0} wali kelas disalin.`);
                 setPromoteFor(null);
                 await load();
             }
@@ -198,20 +215,25 @@ export default function AcademicYears() {
             <Modal
                 open={Boolean(promoteFor)}
                 onClose={() => setPromoteFor(null)}
-                title={`Kenaikan kelas ${promoteFor?.name ?? ''}`}
+                title={`Kenaikan kelas ke ${promoteFor?.name ?? ''}`}
                 wide
                 footer={
                     <>
                         <Button variant="outline" onClick={() => setPromoteFor(null)}>Batal</Button>
-                        <Button variant="info" onClick={() => runPromote(true)} disabled={busy}>Pratinjau</Button>
-                        <Button variant="warning" onClick={() => runPromote(false)} disabled={busy || !preview}>Eksekusi</Button>
+                        <Button variant="info" onClick={() => runPromote(true)} disabled={busy || mapping.length === 0}>Pratinjau</Button>
+                        <Button variant="warning" onClick={() => runPromote(false)} disabled={busy || !preview || mapping.length === 0}>Eksekusi</Button>
                     </>
                 }
             >
                 <div className="space-y-2">
                     <p className="text-[12px] text-[#475569]">
-                        Tentukan kelas tujuan untuk setiap kelas. Pilih "Luluskan" untuk siswa tingkat akhir.
+                        Kelas asal diambil dari tahun ajaran sebelumnya yang masih punya siswa aktif. Tentukan kelas tujuan di tahun ajaran {promoteFor?.name ?? 'ini'}, atau pilih "Luluskan" untuk siswa tingkat akhir.
                     </p>
+                    {mapping.length === 0 ? (
+                        <div className="rounded-xl border border-[#fde68a] bg-[#fffbeb] p-3 text-[12px] text-[#92400e]">
+                            Belum ada kelas dengan siswa aktif di tahun ajaran sebelumnya. Tambahkan siswa ke kelas terlebih dahulu.
+                        </div>
+                    ) : null}
                     <label className="flex items-start gap-2 rounded-xl border border-[#e2e8f0] bg-white p-3 text-[12px] text-[#475569]">
                         <input
                             type="checkbox"
@@ -228,9 +250,28 @@ export default function AcademicYears() {
                             Penugasan Guru BK pada kelas asal disalin ke kelas tujuan. Penugasan lama tetap tersimpan sebagai riwayat akses.
                         </span>
                     </label>
+                    <label className="flex items-start gap-2 rounded-xl border border-[#e2e8f0] bg-white p-3 text-[12px] text-[#475569]">
+                        <input
+                            type="checkbox"
+                            checked={carryHomeroom}
+                            onChange={(event) => {
+                                setCarryHomeroom(event.target.checked);
+                                setPreview(null);
+                            }}
+                            className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#3f51b5]"
+                        />
+                        <span>
+                            <span className="font-semibold text-[#1e293b]">Salin wali kelas</span>
+                            <br />
+                            Nama wali kelas disalin ke kelas tujuan bila kelas tujuan belum punya wali kelas. Ubah setelahnya di menu Kelas bila berganti.
+                        </span>
+                    </label>
                     {mapping.map((item, index) => (
                         <div key={item.from_class_id} className="grid items-end gap-2 rounded-xl bg-[#f1f5f9] p-3 sm:grid-cols-[1fr_1fr_auto]">
-                            <p className="text-[13px] font-semibold">{item.from_name}</p>
+                            <div>
+                                <p className="text-[13px] font-semibold">{item.from_name}</p>
+                                <p className="text-[11px] text-[#64748b]">Wali: {item.from_homeroom || 'belum diisi'}</p>
+                            </div>
                             <Select
                                 value={item.graduate ? 'graduate' : item.to_class_id}
                                 onChange={(event) => {
@@ -246,8 +287,8 @@ export default function AcademicYears() {
                                 aria-label={`Tujuan untuk ${item.from_name}`}
                             >
                                 <option value="">Pilih kelas tujuan</option>
-                                {classes.filter((c) => c.id !== item.from_class_id && c.academic_year !== promoteFor?.name).map((c) => (
-                                    <option key={c.id} value={c.id}>{c.name} ({c.academic_year})</option>
+                                {targetClassesFor(item.from_class_id).map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                                 <option value="graduate">Luluskan</option>
                             </Select>
@@ -256,7 +297,7 @@ export default function AcademicYears() {
                     ))}
                     {preview ? (
                         <div className="rounded-xl bg-[#e8eaf6] p-3 text-[12px] text-[#303f9f]">
-                            Pratinjau: {preview.students_moved} siswa dipindahkan, {preview.students_graduated} siswa diluluskan, {preview.counselors_carried ?? 0} penugasan Guru BK disalin.
+                            Pratinjau: {preview.students_moved} siswa dipindahkan, {preview.students_graduated} siswa diluluskan, {preview.counselors_carried ?? 0} penugasan Guru BK dan {preview.homerooms_carried ?? 0} wali kelas disalin.
                         </div>
                     ) : null}
                 </div>

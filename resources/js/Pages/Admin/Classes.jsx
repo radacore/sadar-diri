@@ -16,6 +16,8 @@ export default function Classes() {
     const [counselorId, setCounselorId] = useState('');
     const [selectedClassIds, setSelectedClassIds] = useState([]);
     const [form, setForm] = useState({ academic_year_id: '', name: '', level: 'X', homeroom_teacher_name: '' });
+    const [editing, setEditing] = useState(null);
+    const [editForm, setEditForm] = useState({ name: '', level: 'X', homeroom_teacher_name: '', is_active: true });
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
@@ -63,6 +65,54 @@ export default function Classes() {
             toast.push('Kelas dibuat.');
             setOpen(false);
             setForm({ academic_year_id: '', name: '', level: 'X', homeroom_teacher_name: '' });
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const openEdit = (classItem) => {
+        setEditing(classItem);
+        setEditForm({
+            name: classItem.name,
+            level: classItem.level,
+            homeroom_teacher_name: classItem.homeroom_teacher_name ?? '',
+            is_active: classItem.is_active,
+        });
+    };
+
+    const saveEdit = async (event) => {
+        event.preventDefault();
+        const previous = editing;
+        const homeroomChanged = (previous.homeroom_teacher_name ?? '') !== (editForm.homeroom_teacher_name ?? '');
+
+        const decision = await confirm({
+            title: 'Simpan perubahan kelas?',
+            description: 'Perubahan hanya menyentuh data kelas, tidak memindahkan siswa atau penugasan Guru BK.',
+            details: [
+                { label: 'Kelas', value: previous.name },
+                { label: 'Nama baru', value: editForm.name },
+                { label: 'Wali kelas', value: editForm.homeroom_teacher_name || '—' },
+                ...(homeroomChanged
+                    ? [{ label: 'Wali kelas sebelumnya', value: previous.homeroom_teacher_name || 'belum diisi' }]
+                    : []),
+            ],
+            confirmLabel: 'Simpan',
+            tone: 'primary',
+            icon: 'users',
+        });
+        if (!decision) return;
+        setBusy(true);
+
+        try {
+            await api.put(`/api/admin/classes/${previous.id}`, {
+                ...editForm,
+                homeroom_teacher_name: editForm.homeroom_teacher_name || null,
+            });
+            toast.push('Kelas diperbarui.');
+            setEditing(null);
             await load();
         } catch (error) {
             toast.push(error.message, 'error');
@@ -192,6 +242,7 @@ export default function Classes() {
                                 <div>
                                     <p className="text-[15px] font-bold">{item.name}</p>
                                     <p className="text-[11px] text-[#475569]">Tahun {item.academic_year} · {item.students_count} siswa</p>
+                                    <p className="text-[11px] text-[#475569]">Wali kelas: {item.homeroom_teacher_name || 'belum diisi'}</p>
                                 </div>
                                 <Badge tone={item.is_active ? 'success' : 'neutral'}>{item.is_active ? 'Aktif' : 'Arsip'}</Badge>
                             </div>
@@ -217,6 +268,7 @@ export default function Classes() {
                                 <p className="mt-1 text-[11px] text-[#92400e]">{item.counselors.length} Guru BK mendampingi kelas ini.</p>
                             ) : null}
                             <div className="mt-3 flex flex-wrap gap-1">
+                                <Button variant="outline" size="sm" onClick={() => openEdit(item)}>Ubah kelas</Button>
                                 <Button variant="outline" size="sm" onClick={() => openAssign(item)}>Atur Guru BK</Button>
                                 <Button variant="ghost" size="sm" onClick={() => (window.location.href = `/admin/pengguna?class_id=${item.id}`)}>Lihat siswa</Button>
                             </div>
@@ -258,6 +310,45 @@ export default function Classes() {
                     <Field label="Wali kelas" htmlFor="homeroom">
                         <Input id="homeroom" value={form.homeroom_teacher_name} onChange={(event) => setForm({ ...form, homeroom_teacher_name: event.target.value })} />
                     </Field>
+                </form>
+            </Modal>
+
+            <Modal
+                open={Boolean(editing)}
+                onClose={() => setEditing(null)}
+                title="Ubah kelas"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setEditing(null)}>Batal</Button>
+                        <Button type="submit" variant="primary" form="class-edit-form" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan perubahan'}</Button>
+                    </>
+                }
+            >
+                <form id="class-edit-form" onSubmit={saveEdit} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Nama kelas" required htmlFor="edit-name">
+                            <Input id="edit-name" value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} required />
+                        </Field>
+                        <Field label="Tingkat" required htmlFor="edit-level">
+                            <Select id="edit-level" value={editForm.level} onChange={(event) => setEditForm({ ...editForm, level: event.target.value })}>
+                                <option value="X">X</option>
+                                <option value="XI">XI</option>
+                                <option value="XII">XII</option>
+                            </Select>
+                        </Field>
+                    </div>
+                    <Field label="Wali kelas" htmlFor="edit-homeroom" hint="Kosongkan bila kelas belum punya wali kelas.">
+                        <Input id="edit-homeroom" value={editForm.homeroom_teacher_name} onChange={(event) => setEditForm({ ...editForm, homeroom_teacher_name: event.target.value })} placeholder="Nama wali kelas" />
+                    </Field>
+                    <label className="flex items-center gap-2 rounded-xl border border-[#e2e8f0] bg-white p-3 text-[12px] text-[#475569]">
+                        <input
+                            type="checkbox"
+                            checked={editForm.is_active}
+                            onChange={(event) => setEditForm({ ...editForm, is_active: event.target.checked })}
+                            className="h-[18px] w-[18px] shrink-0 accent-[#3f51b5]"
+                        />
+                        <span>Kelas aktif (muncul di pilihan kelas tujuan kenaikan kelas)</span>
+                    </label>
                 </form>
             </Modal>
 

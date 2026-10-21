@@ -64,6 +64,7 @@ class AcademicYearController extends Controller
         $data = $request->validate([
             'preview' => ['boolean'],
             'carry_counselors' => ['boolean'],
+            'carry_homeroom' => ['boolean'],
             'mapping' => ['required', 'array', 'min:1'],
             'mapping.*.from_class_id' => ['required', 'exists:classes,id'],
             'mapping.*.to_class_id' => ['nullable', 'exists:classes,id'],
@@ -71,11 +72,13 @@ class AcademicYearController extends Controller
         ]);
 
         $carryCounselors = $data['carry_counselors'] ?? true;
+        $carryHomeroom = $data['carry_homeroom'] ?? true;
 
         $conflicts = [];
         $previewMoved = 0;
         $previewGraduated = 0;
         $previewCounselors = 0;
+        $previewHomerooms = 0;
 
         foreach ($data['mapping'] as $map) {
             $from = SchoolClass::findOrFail($map['from_class_id']);
@@ -104,6 +107,10 @@ class AcademicYearController extends Controller
                 if ($carryCounselors) {
                     $previewCounselors += $this->carryCounselors($from->id, $to->id, true);
                 }
+
+                if ($carryHomeroom && $this->homeroomNeedsCarry($from, $to)) {
+                    $previewHomerooms++;
+                }
             } else {
                 $previewGraduated += $count;
             }
@@ -126,6 +133,7 @@ class AcademicYearController extends Controller
                     'students_moved' => $previewMoved,
                     'students_graduated' => $previewGraduated,
                     'counselors_carried' => $previewCounselors,
+                    'homerooms_carried' => $previewHomerooms,
                     'conflicts' => [],
                 ],
             ]);
@@ -134,8 +142,9 @@ class AcademicYearController extends Controller
         $moved = 0;
         $graduated = 0;
         $carried = 0;
+        $homerooms = 0;
 
-        DB::transaction(function () use ($data, $academicYear, $carryCounselors, &$moved, &$graduated, &$carried) {
+        DB::transaction(function () use ($data, $academicYear, $carryCounselors, $carryHomeroom, &$moved, &$graduated, &$carried, &$homerooms) {
             foreach ($data['mapping'] as $map) {
                 $from = SchoolClass::findOrFail($map['from_class_id']);
 
@@ -165,8 +174,14 @@ class AcademicYearController extends Controller
                     }
                 }
 
-                if ($carryCounselors && ($map['graduate'] ?? false) === false && ! empty($map['to_class_id'])) {
-                    $carried += $this->carryCounselors($from->id, (int) $map['to_class_id']);
+                if (($map['graduate'] ?? false) === false && ! empty($map['to_class_id'])) {
+                    if ($carryCounselors) {
+                        $carried += $this->carryCounselors($from->id, (int) $map['to_class_id']);
+                    }
+
+                    if ($carryHomeroom && $this->carryHomeroom($from, (int) $map['to_class_id'])) {
+                        $homerooms++;
+                    }
                 }
             }
         });
@@ -175,6 +190,7 @@ class AcademicYearController extends Controller
             'moved' => $moved,
             'graduated' => $graduated,
             'counselors_carried' => $carried,
+            'homerooms_carried' => $homerooms,
         ]);
 
         return response()->json([
@@ -184,9 +200,32 @@ class AcademicYearController extends Controller
                 'students_moved' => $moved,
                 'students_graduated' => $graduated,
                 'counselors_carried' => $carried,
+                'homerooms_carried' => $homerooms,
                 'conflicts' => [],
             ],
         ]);
+    }
+
+    /**
+     * Wali kelas disalin ke kelas tujuan hanya bila kelas tujuan belum punya wali
+     * kelas, sehingga pengaturan manual admin tidak tertimpa.
+     */
+    private function homeroomNeedsCarry(SchoolClass $from, SchoolClass $to): bool
+    {
+        return filled($from->homeroom_teacher_name) && blank($to->homeroom_teacher_name);
+    }
+
+    private function carryHomeroom(SchoolClass $from, int $toClassId): bool
+    {
+        $to = SchoolClass::find($toClassId);
+
+        if (! $to || ! $this->homeroomNeedsCarry($from, $to)) {
+            return false;
+        }
+
+        $to->update(['homeroom_teacher_name' => $from->homeroom_teacher_name]);
+
+        return true;
     }
 
     /**
