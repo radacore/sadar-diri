@@ -537,6 +537,7 @@ table.t.sm td { font-size: 8pt; padding: 4.5px 8px; }
 .figrow > .shot { flex: 0 0 66mm; }
 .figrow.small > .shot { flex: 0 0 60mm; }
 .figrow.tight > .shot { flex: 0 0 56mm; }
+.figrow.xtight > .shot { flex: 0 0 50mm; }
 .split { display: flex; gap: 8mm; align-items: flex-start; }
 .split > .shot { flex: 0 0 72mm; }
 .split.wide > .shot { flex: 0 0 86mm; }

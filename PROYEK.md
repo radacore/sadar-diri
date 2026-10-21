@@ -184,10 +184,10 @@ Skema utama ada di `database/migrations/2026_10_19_000001_create_sadar_diri_sche
 
 | Tabel | Kolom penting | Enkripsi |
 |---|---|---|
-| `student_profiles` | `birth_date`, `gender`, `address`, `phone`, `height_cm`, `weight_kg`, `blood_type`, `medical_history`, `health_notes`, `psychological_summary`, `character_summary`, `strengths`, `weaknesses`, `completeness_percent`, `published_at`, `version` | `medical_history`, `health_notes`, `psychological_summary`, `character_summary`, `strengths`, `weaknesses` |
+| `student_profiles` | `nisn`, `birth_date`, `birth_place`, `religion`, `family_status`, `birth_order`, `gender`, `address`, `phone`, `nik`, `previous_school`, `admission_class`, `admission_date`, `father_name`, `father_phone`, `father_occupation`, `mother_name`, `mother_phone`, `mother_occupation`, `parent_address`, `guardian_name`, `guardian_phone`, `guardian_address`, `guardian_occupation`, `social_media` (JSON: instagram/facebook/youtube/threads/tiktok), `height_cm`, `weight_kg`, `blood_type`, `medical_history`, `health_notes`, `extra_fields`, `psychological_summary`, `character_summary`, `strengths`, `weaknesses`, `completeness_percent`, `published_at`, `version` | `nik`, `medical_history`, `health_notes`, `extra_fields`, `psychological_summary`, `character_summary`, `strengths`, `weaknesses` |
 | `student_profile_versions` | `student_profile_id`, `version`, `snapshot` (JSON), `created_by` | — |
 
-`completeness_percent` dihitung dari kelengkapan biodata; `published_at` menandai profil diri sudah dibagikan ke Guru BK (sebelumnya draf).
+`completeness_percent` dihitung dari kelengkapan biodata; `published_at` menandai profil diri sudah dibagikan ke Guru BK (sebelumnya draf). Kolom identitas mengikuti lembar **Identitas Peserta Didik**: `birth_place`, `religion` (`StudentProfile::RELIGIONS`), `family_status` (`StudentProfile::FAMILY_STATUSES`), `birth_order`, `previous_school`, `admission_class`/`admission_date`, data ayah–ibu (nama, telepon, pekerjaan, alamat), serta wali. `nisn` dinormalisasi menjadi digit saja; `admission_class` menyimpan kelas saat diterima (riwayat), terpisah dari keanggotaan kelas aktif. `nik` disimpan terenkripsi (16 digit, dinormalisasi dari spasi/tanda baca) sehingga tidak dapat dicari langsung; `social_media` hanya menerima lima platform (`StudentProfile::SOCIAL_PLATFORMS`), nama pengguna disimpan tanpa `@` dan key kosong dibuang; field kependudukan ini tidak menambah `completeness_percent`.
 
 ### 5.3 Jurnal, mood, refleksi
 
@@ -272,7 +272,7 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 |---|---|---|
 | GET | `/api/student/dashboard` | Mood hari ini, streak jurnal, target aktif, pengumuman |
 | GET | `/api/student/profile` | `biodata`, `self_profile`, `completeness_percent` |
-| PUT | `/api/student/profile/biodata` | Field tertutup (daftar tetap); `extra_fields` (maks. 5 baris label/isi) — baris tidak lengkap dibuang, key yang tidak dikirim tidak menghapus data lama |
+| PUT | `/api/student/profile/biodata` | Field tertutup (daftar tetap); `extra_fields` (maks. 5 baris label/isi) — baris tidak lengkap dibuang, key yang tidak dikirim tidak menghapus data lama; `birth_place`, `religion`, `family_status`, `nisn`, `birth_order`, `previous_school`, `admission_class`, `admission_date`, `nik` (16 digit), data orang tua (nama/telepon/pekerjaan/alamat), data wali, dan `social_media` |
 | PUT | `/api/student/profile/self` | Simpan draf atau publikasikan (`publish`), menaikkan `version` |
 | PUT | `/api/student/account/password` | `throttle:10,1` — alias lama, ditangani `AuthController::updatePassword` |
 | GET | `/api/student/profile/versions` | Riwayat versi profil diri |

@@ -166,9 +166,30 @@ class StudentController extends Controller
                 ] : null,
                 'biodata' => [
                     'birth_date' => $profile->birth_date?->toDateString(),
+                    'birth_place' => $profile->birth_place,
+                    'religion' => $profile->religion,
+                    'family_status' => $profile->family_status,
+                    'nisn' => $profile->nisn,
+                    'birth_order' => $profile->birth_order,
+                    'previous_school' => $profile->previous_school,
+                    'admission_class' => $profile->admission_class,
+                    'admission_date' => $profile->admission_date?->toDateString(),
                     'gender' => $profile->gender,
                     'address' => $profile->address,
                     'phone' => $profile->phone,
+                    'nik' => $profile->nik,
+                    'father_phone' => $profile->father_phone,
+                    'mother_phone' => $profile->mother_phone,
+                    'father_name' => $profile->father_name,
+                    'mother_name' => $profile->mother_name,
+                    'parent_address' => $profile->parent_address,
+                    'father_occupation' => $profile->father_occupation,
+                    'mother_occupation' => $profile->mother_occupation,
+                    'guardian_name' => $profile->guardian_name,
+                    'guardian_phone' => $profile->guardian_phone,
+                    'guardian_address' => $profile->guardian_address,
+                    'guardian_occupation' => $profile->guardian_occupation,
+                    'social_media' => $profile->social_media ?? [],
                     'height_cm' => $profile->height_cm,
                     'weight_kg' => $profile->weight_kg,
                     'blood_type' => $profile->blood_type,
@@ -204,7 +225,10 @@ class StudentController extends Controller
             'extra_fields' => ['nullable', 'array', 'max:5'],
             'extra_fields.*.label' => ['nullable', 'string', 'max:60'],
             'extra_fields.*.value' => ['nullable', 'string', 'max:500'],
+            ...StudentProfile::IDENTITY_RULES,
         ]);
+
+        $data = StudentProfile::normalizeIdentity($data);
 
         // Baris yang belum lengkap dibuang agar formulir tidak gagal hanya karena baris kosong.
         if (array_key_exists('extra_fields', $data)) {

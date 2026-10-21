@@ -21,7 +21,7 @@ import {
 import { Icon } from '../../Components/Icons';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate, initials, label, relative } from '../../lib/format';
+import { SOCIAL_PLATFORMS, formatDate, initials, label, relative } from '../../lib/format';
 
 const tabs = [
     { value: 'ringkasan', label: 'Ringkasan' },
@@ -44,6 +44,9 @@ const emptyAchievement = {
 
 const emptyBiodata = {
     birth_date: '',
+    birth_place: '',
+    religion: '',
+    family_status: '',
     gender: '',
     address: '',
     phone: '',
@@ -53,6 +56,24 @@ const emptyBiodata = {
     medical_history: '',
     health_notes: '',
     extra_fields: [],
+    nik: '',
+    nisn: '',
+    birth_order: '',
+    previous_school: '',
+    admission_class: '',
+    admission_date: '',
+    father_phone: '',
+    mother_phone: '',
+    father_name: '',
+    mother_name: '',
+    parent_address: '',
+    father_occupation: '',
+    mother_occupation: '',
+    guardian_name: '',
+    guardian_phone: '',
+    guardian_address: '',
+    guardian_occupation: '',
+    social_media: {},
 };
 
 const emptySelf = {
@@ -117,6 +138,9 @@ export default function StudentDetail({ studentId }) {
 
         setBiodataForm({
             birth_date: biodata.birth_date ?? '',
+            birth_place: biodata.birth_place ?? '',
+            religion: biodata.religion ?? '',
+            family_status: biodata.family_status ?? '',
             gender: biodata.gender ?? '',
             address: biodata.address ?? '',
             phone: biodata.phone ?? '',
@@ -126,6 +150,24 @@ export default function StudentDetail({ studentId }) {
             medical_history: biodata.medical_history ?? '',
             health_notes: biodata.health_notes ?? '',
             extra_fields: biodata.extra_fields ?? [],
+            nik: biodata.nik ?? '',
+            nisn: biodata.nisn ?? '',
+            birth_order: biodata.birth_order ?? '',
+            previous_school: biodata.previous_school ?? '',
+            admission_class: biodata.admission_class ?? '',
+            admission_date: biodata.admission_date ?? '',
+            father_phone: biodata.father_phone ?? '',
+            mother_phone: biodata.mother_phone ?? '',
+            father_name: biodata.father_name ?? '',
+            mother_name: biodata.mother_name ?? '',
+            parent_address: biodata.parent_address ?? '',
+            father_occupation: biodata.father_occupation ?? '',
+            mother_occupation: biodata.mother_occupation ?? '',
+            guardian_name: biodata.guardian_name ?? '',
+            guardian_phone: biodata.guardian_phone ?? '',
+            guardian_address: biodata.guardian_address ?? '',
+            guardian_occupation: biodata.guardian_occupation ?? '',
+            social_media: biodata.social_media ?? {},
         });
 
         setSelfForm({
@@ -167,6 +209,13 @@ export default function StudentDetail({ studentId }) {
         }
     };
 
+    const updateSocialBiodata = (platform, value) => {
+        setBiodataForm({
+            ...biodataForm,
+            social_media: { ...(biodataForm.social_media ?? {}), [platform]: value },
+        });
+    };
+
     const updateExtraBiodata = (index, key, value) => {
         const rows = [...(biodataForm.extra_fields ?? [])];
         rows[index] = { ...rows[index], [key]: value };
@@ -199,6 +248,8 @@ export default function StudentDetail({ studentId }) {
                 height_cm: biodataForm.height_cm === '' ? null : Number(biodataForm.height_cm),
                 weight_kg: biodataForm.weight_kg === '' ? null : Number(biodataForm.weight_kg),
                 birth_date: biodataForm.birth_date || null,
+                admission_date: biodataForm.admission_date || null,
+                birth_order: biodataForm.birth_order === '' ? null : Number(biodataForm.birth_order),
                 gender: biodataForm.gender || null,
             });
             await api.put(`/api/counselor/students/${studentId}/profile/self`, selfForm);
@@ -650,9 +701,34 @@ export default function StudentDetail({ studentId }) {
                                 Biodata & profil diri
                             </CardTitle>
                             <dl className="space-y-2.5 text-[12.5px]">
-                                <div><dt className="font-semibold">Tanggal lahir</dt><dd className="text-[#475569]">{biodataForm.birth_date ? formatDate(biodataForm.birth_date) : '—'}</dd></div>
+                                <div><dt className="font-semibold">Tempat, tanggal lahir</dt><dd className="text-[#475569]">{[biodataForm.birth_place, biodataForm.birth_date ? formatDate(biodataForm.birth_date) : null].filter(Boolean).join(', ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Agama</dt><dd className="text-[#475569]">{biodataForm.religion ? label('religion', biodataForm.religion) : '—'}</dd></div>
+                                <div><dt className="font-semibold">Status dalam keluarga</dt><dd className="text-[#475569]">{biodataForm.family_status ? label('familyStatus', biodataForm.family_status) : '—'}</dd></div>
+                                <div><dt className="font-semibold">Anak ke-</dt><dd className="text-[#475569]">{biodataForm.birth_order || '—'}</dd></div>
+                                <div><dt className="font-semibold">NISN</dt><dd className="tabular text-[#475569]">{biodataForm.nisn || '—'}</dd></div>
                                 <div><dt className="font-semibold">Jenis kelamin</dt><dd className="text-[#475569]">{biodataForm.gender === 'male' ? 'Laki-laki' : biodataForm.gender === 'female' ? 'Perempuan' : '—'}</dd></div>
                                 <div><dt className="font-semibold">Kontak</dt><dd className="break-words text-[#475569]">{biodataForm.phone || '—'}</dd></div>
+                                <div><dt className="font-semibold">NIK</dt><dd className="tabular break-words text-[#475569]">{biodataForm.nik || '—'}</dd></div>
+                                <div><dt className="font-semibold">Telepon ayah</dt><dd className="break-words text-[#475569]">{biodataForm.father_phone || '—'}</dd></div>
+                                <div><dt className="font-semibold">Telepon ibu</dt><dd className="break-words text-[#475569]">{biodataForm.mother_phone || '—'}</dd></div>
+                                <div><dt className="font-semibold">Sekolah asal</dt><dd className="break-words text-[#475569]">{biodataForm.previous_school || '—'}</dd></div>
+                                <div><dt className="font-semibold">Diterima</dt><dd className="break-words text-[#475569]">{[biodataForm.admission_class, biodataForm.admission_date ? formatDate(biodataForm.admission_date) : null].filter(Boolean).join(' · ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Ayah</dt><dd className="break-words text-[#475569]">{[biodataForm.father_name, biodataForm.father_occupation].filter(Boolean).join(' · ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Ibu</dt><dd className="break-words text-[#475569]">{[biodataForm.mother_name, biodataForm.mother_occupation].filter(Boolean).join(' · ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Alamat orang tua</dt><dd className="break-words text-[#475569]">{biodataForm.parent_address || '—'}</dd></div>
+                                <div><dt className="font-semibold">Wali</dt><dd className="break-words text-[#475569]">{[biodataForm.guardian_name, biodataForm.guardian_phone, biodataForm.guardian_occupation].filter(Boolean).join(' · ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Alamat wali</dt><dd className="break-words text-[#475569]">{biodataForm.guardian_address || '—'}</dd></div>
+                                {SOCIAL_PLATFORMS.filter((platform) => biodataForm.social_media?.[platform.key]).length > 0 ? (
+                                    <div>
+                                        <dt className="font-semibold">Media sosial</dt>
+                                        <dd className="break-words text-[#475569]">
+                                            {SOCIAL_PLATFORMS
+                                                .filter((platform) => biodataForm.social_media?.[platform.key])
+                                                .map((platform) => `${platform.label}: ${biodataForm.social_media[platform.key]}`)
+                                                .join(' · ')}
+                                        </dd>
+                                    </div>
+                                ) : null}
                                 <div><dt className="font-semibold">Alamat</dt><dd className="break-words text-[#475569]">{biodataForm.address || '—'}</dd></div>
                                 <div><dt className="font-semibold">Riwayat penyakit</dt><dd className="break-words text-[#475569]">{biodataForm.medical_history || '—'}</dd></div>
                                 <div><dt className="font-semibold">Catatan kesehatan</dt><dd className="break-words text-[#475569]">{biodataForm.health_notes || '—'}</dd></div>
@@ -738,11 +814,16 @@ export default function StudentDetail({ studentId }) {
                 }
             >
                 <form id="profile-form" onSubmit={saveProfile} className="space-y-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Biodata</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Identitas</p>
                     <div className="grid grid-cols-2 gap-3">
+                        <Field label="Tempat lahir" htmlFor="bio-birth-place">
+                            <Input id="bio-birth-place" value={biodataForm.birth_place} onChange={(event) => setBiodataForm({ ...biodataForm, birth_place: event.target.value })} />
+                        </Field>
                         <Field label="Tanggal lahir" htmlFor="bio-birth">
                             <Input id="bio-birth" type="date" value={biodataForm.birth_date} onChange={(event) => setBiodataForm({ ...biodataForm, birth_date: event.target.value })} />
                         </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                         <Field label="Jenis kelamin" htmlFor="bio-gender">
                             <select id="bio-gender" className="sd-input" value={biodataForm.gender} onChange={(event) => setBiodataForm({ ...biodataForm, gender: event.target.value })}>
                                 <option value="">—</option>
@@ -750,22 +831,148 @@ export default function StudentDetail({ studentId }) {
                                 <option value="female">Perempuan</option>
                             </select>
                         </Field>
+                        <Field label="Agama" htmlFor="bio-religion">
+                            <select id="bio-religion" className="sd-input" value={biodataForm.religion} onChange={(event) => setBiodataForm({ ...biodataForm, religion: event.target.value })}>
+                                <option value="">—</option>
+                                {['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu'].map((value) => (
+                                    <option key={value} value={value}>{label('religion', value)}</option>
+                                ))}
+                            </select>
+                        </Field>
                     </div>
-                    <Field label="Kontak" htmlFor="bio-phone">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Status dalam keluarga" htmlFor="bio-family">
+                            <select id="bio-family" className="sd-input" value={biodataForm.family_status} onChange={(event) => setBiodataForm({ ...biodataForm, family_status: event.target.value })}>
+                                <option value="">—</option>
+                                {['kandung', 'angkat', 'tiri', 'wali'].map((value) => (
+                                    <option key={value} value={value}>{label('familyStatus', value)}</option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label="Anak ke-" htmlFor="bio-order">
+                            <Input
+                                id="bio-order"
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={biodataForm.birth_order}
+                                onChange={(event) => setBiodataForm({ ...biodataForm, birth_order: event.target.value })}
+                            />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="NISN" htmlFor="bio-nisn">
+                            <Input
+                                id="bio-nisn"
+                                className="tabular"
+                                inputMode="numeric"
+                                maxLength={10}
+                                value={biodataForm.nisn}
+                                onChange={(event) => setBiodataForm({ ...biodataForm, nisn: event.target.value.replace(/\D/g, '') })}
+                            />
+                        </Field>
+                        <Field label="NIK (kependudukan)" htmlFor="bio-nik" hint="16 digit, terenkripsi.">
+                            <Input
+                                id="bio-nik"
+                                className="tabular"
+                                inputMode="numeric"
+                                maxLength={16}
+                                value={biodataForm.nik}
+                                onChange={(event) => setBiodataForm({ ...biodataForm, nik: event.target.value.replace(/\D/g, '') })}
+                            />
+                        </Field>
+                    </div>
+
+                    <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Kontak &amp; sekolah</p>
+                    <Field label="Nomor kontak / telepon rumah" htmlFor="bio-phone">
                         <Input id="bio-phone" value={biodataForm.phone} onChange={(event) => setBiodataForm({ ...biodataForm, phone: event.target.value })} />
                     </Field>
-                    <Field label="Alamat" htmlFor="bio-address">
+                    <Field label="Alamat siswa" htmlFor="bio-address">
                         <Textarea id="bio-address" rows={2} value={biodataForm.address} onChange={(event) => setBiodataForm({ ...biodataForm, address: event.target.value })} />
                     </Field>
+                    <Field label="Sekolah asal" htmlFor="bio-school">
+                        <Input id="bio-school" value={biodataForm.previous_school} onChange={(event) => setBiodataForm({ ...biodataForm, previous_school: event.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Diterima di kelas" htmlFor="bio-admission-class">
+                            <Input id="bio-admission-class" value={biodataForm.admission_class} onChange={(event) => setBiodataForm({ ...biodataForm, admission_class: event.target.value })} />
+                        </Field>
+                        <Field label="Tanggal diterima" htmlFor="bio-admission-date">
+                            <Input id="bio-admission-date" type="date" value={biodataForm.admission_date} onChange={(event) => setBiodataForm({ ...biodataForm, admission_date: event.target.value })} />
+                        </Field>
+                    </div>
+
+                    <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Orang tua</p>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Field label="Nama ayah" htmlFor="bio-father-name">
+                            <Input id="bio-father-name" value={biodataForm.father_name} onChange={(event) => setBiodataForm({ ...biodataForm, father_name: event.target.value })} />
+                        </Field>
+                        <Field label="Pekerjaan ayah" htmlFor="bio-father-job">
+                            <Input id="bio-father-job" value={biodataForm.father_occupation} onChange={(event) => setBiodataForm({ ...biodataForm, father_occupation: event.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Telepon ayah" htmlFor="bio-father">
+                        <Input id="bio-father" inputMode="tel" value={biodataForm.father_phone} onChange={(event) => setBiodataForm({ ...biodataForm, father_phone: event.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Field label="Nama ibu" htmlFor="bio-mother-name">
+                            <Input id="bio-mother-name" value={biodataForm.mother_name} onChange={(event) => setBiodataForm({ ...biodataForm, mother_name: event.target.value })} />
+                        </Field>
+                        <Field label="Pekerjaan ibu" htmlFor="bio-mother-job">
+                            <Input id="bio-mother-job" value={biodataForm.mother_occupation} onChange={(event) => setBiodataForm({ ...biodataForm, mother_occupation: event.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Telepon ibu" htmlFor="bio-mother">
+                        <Input id="bio-mother" inputMode="tel" value={biodataForm.mother_phone} onChange={(event) => setBiodataForm({ ...biodataForm, mother_phone: event.target.value })} />
+                    </Field>
+                    <Field label="Alamat orang tua" htmlFor="bio-parent-address">
+                        <Textarea id="bio-parent-address" rows={2} value={biodataForm.parent_address} onChange={(event) => setBiodataForm({ ...biodataForm, parent_address: event.target.value })} />
+                    </Field>
+
+                    <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Wali (opsional)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Field label="Nama wali" htmlFor="bio-guardian-name">
+                            <Input id="bio-guardian-name" value={biodataForm.guardian_name} onChange={(event) => setBiodataForm({ ...biodataForm, guardian_name: event.target.value })} />
+                        </Field>
+                        <Field label="Telepon wali" htmlFor="bio-guardian-phone">
+                            <Input id="bio-guardian-phone" value={biodataForm.guardian_phone} onChange={(event) => setBiodataForm({ ...biodataForm, guardian_phone: event.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Field label="Pekerjaan wali" htmlFor="bio-guardian-job">
+                            <Input id="bio-guardian-job" value={biodataForm.guardian_occupation} onChange={(event) => setBiodataForm({ ...biodataForm, guardian_occupation: event.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Alamat wali" htmlFor="bio-guardian-address">
+                        <Textarea id="bio-guardian-address" rows={2} value={biodataForm.guardian_address} onChange={(event) => setBiodataForm({ ...biodataForm, guardian_address: event.target.value })} />
+                    </Field>
+
+                    <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Media sosial (opsional)</p>
+                    <div className="space-y-2">
+                        {SOCIAL_PLATFORMS.map((platform) => (
+                            <div key={platform.key} className="flex items-center gap-2">
+                                <span className="w-[78px] shrink-0 text-[11.5px] text-[#475569]">{platform.label}</span>
+                                <Input
+                                    className="min-w-0 flex-1"
+                                    aria-label={`Akun ${platform.label}`}
+                                    placeholder={platform.placeholder}
+                                    value={biodataForm.social_media?.[platform.key] ?? ''}
+                                    onChange={(event) => updateSocialBiodata(platform.key, event.target.value)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Kesehatan</p>
                     <div className="grid grid-cols-3 gap-2">
+                        <Field label="Gol. darah" htmlFor="bio-blood">
+                            <Input id="bio-blood" value={biodataForm.blood_type} onChange={(event) => setBiodataForm({ ...biodataForm, blood_type: event.target.value })} />
+                        </Field>
                         <Field label="Tinggi" htmlFor="bio-height">
                             <Input id="bio-height" type="number" value={biodataForm.height_cm} onChange={(event) => setBiodataForm({ ...biodataForm, height_cm: event.target.value })} />
                         </Field>
                         <Field label="Berat" htmlFor="bio-weight">
                             <Input id="bio-weight" type="number" value={biodataForm.weight_kg} onChange={(event) => setBiodataForm({ ...biodataForm, weight_kg: event.target.value })} />
-                        </Field>
-                        <Field label="Gol. darah" htmlFor="bio-blood">
-                            <Input id="bio-blood" value={biodataForm.blood_type} onChange={(event) => setBiodataForm({ ...biodataForm, blood_type: event.target.value })} />
                         </Field>
                     </div>
                     <Field label="Riwayat penyakit" htmlFor="bio-medical">

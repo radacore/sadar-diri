@@ -372,7 +372,10 @@ class CounselorController extends Controller
             'extra_fields' => ['nullable', 'array', 'max:5'],
             'extra_fields.*.label' => ['nullable', 'string', 'max:60'],
             'extra_fields.*.value' => ['nullable', 'string', 'max:500'],
+            ...StudentProfile::IDENTITY_RULES,
         ]);
+
+        $data = StudentProfile::normalizeIdentity($data);
 
         if (array_key_exists('extra_fields', $data)) {
             $data['extra_fields'] = collect($data['extra_fields'] ?? [])

@@ -8,6 +8,20 @@ export const labels = {
         alumni: 'Alumni',
     },
     mood: { positive: 'Positif', negative: 'Negatif' },
+    religion: {
+        islam: 'Islam',
+        kristen: 'Kristen',
+        katolik: 'Katolik',
+        hindu: 'Hindu',
+        buddha: 'Buddha',
+        konghucu: 'Konghucu',
+    },
+    familyStatus: {
+        kandung: 'Anak kandung',
+        angkat: 'Anak angkat',
+        tiri: 'Anak tiri',
+        wali: 'Wali',
+    },
     journal: { abc: 'Curhat ABC', grateful: 'Grateful journal' },
     journalStatus: { draft: 'Draf', published: 'Terbit' },
     reflection: { self: 'Mandiri', guided: 'Terbimbing' },
@@ -63,6 +77,21 @@ export function formatDate(value, withTime = false) {
         : { day: '2-digit', month: 'short', year: 'numeric' };
 
     return new Intl.DateTimeFormat('id-ID', options).format(date);
+}
+
+export const SOCIAL_PLATFORMS = [
+    { key: 'instagram', label: 'Instagram', placeholder: 'nama.pengguna', url: (value) => `https://instagram.com/${value}` },
+    { key: 'facebook', label: 'Facebook', placeholder: 'nama.pengguna', url: (value) => `https://facebook.com/${value}` },
+    { key: 'youtube', label: 'YouTube', placeholder: '@kanal', url: (value) => `https://youtube.com/@${value.replace(/^@/, '')}` },
+    { key: 'threads', label: 'Threads', placeholder: 'nama.pengguna', url: (value) => `https://threads.net/@${value.replace(/^@/, '')}` },
+    { key: 'tiktok', label: 'TikTok', placeholder: 'nama.pengguna', url: (value) => `https://tiktok.com/@${value.replace(/^@/, '')}` },
+];
+
+export function socialUrl(platform, value) {
+    if (!value) return null;
+    const entry = SOCIAL_PLATFORMS.find((item) => item.key === platform);
+
+    return entry ? entry.url(value) : null;
 }
 
 export function formatDateNumeric(value) {

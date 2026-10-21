@@ -4,7 +4,7 @@ import { Icon } from '../../Components/Icons';
 import { Button, Card, Field, HeroCard, IconButton, Input, ListRow, PageSection, PasswordInput, ProgressRing, ReadOnlyValue, Select, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate, initials } from '../../lib/format';
+import { SOCIAL_PLATFORMS, formatDate, initials, label } from '../../lib/format';
 
 export default function Profile() {
     const { auth } = usePage().props;
@@ -72,6 +72,13 @@ export default function Profile() {
         const rows = [...(biodata.extra_fields ?? [])];
         rows[index] = { ...rows[index], [key]: value };
         setBiodata({ ...biodata, extra_fields: rows });
+    };
+
+    const updateSocial = (platform, value) => {
+        setBiodata({
+            ...biodata,
+            social_media: { ...(biodata.social_media ?? {}), [platform]: value },
+        });
     };
 
     const addExtra = () => {
@@ -181,7 +188,7 @@ export default function Profile() {
                             </span>
                             <span className="min-w-0 flex-1">
                                 <span className="block text-[15px] font-bold leading-tight">Biodata</span>
-                                <span className="mt-0.5 block text-[11px] text-[#64748b]">Data dasar dan kesehatan</span>
+                                <span className="mt-0.5 block text-[11px] text-[#64748b]">Identitas, keluarga, dan kesehatan</span>
                             </span>
                             <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f1f5f9] text-[#475569] transition ${openSection === 'biodata' ? 'rotate-180' : ''}`}>
                                 <Icon name="chevron" size={18} />
@@ -192,10 +199,38 @@ export default function Profile() {
                             <div className="mt-4">
                                 {loading ? <Skeleton rows={6} /> : (
                                     <form onSubmit={saveBiodata} className="space-y-3">
-                                        <div className="grid gap-3">
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Identitas</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Tempat lahir" htmlFor="birth_place">
+                                                <Input id="birth_place" className="h-11" value={biodata.birth_place ?? ''} onChange={(e) => setBiodata({ ...biodata, birth_place: e.target.value })} placeholder="mis. Bulukumba" />
+                                            </Field>
                                             <Field label="Tanggal lahir" htmlFor="birth_date">
                                                 <Input id="birth_date" className="h-11" type="date" value={biodata.birth_date ?? ''} onChange={(e) => setBiodata({ ...biodata, birth_date: e.target.value })} />
                                             </Field>
+                                        </div>
+                                        <Field label="NISN" htmlFor="nisn" hint="Nomor Induk Siswa Nasional, 10 digit.">
+                                            <Input
+                                                id="nisn"
+                                                className="h-11 tabular"
+                                                inputMode="numeric"
+                                                maxLength={10}
+                                                value={biodata.nisn ?? ''}
+                                                onChange={(e) => setBiodata({ ...biodata, nisn: e.target.value.replace(/\D/g, '') })}
+                                                placeholder="0086865430"
+                                            />
+                                        </Field>
+                                        <Field label="NIK (kependudukan)" htmlFor="nik" hint="16 digit sesuai KTP/KK. Disimpan terenkripsi.">
+                                            <Input
+                                                id="nik"
+                                                className="h-11 tabular"
+                                                inputMode="numeric"
+                                                maxLength={16}
+                                                value={biodata.nik ?? ''}
+                                                onChange={(e) => setBiodata({ ...biodata, nik: e.target.value.replace(/\D/g, '') })}
+                                                placeholder="16 digit angka"
+                                            />
+                                        </Field>
+                                        <div className="grid grid-cols-2 gap-3">
                                             <Field label="Jenis kelamin" htmlFor="gender">
                                                 <Select id="gender" className="h-11" value={biodata.gender ?? ''} onChange={(e) => setBiodata({ ...biodata, gender: e.target.value })}>
                                                     <option value="">Pilih</option>
@@ -203,10 +238,102 @@ export default function Profile() {
                                                     <option value="female">Perempuan</option>
                                                 </Select>
                                             </Field>
-                                            <Field label="Nomor kontak" htmlFor="phone">
-                                                <Input id="phone" className="h-11" value={biodata.phone ?? ''} onChange={(e) => setBiodata({ ...biodata, phone: e.target.value })} placeholder="08xxxxxxxxxx" />
+                                            <Field label="Agama" htmlFor="religion">
+                                                <Select id="religion" className="h-11" value={biodata.religion ?? ''} onChange={(e) => setBiodata({ ...biodata, religion: e.target.value })}>
+                                                    <option value="">Pilih</option>
+                                                    {['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu'].map((value) => (
+                                                        <option key={value} value={value}>{label('religion', value)}</option>
+                                                    ))}
+                                                </Select>
                                             </Field>
-                                            <Field label="Golongan darah" htmlFor="blood_type">
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Status dalam keluarga" htmlFor="family_status">
+                                                <Select id="family_status" className="h-11" value={biodata.family_status ?? ''} onChange={(e) => setBiodata({ ...biodata, family_status: e.target.value })}>
+                                                    <option value="">Pilih</option>
+                                                    {['kandung', 'angkat', 'tiri', 'wali'].map((value) => (
+                                                        <option key={value} value={value}>{label('familyStatus', value)}</option>
+                                                    ))}
+                                                </Select>
+                                            </Field>
+                                            <Field label="Anak ke-" htmlFor="birth_order">
+                                                <Input
+                                                    id="birth_order"
+                                                    className="h-11 tabular"
+                                                    type="number"
+                                                    min={1}
+                                                    max={20}
+                                                    value={biodata.birth_order ?? ''}
+                                                    onChange={(e) => setBiodata({ ...biodata, birth_order: e.target.value })}
+                                                />
+                                            </Field>
+                                        </div>
+
+                                        <p className="pt-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Kontak &amp; sekolah</p>
+                                        <Field label="Nomor kontak / telepon rumah" htmlFor="phone">
+                                            <Input id="phone" className="h-11" inputMode="tel" value={biodata.phone ?? ''} onChange={(e) => setBiodata({ ...biodata, phone: e.target.value })} placeholder="08xxxxxxxxxx" />
+                                        </Field>
+                                        <Field label="Alamat" htmlFor="address">
+                                            <Textarea id="address" rows={2} value={biodata.address ?? ''} onChange={(e) => setBiodata({ ...biodata, address: e.target.value })} />
+                                        </Field>
+                                        <Field label="Sekolah asal" htmlFor="previous_school">
+                                            <Input id="previous_school" className="h-11" value={biodata.previous_school ?? ''} onChange={(e) => setBiodata({ ...biodata, previous_school: e.target.value })} placeholder="mis. SMP Negeri 1 Bulukumba" />
+                                        </Field>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Diterima di kelas" htmlFor="admission_class">
+                                                <Input id="admission_class" className="h-11" value={biodata.admission_class ?? ''} onChange={(e) => setBiodata({ ...biodata, admission_class: e.target.value })} placeholder="mis. X IPA 1" />
+                                            </Field>
+                                            <Field label="Tanggal diterima" htmlFor="admission_date">
+                                                <Input id="admission_date" className="h-11" type="date" value={biodata.admission_date ?? ''} onChange={(e) => setBiodata({ ...biodata, admission_date: e.target.value })} />
+                                            </Field>
+                                        </div>
+
+                                        <p className="pt-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Orang tua</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Nama ayah" htmlFor="father_name">
+                                                <Input id="father_name" className="h-11" value={biodata.father_name ?? ''} onChange={(e) => setBiodata({ ...biodata, father_name: e.target.value })} />
+                                            </Field>
+                                            <Field label="Pekerjaan ayah" htmlFor="father_occupation">
+                                                <Input id="father_occupation" className="h-11" value={biodata.father_occupation ?? ''} onChange={(e) => setBiodata({ ...biodata, father_occupation: e.target.value })} />
+                                            </Field>
+                                        </div>
+                                        <Field label="Telepon ayah" htmlFor="father_phone">
+                                            <Input id="father_phone" className="h-11" inputMode="tel" value={biodata.father_phone ?? ''} onChange={(e) => setBiodata({ ...biodata, father_phone: e.target.value })} placeholder="08xxxxxxxxxx" />
+                                        </Field>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Nama ibu" htmlFor="mother_name">
+                                                <Input id="mother_name" className="h-11" value={biodata.mother_name ?? ''} onChange={(e) => setBiodata({ ...biodata, mother_name: e.target.value })} />
+                                            </Field>
+                                            <Field label="Pekerjaan ibu" htmlFor="mother_occupation">
+                                                <Input id="mother_occupation" className="h-11" value={biodata.mother_occupation ?? ''} onChange={(e) => setBiodata({ ...biodata, mother_occupation: e.target.value })} />
+                                            </Field>
+                                        </div>
+                                        <Field label="Telepon ibu" htmlFor="mother_phone">
+                                            <Input id="mother_phone" className="h-11" inputMode="tel" value={biodata.mother_phone ?? ''} onChange={(e) => setBiodata({ ...biodata, mother_phone: e.target.value })} placeholder="08xxxxxxxxxx" />
+                                        </Field>
+                                        <Field label="Alamat orang tua" htmlFor="parent_address">
+                                            <Textarea id="parent_address" rows={2} value={biodata.parent_address ?? ''} onChange={(e) => setBiodata({ ...biodata, parent_address: e.target.value })} placeholder="Kosongkan bila sama dengan alamat Anda" />
+                                        </Field>
+
+                                        <p className="pt-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Wali (opsional)</p>
+                                        <Field label="Nama wali" htmlFor="guardian_name">
+                                            <Input id="guardian_name" className="h-11" value={biodata.guardian_name ?? ''} onChange={(e) => setBiodata({ ...biodata, guardian_name: e.target.value })} />
+                                        </Field>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Telepon wali" htmlFor="guardian_phone">
+                                                <Input id="guardian_phone" className="h-11" inputMode="tel" value={biodata.guardian_phone ?? ''} onChange={(e) => setBiodata({ ...biodata, guardian_phone: e.target.value })} />
+                                            </Field>
+                                            <Field label="Pekerjaan wali" htmlFor="guardian_occupation">
+                                                <Input id="guardian_occupation" className="h-11" value={biodata.guardian_occupation ?? ''} onChange={(e) => setBiodata({ ...biodata, guardian_occupation: e.target.value })} />
+                                            </Field>
+                                        </div>
+                                        <Field label="Alamat wali" htmlFor="guardian_address">
+                                            <Textarea id="guardian_address" rows={2} value={biodata.guardian_address ?? ''} onChange={(e) => setBiodata({ ...biodata, guardian_address: e.target.value })} />
+                                        </Field>
+
+                                        <p className="pt-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Kesehatan</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <Field label="Gol. darah" htmlFor="blood_type">
                                                 <Input id="blood_type" className="h-11" value={biodata.blood_type ?? ''} onChange={(e) => setBiodata({ ...biodata, blood_type: e.target.value })} maxLength={3} />
                                             </Field>
                                             <Field label="Tinggi (cm)" htmlFor="height_cm">
@@ -216,15 +343,33 @@ export default function Profile() {
                                                 <Input id="weight_kg" className="h-11" type="number" value={biodata.weight_kg ?? ''} onChange={(e) => setBiodata({ ...biodata, weight_kg: e.target.value })} />
                                             </Field>
                                         </div>
-                                        <Field label="Alamat" htmlFor="address">
-                                            <Textarea id="address" rows={2} value={biodata.address ?? ''} onChange={(e) => setBiodata({ ...biodata, address: e.target.value })} />
-                                        </Field>
                                         <Field label="Riwayat penyakit" htmlFor="medical_history" hint="Data sensitif. Hanya Guru BK kelas Anda yang dapat melihat.">
                                             <Textarea id="medical_history" rows={2} value={biodata.medical_history ?? ''} onChange={(e) => setBiodata({ ...biodata, medical_history: e.target.value })} />
                                         </Field>
                                         <Field label="Catatan kesehatan" htmlFor="health_notes">
                                             <Textarea id="health_notes" rows={2} value={biodata.health_notes ?? ''} onChange={(e) => setBiodata({ ...biodata, health_notes: e.target.value })} />
                                         </Field>
+
+                                        <div className="rounded-[18px] border border-dashed border-[#cbd5e1] p-3">
+                                            <p className="text-[12.5px] font-semibold">Media sosial</p>
+                                            <p className="mt-0.5 text-[11px] leading-snug text-[#64748b]">
+                                                Opsional. Isi nama pengguna saja, mis. <i>ayu.lestari</i>; kosongkan yang tidak dipakai.
+                                            </p>
+                                            <div className="mt-2 space-y-2">
+                                                {SOCIAL_PLATFORMS.map((platform) => (
+                                                    <div key={platform.key} className="flex items-center gap-2">
+                                                        <span className="w-[86px] shrink-0 text-[12px] text-[#475569]">{platform.label}</span>
+                                                        <Input
+                                                            className="h-11 min-w-0 flex-1"
+                                                            aria-label={`Akun ${platform.label}`}
+                                                            placeholder={platform.placeholder}
+                                                            value={biodata.social_media?.[platform.key] ?? ''}
+                                                            onChange={(event) => updateSocial(platform.key, event.target.value)}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
 
                                         <div className="rounded-[18px] border border-dashed border-[#cbd5e1] p-3">
                                             <div className="flex items-start justify-between gap-3">
