@@ -168,29 +168,17 @@ class ClientFeedbackRound2Test extends TestCase
             ->assertJsonPath('data.today_mood.note', 'Karena nilai ujian membaik.');
     }
 
-    public function test_student_sees_assigned_counselor_whatsapp_number(): void
+    public function test_curhat_button_uses_assigned_counselor_number(): void
     {
-        $admin = $this->user('superadmin', '9001');
-
-        $this->actingAs($admin)
-            ->withSession(['two_factor_passed' => true])
-            ->postJson('/api/admin/users', [
-                'name' => 'Rina Wati',
-                'identity_number' => '198501012011',
-                'email' => 'rina@example.test',
-                'phone' => '628111111111',
-                'role' => 'counselor',
-                'password' => 'Password123',
-                'class_ids' => [\App\Models\SchoolClass::query()->value('id')],
-            ])
-            ->assertCreated();
+        $this->counselor->forceFill(['phone' => '628111111111'])->save();
+        app(SettingsService::class)->set('school.whatsapp_number', '628999999999');
 
         $this->actingAs($this->student)
-            ->getJson('/api/student/counselor-contacts')
+            ->postJson('/api/student/whatsapp-link', ['context' => 'curhat lanjutan'])
             ->assertOk()
-            ->assertJsonCount(1, 'data.contacts')
-            ->assertJsonPath('data.contacts.0.name', 'Rina Wati')
-            ->assertJsonPath('data.contacts.0.url', fn ($url) => str_starts_with($url, 'https://wa.me/628111111111?text='));
+            ->assertJsonPath('data.counselor_name', $this->counselor->name)
+            ->assertJsonPath('data.source', 'counselor')
+            ->assertJsonPath('data.url', fn ($url) => str_starts_with($url, 'https://wa.me/628111111111?text='));
     }
 
     public function test_counselor_phone_is_rejected_when_invalid(): void
@@ -210,16 +198,28 @@ class ClientFeedbackRound2Test extends TestCase
             ->assertJsonValidationErrors('phone');
     }
 
-    public function test_contacts_fall_back_to_school_whatsapp_number(): void
+    public function test_curhat_button_falls_back_to_school_number(): void
     {
         $this->counselor->forceFill(['phone' => null])->save();
         app(SettingsService::class)->set('school.whatsapp_number', '6281234567890');
 
         $this->actingAs($this->student)
-            ->getJson('/api/student/counselor-contacts')
+            ->postJson('/api/student/whatsapp-link')
             ->assertOk()
-            ->assertJsonCount(1, 'data.contacts')
-            ->assertJsonPath('data.contacts.0.name', 'Layanan BK');
+            ->assertJsonPath('data.counselor_name', 'Layanan BK sekolah')
+            ->assertJsonPath('data.source', 'school')
+            ->assertJsonPath('data.url', fn ($url) => str_starts_with($url, 'https://wa.me/6281234567890?text='));
+    }
+
+    public function test_curhat_button_requires_a_number(): void
+    {
+        $this->counselor->forceFill(['phone' => null])->save();
+        app(SettingsService::class)->set('school.whatsapp_number', null);
+
+        $this->actingAs($this->student)
+            ->postJson('/api/student/whatsapp-link')
+            ->assertStatus(409)
+            ->assertJsonPath('error', 'WHATSAPP_NOT_CONFIGURED');
     }
 
     public function test_weekly_reflection_is_mandatory_only_on_weekend(): void

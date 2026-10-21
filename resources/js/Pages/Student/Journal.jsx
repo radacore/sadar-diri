@@ -7,7 +7,6 @@ import {
     EmptyState,
     Field,
     ListRow,
-    PageSection,
     Segmented,
     Skeleton,
     Textarea,
@@ -45,8 +44,6 @@ export default function Journal() {
     const [saving, setSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
     const [filter, setFilter] = useState('');
-    const [contacts, setContacts] = useState([]);
-    const [serviceHours, setServiceHours] = useState(null);
 
     const [abc, setAbc] = useState({ activating_event: '', belief: '', consequence: '' });
     const [grateful, setGrateful] = useState({ gratitude_text: '', happiness_text: '' });
@@ -71,17 +68,6 @@ export default function Journal() {
     useEffect(() => {
         load();
     }, [load]);
-
-    useEffect(() => {
-        api.get('/api/student/counselor-contacts')
-            .then((response) => {
-                setContacts(response.data.contacts ?? []);
-                setServiceHours(response.data.service_hours ?? null);
-            })
-            .catch(() => {
-                /* kontak bersifat pelengkap; kegagalan muat tidak menghalangi penulisan jurnal */
-            });
-    }, []);
 
     const saveDraft = useCallback(async (payload) => {
         try {
@@ -149,21 +135,30 @@ export default function Journal() {
     };
 
     const openWhatsApp = async () => {
+        let target = null;
+
+        try {
+            const response = await api.post('/api/student/whatsapp-link', { context: 'curhat lanjutan' });
+            target = response.data;
+        } catch (error) {
+            toast.push(error.message, 'error');
+            return;
+        }
+
         const decision = await confirm({
             title: 'Buka WhatsApp?',
-            description: 'Anda akan diarahkan ke WhatsApp untuk menghubungi Guru BK.',
+            description: 'Anda akan diarahkan ke WhatsApp untuk menghubungi Guru BK kelas Anda.',
+            details: [
+                { label: 'Tujuan', value: target.counselor_name },
+                ...(target.service_hours ? [{ label: 'Jam layanan', value: target.service_hours }] : []),
+            ],
             confirmLabel: 'Buka WhatsApp',
             tone: 'info',
             icon: 'send',
         });
         if (!decision) return;
 
-        try {
-            const response = await api.post('/api/student/whatsapp-link', { context: 'curhat lanjutan' });
-            window.open(response.data.url, '_blank', 'noopener');
-        } catch (error) {
-            toast.push(error.message, 'error');
-        }
+        window.open(target.url, '_blank', 'noopener');
     };
 
     const toggleEntry = async (entry) => {
@@ -212,38 +207,6 @@ export default function Journal() {
                     onChange={setTab}
                 />
 
-                <PageSection
-                    title="Curhat & konseling"
-                    action={serviceHours ? <span className="text-[11px] text-[#64748b]">{serviceHours}</span> : null}
-                >
-                    {contacts.length === 0 ? (
-                        <EmptyState
-                            title="Nomor Guru BK belum diatur"
-                            description="Hubungi wali kelas atau admin sekolah untuk mendapatkan nomor layanan BK."
-                        />
-                    ) : (
-                        <div className="space-y-2">
-                            {contacts.map((contact) => (
-                                <ListRow
-                                    key={contact.phone}
-                                    title={contact.name}
-                                    subtitle={contact.phone}
-                                    trailing={
-                                        <Button
-                                            size="sm"
-                                            variant="info"
-                                            className="min-h-11"
-                                            onClick={() => window.open(contact.url, '_blank', 'noopener')}
-                                        >
-                                            Chat
-                                        </Button>
-                                    }
-                                />
-                            ))}
-                        </div>
-                    )}
-                </PageSection>
-
                 {tab === 'abc' ? (
                     <div className="space-y-5">
                         <section className="space-y-3">
@@ -254,24 +217,18 @@ export default function Journal() {
                                 </p>
                             </div>
 
-                            <div className="relative space-y-3">
-                                <span className="absolute bottom-10 left-4 top-10 w-px bg-[#e2e8f0]" aria-hidden="true" />
+                            <div className="space-y-3">
                                 {ABC_STEPS.map((step) => (
-                                    <div key={step.key} className="relative flex gap-3">
-                                        <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e8eaf6] text-[12px] font-extrabold text-[#3f51b5]">
-                                            {step.letter}
-                                        </span>
-                                        <div className="min-w-0 flex-1 rounded-[18px] border border-[#e2e8f0] bg-white p-3.5">
-                                            <Field label={`${step.letter} — ${step.label}`} required htmlFor={step.key}>
-                                                <Textarea
-                                                    id={step.key}
-                                                    rows={3}
-                                                    value={abc[step.key]}
-                                                    onChange={(event) => updateAbc(step.key, event.target.value)}
-                                                    placeholder={step.placeholder}
-                                                />
-                                            </Field>
-                                        </div>
+                                    <div key={step.key} className="rounded-[18px] border border-[#e2e8f0] bg-white p-3.5">
+                                        <Field label={`${step.letter} — ${step.label}`} required htmlFor={step.key}>
+                                            <Textarea
+                                                id={step.key}
+                                                rows={3}
+                                                value={abc[step.key]}
+                                                onChange={(event) => updateAbc(step.key, event.target.value)}
+                                                placeholder={step.placeholder}
+                                            />
+                                        </Field>
                                     </div>
                                 ))}
                             </div>
