@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '../../Components/Icons';
 import { Badge, Button, Card, EmptyState, Field, HeroCard, Input, ListRow, PageSection, Skeleton, useConfirm, useToast } from '../../Components/UI';
@@ -29,25 +29,27 @@ function Switch({ checked, onChange, label, hint, icon }) {
 
 export default function Privacy() {
     const { auth } = usePage().props;
-    const hasConsent = Boolean(auth?.user?.has_consent);
     const toast = useToast();
     const confirm = useConfirm();
     const [logs, setLogs] = useState([]);
     const [summaries, setSummaries] = useState([]);
     const [preferences, setPreferences] = useState(null);
+    const [consent, setConsent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
         try {
-            const [logResponse, summaryResponse, preferenceResponse] = await Promise.all([
+            const [logResponse, summaryResponse, preferenceResponse, consentResponse] = await Promise.all([
                 api.get('/api/student/privacy/access-log'),
                 api.get('/api/student/counseling-summaries'),
                 api.get('/api/student/preferences/reminders'),
+                api.get('/api/student/privacy/consent'),
             ]);
             setLogs(logResponse.data ?? []);
             setSummaries(summaryResponse.data ?? []);
             setPreferences(preferenceResponse.data);
+            setConsent(consentResponse.data);
         } catch (error) {
             toast.push(error.message, 'error');
         } finally {
@@ -84,6 +86,42 @@ export default function Privacy() {
         }
     };
 
+    const activate = async () => {
+        const version = consent?.version;
+
+        if (!version) {
+            toast.push('Versi kebijakan belum tersedia. Muat ulang halaman.', 'error');
+            return;
+        }
+
+        const decision = await confirm({
+            title: 'Aktifkan persetujuan?',
+            description: 'Jurnal, refleksi, dan portofolio akan dapat dipakai kembali dengan data yang tersimpan.',
+            details: [{ label: 'Versi kebijakan', value: version }],
+            confirmLabel: 'Aktifkan',
+            tone: 'primary',
+            icon: 'shield',
+        });
+        if (!decision) return;
+
+        setBusy(true);
+
+        try {
+            const response = await api.post('/api/auth/consent', { version, accepted: true });
+            setConsent({
+                version: response.data?.consent_version ?? version,
+                has_consent: true,
+                consented_at: response.data?.consented_at ?? new Date().toISOString(),
+            });
+            toast.push('Persetujuan aktif kembali.');
+            router.reload({ only: ['auth'] });
+        } catch (error) {
+            toast.push(error.message, 'error');
+        } finally {
+            setBusy(false);
+        }
+    };
+
     const revoke = async () => {
         const decision = await confirm({
             title: 'Cabut persetujuan?',
@@ -95,18 +133,22 @@ export default function Privacy() {
         });
         if (!decision) return;
 
+        setBusy(true);
+
         try {
             await api.delete('/api/auth/consent');
+            setConsent({ ...(consent ?? {}), has_consent: false, consented_at: null });
             toast.push('Persetujuan dicabut.');
-            setTimeout(() => {
-                window.location.href = '/masuk';
-            }, 1200);
+            router.reload({ only: ['auth'] });
         } catch (error) {
             toast.push(error.message, 'error');
+        } finally {
+            setBusy(false);
         }
     };
 
     const channelEnabled = preferences?.channel !== 'in_app';
+    const hasConsent = consent ? consent.has_consent : Boolean(auth?.user?.has_consent);
 
     return (
         <AppShell title="Privasi & data saya" subtitle="Siapa yang melihat data Anda dan pengaturan pengingat">
@@ -121,10 +163,16 @@ export default function Privacy() {
                         <div className="flex items-center gap-2">
                             <Badge tone={hasConsent ? 'success' : 'danger'}>{hasConsent ? 'Aktif' : 'Tidak aktif'}</Badge>
                             <span className="text-[11px] leading-snug text-[#64748b]">
-                                {hasConsent ? 'Dapat dicabut kapan saja.' : 'Hubungi Guru BK untuk mengaktifkan kembali.'}
+                                {hasConsent ? 'Dapat dicabut kapan saja.' : 'Aktifkan sendiri kapan saja, tanpa menunggu Guru BK.'}
                             </span>
                         </div>
-                        <Button variant="danger" className="h-11 w-full" onClick={revoke}>Cabut persetujuan</Button>
+                        {hasConsent ? (
+                            <Button variant="danger" className="h-11 w-full" onClick={revoke} disabled={busy}>Cabut persetujuan</Button>
+                        ) : (
+                            <Button variant="success" className="h-11 w-full" onClick={activate} disabled={busy}>
+                                {busy ? 'Mengaktifkan…' : 'Aktifkan persetujuan'}
+                            </Button>
+                        )}
                     </div>
                 </HeroCard>
 

@@ -69,7 +69,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::put('/account/password', [AuthController::class, 'updatePassword'])->middleware('throttle:10,1');
     Route::get('/profile/versions', [StudentController::class, 'profileVersions']);
     Route::get('/counseling-summaries', [StudentController::class, 'counselingSummaries']);
-    Route::get('/counselor-contacts', [StudentController::class, 'counselorContacts']);
+    Route::get('/privacy/consent', [StudentController::class, 'consentStatus']);
     Route::get('/privacy/access-log', [StudentController::class, 'accessLog']);
     Route::get('/preferences/reminders', [StudentController::class, 'reminderPreferences']);
     Route::put('/preferences/reminders', [StudentController::class, 'updateReminderPreferences']);

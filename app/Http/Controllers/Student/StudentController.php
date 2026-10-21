@@ -28,50 +28,33 @@ class StudentController extends Controller
         private readonly SettingsService $settings,
     ) {}
 
-    public function counselorContacts(Request $request)
+    /**
+     * Satu siswa didampingi satu Guru BK, jadi tombol Curhat memakai nomor
+     * Guru BK kelasnya. Nomor layanan sekolah hanya dipakai sebagai cadangan
+     * bila Guru BK belum mengisi nomor.
+     */
+    private function counselorFor(User $student): ?User
     {
         $classIds = \App\Models\ClassStudent::query()
-            ->where('student_id', $request->user()->id)
+            ->where('student_id', $student->id)
             ->where('status', 'active')
             ->pluck('class_id');
 
-        $contacts = \App\Models\CounselorClass::query()
-            ->whereIn('class_id', $classIds)
-            ->pluck('counselor_id')
-            ->unique()
-            ->pipe(fn ($ids) => User::query()
-                ->whereIn('id', $ids)
-                ->where('role', 'counselor')
-                ->where('status', 'active')
-                ->whereNotNull('phone')
-                ->orderBy('name')
-                ->get(['name', 'phone'])
-                ->map(fn (User $counselor) => ['name' => $counselor->name, 'phone' => $counselor->phone])
-                ->values());
-
-        if ($contacts->isEmpty()) {
-            $fallback = preg_replace('/\D+/', '', (string) $this->settings->get('school.whatsapp_number'));
-            $contacts = collect($fallback === '' ? [] : [['name' => 'Layanan BK', 'phone' => $fallback]]);
+        if ($classIds->isEmpty()) {
+            return null;
         }
 
-        $class = $request->user()->activeClass();
-        $message = sprintf(
-            'Halo, saya %s%s. Saya ingin melanjutkan curhat dan meminta waktu konsultasi.',
-            $request->user()->name,
-            $class ? ' kelas '.$class->name : '',
-        );
+        $counselorIds = \App\Models\CounselorClass::query()
+            ->whereIn('class_id', $classIds)
+            ->pluck('counselor_id')
+            ->unique();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'contacts' => $contacts->map(fn ($row) => [
-                    'name' => $row['name'],
-                    'phone' => $row['phone'],
-                    'url' => 'https://wa.me/'.preg_replace('/\D+/', '', (string) $row['phone']).'?text='.rawurlencode($message),
-                ])->all(),
-                'service_hours' => $this->settings->get('school.service_hours'),
-            ],
-        ]);
+        return User::query()
+            ->whereIn('id', $counselorIds)
+            ->where('role', 'counselor')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->first();
     }
 
     public function dashboard(Request $request)
@@ -330,6 +313,20 @@ class StudentController extends Controller
         return response()->json(['success' => true, 'data' => $notes]);
     }
 
+    public function consentStatus(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'version' => $this->settings->get('privacy.consent_version', '2026-08-01'),
+                'has_consent' => $user->hasConsent(),
+                'consented_at' => $user->consented_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
     public function accessLog(Request $request)
     {
         $user = $request->user();
@@ -400,23 +397,27 @@ class StudentController extends Controller
 
     public function whatsappLink(Request $request)
     {
-        $user = $request->user();
-        $number = preg_replace('/\D+/', '', (string) $this->settings->get('school.whatsapp_number'));
-
-        if (blank($number)) {
-            return response()->json([
-                'success' => false,
-                'error' => 'WHATSAPP_NOT_CONFIGURED',
-                'message' => 'Nomor WhatsApp layanan BK belum diatur. Hubungi Guru BK secara langsung.',
-            ], 409);
-        }
-
         if (! $this->settings->get('feature.whatsapp_escalation', true)) {
             return response()->json([
                 'success' => false,
                 'error' => 'FEATURE_DISABLED',
                 'message' => 'Fitur eskalasi WhatsApp sedang dinonaktifkan.',
             ], 403);
+        }
+
+        $user = $request->user();
+        $counselor = $this->counselorFor($user);
+        $counselorNumber = preg_replace('/\D+/', '', (string) $counselor?->phone);
+        $schoolNumber = preg_replace('/\D+/', '', (string) $this->settings->get('school.whatsapp_number'));
+
+        $number = $counselorNumber !== '' ? $counselorNumber : $schoolNumber;
+
+        if ($number === '') {
+            return response()->json([
+                'success' => false,
+                'error' => 'WHATSAPP_NOT_CONFIGURED',
+                'message' => 'Nomor WhatsApp Guru BK belum diatur. Hubungi wali kelas atau admin sekolah.',
+            ], 409);
         }
 
         $class = $user->activeClass();
@@ -430,6 +431,9 @@ class StudentController extends Controller
             'success' => true,
             'data' => [
                 'url' => 'https://wa.me/'.$number.'?text='.rawurlencode($message),
+                'counselor_name' => $counselorNumber !== '' ? $counselor?->name : 'Layanan BK sekolah',
+                'phone' => $number,
+                'source' => $counselorNumber !== '' ? 'counselor' : 'school',
                 'service_hours' => $this->settings->get('school.service_hours'),
             ],
         ]);

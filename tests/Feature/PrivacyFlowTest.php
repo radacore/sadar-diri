@@ -73,6 +73,47 @@ class PrivacyFlowTest extends TestCase
         return $class;
     }
 
+    public function test_student_can_revoke_and_reactivate_consent_without_counselor(): void
+    {
+        $counselor = $this->user('counselor', '199001');
+        $class = $this->classWithStudents($counselor, 1);
+        $student = User::where('role', 'student')->firstOrFail();
+
+        $this->actingAs($student)
+            ->getJson('/api/student/privacy/consent')
+            ->assertOk()
+            ->assertJsonPath('data.has_consent', true);
+
+        $this->actingAs($student)
+            ->deleteJson('/api/auth/consent')
+            ->assertOk();
+
+        $this->assertFalse($student->fresh()->hasConsent());
+
+        $this->actingAs($student)
+            ->getJson('/api/student/privacy/consent')
+            ->assertOk()
+            ->assertJsonPath('data.has_consent', false)
+            ->assertJsonPath('data.consented_at', null);
+
+        // Fitur jurnal terkunci selama persetujuan dicabut.
+        $this->actingAs($student)
+            ->getJson('/api/student/journals')
+            ->assertForbidden();
+
+        $version = app(\App\Services\SettingsService::class)->get('privacy.consent_version', '2026-08-01');
+
+        $this->actingAs($student)
+            ->postJson('/api/auth/consent', ['version' => $version, 'accepted' => true])
+            ->assertOk();
+
+        $this->assertTrue($student->fresh()->hasConsent());
+
+        $this->actingAs($student)
+            ->getJson('/api/student/journals')
+            ->assertOk();
+    }
+
     public function test_guided_session_stays_open_until_counselor_closes_it(): void
     {
         $counselor = $this->user('counselor', '199001');
