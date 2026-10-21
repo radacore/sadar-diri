@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Panduan Penggunaan SADAR DIRI — Portal Superadmin</title>
+<link rel="stylesheet" href="panduan.css">
+</head>
+<body>
+
+<!-- ============ 1. SAMPUL ============ -->
+<section class="page cover admin">
+  <div class="cover-inner">
+    <div class="cover-brand">
+      <div class="cover-mark">SD</div>
+      <div>
+        <div class="name">SADAR DIRI</div>
+        <div class="tag">Portal Superadmin</div>
+      </div>
+    </div>
+
+    <div class="cover-kicker-row">
+      <div class="cover-kicker">Panduan Penggunaan</div>
+      <div class="cover-portal">Portal Superadmin</div>
+    </div>
+    <h1>SADAR DIRI<span>Menjaga layanan, tanpa membaca cerita.</span></h1>
+    <p class="cover-lead">
+      Petunjuk langkah demi langkah untuk mengelola akun, kelas, tahun ajaran, pengumuman,
+      konten, laporan agregat, audit log, sampai kebijakan retensi data sekolah.
+      Seluruh gambar diambil langsung dari aplikasi yang berjalan pada layar desktop.
+    </p>
+
+    <div class="cover-roles">
+      <div class="cover-role">
+        <div class="r">Bab 04–06</div>
+        <div class="t">Akun &amp; akses</div>
+        <div class="d">Tambah akun, reset sandi, impor massal, dan penonaktifan.</div>
+      </div>
+      <div class="cover-role">
+        <div class="r">Bab 07–10</div>
+        <div class="t">Kelas &amp; tahun ajaran</div>
+        <div class="d">Penugasan Guru BK, kenaikan kelas, dan pratinjau aman.</div>
+      </div>
+      <div class="cover-role">
+        <div class="r">Bab 11–16</div>
+        <div class="t">Layanan &amp; tata kelola</div>
+        <div class="d">Pengumuman, konten, laporan, audit, retensi, pengaturan.</div>
+      </div>
+    </div>
+
+    <div class="cover-steps">
+      <div class="cover-step"><div class="n">1</div><div><div class="t">Siapkan tahun ajaran</div><div class="d">Kelas dulu, baru akun siswa.</div></div></div>
+      <div class="cover-step"><div class="n">2</div><div><div class="t">Tugaskan Guru BK</div><div class="d">Tanpa penugasan, data tak terbaca.</div></div></div>
+      <div class="cover-step"><div class="n">3</div><div><div class="t">Tutup dengan audit</div><div class="d">Periksa jejak akses setiap bulan.</div></div></div>
+    </div>
+
+    <div class="cover-quote">
+      <div class="q">“Admin mengelola layanan, bukan isi jiwa. Jurnal dan refleksi siswa tidak pernah terbuka di portal ini.”</div>
+    </div>
+
+    <div class="cover-aspects">
+      <div class="cover-aspects-title">Enam aspek kesejahteraan psikologis (Ryff) yang dipantau</div>
+      <div class="cover-aspects-list">
+        <span>Penerimaan diri</span><span>Relasi positif</span><span>Kemandirian</span>
+        <span>Penguasaan diri</span><span>Tujuan hidup</span><span>Pertumbuhan</span>
+      </div>
+    </div>
+
+    <div class="cover-meta">
+      <div><b>22 tangkapan layar</b>Desktop 1440 × 900</div>
+      <div><b>Versi 1.2</b>Oktober 2026</div>
+      <div><b>Bahasa Indonesia</b>Antarmuka dan panduan</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. ISI PANDUAN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Daftar Isi</div>
+    <h1>Isi panduan &amp; peran Anda</h1>
+    <p class="sub">Bab 01–02 berlaku untuk semua pengguna. Bab 03–16 khusus portal superadmin.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">A</span><h2>Peta isi</h2></div>
+    <div class="toc">
+      <div class="toc-col">
+        <div class="toc-item lead"><span class="n">01</span><span class="t">Masuk ke aplikasi</span><span class="p">3</span></div>
+        <div class="toc-item lead"><span class="n">02</span><span class="t">Verifikasi dua faktor &amp; ganti sandi</span><span class="p">4</span></div>
+        <div class="toc-item lead"><span class="n">03</span><span class="t">Dashboard admin</span><span class="p">5</span></div>
+        <div class="toc-item lead"><span class="n">04</span><span class="t">Akun pengguna</span><span class="p">6</span></div>
+        <div class="toc-item lead"><span class="n">05</span><span class="t">Menambah akun</span><span class="p">7</span></div>
+        <div class="toc-item"><span class="n">5.1</span><span class="t">Akun siswa</span><span class="p">7</span></div>
+        <div class="toc-item"><span class="n">5.2</span><span class="t">Akun Guru BK</span><span class="p">7</span></div>
+        <div class="toc-item lead"><span class="n">06</span><span class="t">Reset sandi &amp; impor CSV</span><span class="p">8</span></div>
+        <div class="toc-item"><span class="n">6.1</span><span class="t">Reset satu akun</span><span class="p">8</span></div>
+        <div class="toc-item"><span class="n">6.2</span><span class="t">Impor massal</span><span class="p">8</span></div>
+        <div class="toc-item lead"><span class="n">07</span><span class="t">Kelas &amp; penugasan</span><span class="p">9</span></div>
+        <div class="toc-item"><span class="n">7.1</span><span class="t">Membuat kelas</span><span class="p">9</span></div>
+        <div class="toc-item lead"><span class="n">08</span><span class="t">Ubah kelas &amp; tugaskan BK</span><span class="p">10</span></div>
+      </div>
+      <div class="toc-col">
+        <div class="toc-item"><span class="n">8.1</span><span class="t">Mengubah data kelas</span><span class="p">10</span></div>
+        <div class="toc-item"><span class="n">8.2</span><span class="t">Menugaskan Guru BK</span><span class="p">10</span></div>
+        <div class="toc-item lead"><span class="n">09</span><span class="t">Tahun ajaran</span><span class="p">11</span></div>
+        <div class="toc-item lead"><span class="n">10</span><span class="t">Kenaikan kelas</span><span class="p">12</span></div>
+        <div class="toc-item"><span class="n">10.1</span><span class="t">Alur aman kenaikan</span><span class="p">12</span></div>
+        <div class="toc-item lead"><span class="n">11</span><span class="t">Pengumuman</span><span class="p">13</span></div>
+        <div class="toc-item"><span class="n">11.1</span><span class="t">Membuat pengumuman</span><span class="p">13</span></div>
+        <div class="toc-item lead"><span class="n">12</span><span class="t">Konten pembelajaran</span><span class="p">14</span></div>
+        <div class="toc-item lead"><span class="n">13</span><span class="t">Laporan agregat</span><span class="p">15</span></div>
+        <div class="toc-item lead"><span class="n">14</span><span class="t">Audit log</span><span class="p">16</span></div>
+        <div class="toc-item lead"><span class="n">15</span><span class="t">Retensi data</span><span class="p">17</span></div>
+        <div class="toc-item lead"><span class="n">16</span><span class="t">Pengaturan sekolah</span><span class="p">18</span></div>
+        <div class="toc-item lead"><span class="n">17</span><span class="t">Rutinitas, masalah, bantuan</span><span class="p">19</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">B</span><h2>Batas peran superadmin</h2></div>
+    <table class="t sm">
+      <tr><th style="width:50%">Yang bisa Anda lakukan</th><th>Yang bukan wewenang Anda</th></tr>
+      <tr>
+        <td>Membuat, mengubah, menonaktifkan akun siswa dan Guru BK.</td>
+        <td>Membaca isi jurnal, refleksi, dan catatan konseling.</td>
+      </tr>
+      <tr>
+        <td>Mengelola kelas, tahun ajaran, penugasan Guru BK, dan kenaikan kelas.</td>
+        <td>Menilai atau memverifikasi prestasi siswa.</td>
+      </tr>
+      <tr>
+        <td>Mengatur pengumuman, konten, laporan agregat, dan kebijakan retensi.</td>
+        <td>Menghapus audit log; catatan akses bersifat permanen.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">C</span><h2>Konvensi penulisan</h2></div>
+    <div class="legend">
+      <div class="legend-item"><span class="lg-bold">Tebal</span><span class="lg-desc">Tombol, menu, atau kolom yang harus diklik.</span></div>
+      <div class="legend-item"><span class="lg-italic">Miring</span><span class="lg-desc">Contoh isian, nama status, atau kutipan singkat.</span></div>
+      <div class="legend-item"><span class="chip">Badge</span><span class="lg-desc">Status data yang tampil di antarmuka.</span></div>
+      <div class="legend-item"><span class="lg-num">1</span><span class="lg-desc">Urutan langkah; kerjakan dari atas ke bawah.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">D</span><h2>Sebelum mulai</h2></div>
+    <div class="grid3">
+      <div class="card">
+        <h3><span class="num">1</span>Layar desktop</h3>
+        <p>Tata letak web penuh: sidebar muncul di layar 1024 piksel ke atas. Tidak ada versi ponsel.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">2</span>Akun superadmin</h3>
+        <p>Dibuat lewat seeder atau perintah artisan, bukan dari menu Pengguna.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">3</span>Urutan kerja</h3>
+        <p>Tahun ajaran → kelas → penugasan BK → akun siswa, agar data tidak menggantung.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">E</span><h2>Batas akses tiap peran</h2></div>
+    <table class="t sm">
+      <tr><th style="width:26%">Peran</th><th>Yang dapat dibuka</th></tr>
+      <tr><td>Superadmin</td><td>Seluruh menu admin, pengaturan, audit log, dan laporan agregat — tanpa isi jurnal siswa.</td></tr>
+      <tr><td>Guru BK</td><td>Data dan jurnal siswa pada kelas yang ditugaskan kepadanya.</td></tr>
+      <tr><td>Siswa</td><td>Data, jurnal, refleksi, dan portofolio miliknya sendiri.</td></tr>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <b>Prinsip pemisahan.</b> Admin mengelola layanan dan akun, bukan membaca isi psikologis siswa. Portal siswa dan Guru BK selalu bertata letak ponsel; admin web penuh.
+  </div>
+
+  <div class="foot"><span>Panduan Superadmin SADAR DIRI · Versi 1.2</span><span class="pnum">2</span></div>
+</section>
+
+<!-- ============ 3. MASUK ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 01 · Semua peran</div>
+    <h1>Masuk ke aplikasi</h1>
+    <p class="sub">Satu pintu untuk siswa, Guru BK, dan superadmin.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop w100 mb6">
+    <img src="img/01-masuk-desktop-crop.png" alt="Halaman masuk SADAR DIRI">
+    <figcaption><b>Gambar 1.</b> Halaman masuk. Panel kiri menjelaskan tujuan aplikasi dan enam aspek kesejahteraan Ryff; formulir ada di kanan.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">1.1</span><h2>Cara masuk</h2></div>
+    <ol class="steps compact">
+      <li>Buka alamat aplikasi. Anda langsung diarahkan ke halaman <b>Masuk</b>.</li>
+      <li>Isi <b>Email atau NIS/NIP</b> dengan akun superadmin, mis. <i>ADM001</i>.</li>
+      <li>Isi <b>Kata sandi</b>. Di komputer sekolah, hindari mencentang <b>Ingat saya</b>.</li>
+      <li>Klik <b>Masuk</b>. Anda diarahkan ke dashboard admin.</li>
+    </ol>
+  </div>
+
+  <div class="grid2">
+    <div class="note">
+      <b>Lupa kata sandi?</b> Gunakan tautan pemulihan di bawah formulir. Bila email admin tidak aktif, pemulihan harus dilakukan lewat perintah artisan di server.
+    </div>
+    <div class="note warn">
+      <b>Akun belum aktif?</b> Hanya akun berstatus <i>active</i> yang dapat masuk. Status akun diubah dari menu <b>Pengguna</b>.
+    </div>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">1.2</span><h2>Bila muncul pesan gagal</h2></div>
+    <table class="t sm">
+      <tr><th style="width:38%">Pesan</th><th>Artinya &amp; tindakan</th></tr>
+      <tr><td>Kredensial tidak cocok</td><td>Akun atau sandi salah. Periksa huruf besar/kecil, lalu coba lagi atau pakai pemulihan sandi.</td></tr>
+      <tr><td>Akun belum aktif</td><td>Status akun bukan <i>active</i>. Aktifkan dari menu Pengguna memakai akun admin lain.</td></tr>
+      <tr><td>Terlalu banyak percobaan</td><td>Batas lima percobaan per menit tercapai. Tunggu sekitar satu menit sebelum mencoba lagi.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">1.3</span><h2>Tiga langkah setelah masuk</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3><span class="num">1</span>Verifikasi OTP</h3>
+        <p>Masukkan kode 6 digit dari email admin sebelum dashboard terbuka.</p>
+      </div>
+      <div class="card compact">
+        <h3><span class="num">2</span>Periksa dashboard</h3>
+        <p>Pastikan angka siswa, Guru BK, dan alert terbuka sesuai kondisi sekolah.</p>
+      </div>
+      <div class="card compact">
+        <h3><span class="num">3</span>Ganti sandi</h3>
+        <p>Bila masih memakai sandi awal, ganti lewat menu akun sebelum bekerja.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 01 · Masuk ke aplikasi</span><span class="pnum">3</span></div>
+</section>
+
+<!-- ============ 4. 2FA & GANTI SANDI ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 02 · Semua peran</div>
+    <h1>Verifikasi dua faktor &amp; ganti sandi</h1>
+    <p class="sub">Akun admin memegang data seluruh sekolah, jadi keamanannya berlapis.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot-row mb6">
+    <div class="shot" style="flex:0 0 auto;width:88mm">
+      <img src="img/20-otp-form.png" alt="Layar verifikasi dua faktor di desktop">
+      <figcaption><b>Gambar 2.</b> Verifikasi dua faktor: kode 6 digit, berlaku 10 menit, hanya sekali pakai.</figcaption>
+    </div>
+    <div class="flex1">
+      <div class="sec">
+        <div class="sec-head"><span class="sec-num">2.1</span><h2>Memasukkan kode OTP</h2></div>
+        <ol class="steps compact">
+          <li>Buka email terdaftar. Kode 6 digit dikirim setiap kali Anda masuk sebagai superadmin.</li>
+          <li>Ketik kode pada kolom <b>Kode 6 digit</b>, lalu klik <b>Verifikasi</b>.</li>
+          <li>Bila kode kedaluwarsa, tunggu hitungan <b>Kirim ulang dalam … detik</b> selesai, lalu minta kode baru.</li>
+        </ol>
+      </div>
+      <div class="note warn">
+        <b>Jangan bagikan kode.</b> Tidak ada petugas yang berhak meminta kode OTP admin. Kode yang bocor berarti seluruh data sekolah berisiko.
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">2.2</span><h2>Mengganti kata sandi awal</h2></div>
+    <p>Akun baru memakai NIP atau ID admin sebagai kata sandi awal, sehingga aplikasi meminta penggantian sebelum halaman lain dapat dibuka.</p>
+  </div>
+
+  <div class="shot desktop w90 mb6">
+    <img src="img/41-ganti-sandi.png" alt="Halaman ganti kata sandi awal">
+    <figcaption><b>Gambar 3.</b> Halaman ganti kata sandi awal. Empat syarat kekuatan sandi berubah menjadi centang saat terpenuhi.</figcaption>
+  </div>
+
+  <ol class="steps compact">
+    <li>Isi <b>Kata sandi saat ini</b> — sandi yang Anda terima.</li>
+    <li>Isi <b>Kata sandi baru</b>: minimal 10 karakter, mengandung huruf besar, huruf kecil, dan angka.</li>
+    <li>Ulangi pada kolom <b>Ulangi kata sandi baru</b>, lalu klik <b>Simpan kata sandi</b>.</li>
+    <li>Setelah tersimpan, Anda langsung dibawa ke beranda peran Anda dengan sandi baru.</li>
+  </ol>
+
+  <div class="foot"><span>Bab 02 · Verifikasi dua faktor &amp; ganti sandi</span><span class="pnum">4</span></div>
+</section>
+
+<!-- ============ 5. DASHBOARD ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 03 · Portal Superadmin</div>
+    <h1>Dashboard admin</h1>
+    <p class="sub">Ringkasan kesehatan data dan penggunaan aplikasi dalam satu layar.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop mb6">
+    <img src="img/21-admin-dashboard.png" alt="Dashboard admin">
+    <figcaption><b>Gambar 4.</b> Dashboard admin: empat angka kunci, penggunaan 30 hari, dan status layanan.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">3.1</span><h2>Arti setiap angka</h2></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Siswa aktif</h3>
+        <p>Jumlah akun siswa berstatus aktif, dengan keterangan berapa akun yang masih menunggu aktivasi.</p>
+      </div>
+      <div class="card">
+        <h3>Guru BK aktif</h3>
+        <p>Akun Guru BK aktif beserta jumlah guru yang belum memiliki kelas dampingan.</p>
+      </div>
+      <div class="card">
+        <h3>Alert terbuka</h3>
+        <p>Alert risiko yang belum ditutup, dengan penanda berapa di antaranya prioritas tinggi.</p>
+      </div>
+      <div class="card">
+        <h3>Respons alert</h3>
+        <p>Rata-rata waktu (jam) dari alert dibuat sampai ditindaklanjuti Guru BK.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note">
+      <b>Penggunaan 30 hari</b> merekap entri mood, jurnal, refleksi, dan prestasi baru. Angka yang menurun tajam biasanya berarti sosialisasi ke siswa perlu diulang.
+    </div>
+    <div class="note warn">
+      <b>Status layanan</b> menampilkan pemakaian penyimpanan bukti prestasi dan jumlah siswa nonaktif. Bila kapasitas mendekati batas, unduh dan arsipkan bukti lama.
+    </div>
+  </div>
+
+  <div class="grid3 mt6">
+    <div class="card compact">
+      <h3>Angka turun tajam</h3>
+      <p>Periksa jadwal sosialisasi dan pastikan fitur jurnal masih menyala di Pengaturan.</p>
+    </div>
+    <div class="card compact">
+      <h3>Alert menumpuk</h3>
+      <p>Ingatkan Guru BK menutup alert setelah pendampingan; alert terbuka menurunkan respons.</p>
+    </div>
+    <div class="card compact">
+      <h3>Penyimpanan penuh</h3>
+      <p>Arsipkan bukti prestasi lama atau naikkan kapasitas sebelum tahun ajaran baru.</p>
+    </div>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">3.2</span><h2>Ritme pemeriksaan dashboard</h2></div>
+    <table class="t sm">
+      <tr><th style="width:22%">Irama</th><th>Yang diperiksa</th></tr>
+      <tr><td>Mingguan</td><td>Respons alert dan jumlah alert terbuka; ingatkan Guru BK menutup alert setelah pendampingan.</td></tr>
+      <tr><td>Bulanan</td><td>Tren penggunaan 30 hari, akun menunggu aktivasi, dan siswa yang belum pernah masuk.</td></tr>
+      <tr><td>Per semester</td><td>Kapasitas penyimpanan bukti prestasi dan jumlah akun nonaktif yang perlu diarsipkan.</td></tr>
+    </table>
+  </div>
+
+  <div class="foot"><span>Bab 03 · Dashboard admin</span><span class="pnum">5</span></div>
+</section>
+
+<!-- ============ 6. AKUN PENGGUNA ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 04 · Portal Superadmin</div>
+    <h1>Akun pengguna</h1>
+    <p class="sub">Satu tabel untuk seluruh siswa dan Guru BK, lengkap dengan status dan aksi per akun.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop mb6">
+    <img src="img/22-admin-pengguna.png" alt="Halaman akun pengguna">
+    <figcaption><b>Gambar 5.</b> Akun pengguna: pencarian, filter peran dan status, tabel 20 baris per halaman, serta tiga aksi per akun.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">4.1</span><h2>Membaca tabel</h2></div>
+    <table class="t sm">
+      <tr><th style="width:26%">Kolom / tombol</th><th>Keterangan</th></tr>
+      <tr><td>Nama &amp; email</td><td>Identitas akun. Email dipakai untuk pemulihan sandi dan notifikasi; OTP hanya untuk superadmin.</td></tr>
+      <tr><td>NIS/NIP</td><td>Nomor induk; sekaligus kata sandi awal akun baru.</td></tr>
+      <tr><td>Peran</td><td><i>Siswa</i> atau <i>Guru BK</i>. Superadmin tidak dibuat dari halaman ini.</td></tr>
+      <tr><td>Kelas</td><td>Kelas siswa, atau daftar kelas dampingan untuk Guru BK.</td></tr>
+      <tr><td>Status</td><td><i>Aktif</i>, <i>Nonaktif</i>, <i>Menunggu</i>, <i>Arsip</i>, atau <i>Alumni</i>.</td></tr>
+      <tr><td>Login terakhir</td><td>Relatif hari ini, kemarin, atau jumlah hari lalu.</td></tr>
+      <tr><td>Tiga aksi</td><td>Reset kata sandi (ikon kunci), putus sesi (ikon keluar), dan nonaktifkan/aktifkan (ikon × atau ✓).</td></tr>
+    </table>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note">
+      <b>Filter cepat.</b> Gunakan <b>Semua peran</b> dan <b>Semua status</b> untuk menyaring, atau kolom <b>Cari nama/email/NIS</b> untuk pencarian langsung.
+    </div>
+    <div class="note">
+      <b>Navigasi halaman.</b> Pilih 20 atau 50 baris per halaman di kiri bawah, lalu gunakan <b>Sebelumnya</b> / <b>Berikutnya</b>.
+    </div>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">4.2</span><h2>Tiga aksi per akun</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Reset sandi</h3>
+        <p>Mengembalikan sandi ke NIS/NIP dan memutus sesi aktif. Wajib dicatat alasannya untuk audit.</p>
+      </div>
+      <div class="card compact">
+        <h3>Putus sesi</h3>
+        <p>Mengeluarkan pengguna dari semua perangkat tanpa mengubah sandi atau status akun.</p>
+      </div>
+      <div class="card compact">
+        <h3>Nonaktifkan</h3>
+        <p>Menutup akses tanpa menghapus data. Gunakan untuk siswa pindah atau akun uji.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="note mt6">
+    <b>Sebelum menonaktifkan.</b> Pastikan siswa tidak sedang memiliki sesi aktif, dan catat alasan pada kolom yang tersedia agar jejak keputusan tetap jelas.
+  </div>
+
+  <div class="foot"><span>Bab 04 · Akun pengguna</span><span class="pnum">6</span></div>
+</section>
+
+<!-- ============ 7. TAMBAH AKUN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 05 · Portal Superadmin</div>
+    <h1>Menambah akun siswa &amp; Guru BK</h1>
+    <p class="sub">Satu formulir, dua peran. Perbedaan utamanya ada pada kelas dan kata sandi.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot-row mb6">
+    <div class="shot">
+      <img src="img/36-admin-tambah-akun-dlg.png" alt="Dialog tambah akun siswa">
+      <figcaption><b>Gambar 6.</b> Tambah akun siswa: isi nama, NIS, email, lalu pilih kelas.</figcaption>
+    </div>
+    <div class="shot">
+      <img src="img/37-admin-tambah-akun-bk-dlg.png" alt="Dialog tambah akun Guru BK">
+      <figcaption><b>Gambar 7.</b> Tambah akun Guru BK: sandi wajib diisi, nomor WhatsApp diisi di sini, kelas boleh lebih dari satu.</figcaption>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">5.1</span><h2>Langkah menambah siswa</h2></div>
+    <ol class="steps compact">
+      <li>Di halaman <b>Pengguna</b>, klik <b>Tambah akun</b>.</li>
+      <li>Isi <b>Nama lengkap</b> dan <b>NIS/NIP</b> — untuk siswa gunakan NIS.</li>
+      <li>Pilih <b>Peran: Siswa</b>, lalu isi <b>Email</b> aktif; alamat ini dipakai untuk pemulihan sandi dan notifikasi.</li>
+      <li>Tidak ada kolom sandi untuk siswa: sandi awal otomatis memakai NIS yang diisi.</li>
+      <li>Pilih <b>Kelas</b>, lalu klik <b>Buat akun</b>. Siswa langsung aktif dan wajib mengganti sandi saat pertama masuk.</li>
+    </ol>
+  </div>
+
+  <div class="grid2">
+    <div class="note">
+      <b>Buat kata sandi otomatis</b> menghasilkan sandi acak yang memenuhi syarat keamanan. Salin dan sampaikan kepada guru yang bersangkutan secara pribadi.
+    </div>
+    <div class="note warn">
+      <b>Kelas dampingan.</b> Guru BK tanpa kelas tidak dapat membuka data siswa. Tetapkan minimal satu kelas agar portalnya berfungsi.
+    </div>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">5.2</span><h2>Setelah akun dibuat</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Sandi awal</h3>
+        <p>NIS/NIP dipakai sebagai sandi awal. Pengguna wajib menggantinya saat masuk pertama.</p>
+      </div>
+      <div class="card compact">
+        <h3>Email aktif</h3>
+        <p>Alamat email dipakai untuk pemulihan sandi dan notifikasi layanan.</p>
+      </div>
+      <div class="card compact">
+        <h3>Kelas benar</h3>
+        <p>Salah kelas berarti Guru BK tidak melihat siswa tersebut. Periksa kelas sebelum menyimpan karena belum ada aksi pindah kelas per siswa.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="note mt6">
+    <b>Nomor WhatsApp Guru BK.</b> Isi kolom <b>Nomor WhatsApp</b> saat membuat akun Guru BK (format <i>628…</i>, tanpa tanda plus). Nomor itu yang tampil pada tombol <b>Chat</b> di halaman Jurnal siswa kelas binaannya. Nomor dapat diperbaiki kapan saja lewat ikon ubah pada baris Guru BK di halaman Pengguna.
+  </div>
+
+  <div class="note mt6">
+    <b>Sampaikan sekali lagi.</b> Beri tahu siswa dan guru alamat aplikasi, NIS/NIP, serta kewajiban mengganti sandi pada saat penyerahan akun.
+  </div>
+
+  <div class="foot"><span>Bab 05 · Menambah akun</span><span class="pnum">7</span></div>
+</section>
+
+<!-- ============ 8. RESET & IMPOR ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 06 · Portal Superadmin</div>
+    <h1>Reset kata sandi &amp; impor massal</h1>
+    <p class="sub">Dua jalur untuk memulihkan akses: satu akun atau satu angkatan sekaligus.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot w60 mb6">
+    <img src="img/38-admin-reset-sandi-dlg.png" alt="Dialog reset kata sandi">
+    <figcaption><b>Gambar 8.</b> Dialog reset kata sandi: sandi langsung diganti ke NIS/NIP, lalu wajib diubah saat masuk berikutnya.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">6.1</span><h2>Mereset sandi satu akun</h2></div>
+    <ol class="steps compact">
+      <li>Pada tabel pengguna, klik ikon <b>kunci</b> di baris akun yang bermasalah.</li>
+      <li>Periksa nama, NIS/NIP, dan kelas pada dialog. Tambahkan <b>Catatan</b> bila perlu, mis. <i>Lupa sandi setelah libur</i>.</li>
+      <li>Klik <b>Reset kata sandi</b>. Sandi kembali menjadi NIS/NIP.</li>
+      <li>Sampaikan kepada pengguna bahwa ia harus mengganti sandi saat masuk berikutnya.</li>
+    </ol>
+    <div class="note danger mt6">
+      <b>Jangan kirim lewat grup.</b> Sampaikan sandi sementara secara pribadi. Setiap reset tercatat di audit log beserta alasan yang Anda tulis.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">6.2</span><h2>Impor CSV</h2></div>
+    <ol class="steps compact">
+      <li>Klik <b>Impor CSV</b> di halaman Pengguna, lalu pilih berkas dari komputer.</li>
+      <li>Gunakan judul kolom: <b>name</b>, <b>identity_number</b>, <b>email</b>, <b>role</b> (<i>student</i>/<i>counselor</i>), <b>class_name</b>, dan opsional <b>password</b>.</li>
+      <li>Baris dengan email tidak valid atau NIS sudah terdaftar ditandai gagal; baris valid langsung aktif dengan sandi awal NIS/NIP bila kolom password kosong.</li>
+      <li>Periksa hasil impor, lalu perbaiki baris yang gagal melalui formulir <b>Tambah akun</b>.</li>
+    </ol>
+  </div>
+
+  <div class="grid2">
+    <div class="note">
+      <b>Kolom wajib.</b> <i>name</i>, <i>identity_number</i>, dan <i>role</i>; <i>class_name</i> wajib untuk siswa dan harus sama persis dengan nama kelas aktif. Impor tidak menugaskan kelas untuk Guru BK — atur setelahnya lewat menu <b>Kelas</b>.
+    </div>
+    <div class="note warn">
+      <b>Uji tiga baris dulu.</b> Impor percobaan memastikan pemetaan kolom benar sebelum mengunggah satu angkatan penuh.
+    </div>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">6.3</span><h2>Kegagalan impor yang sering terjadi</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Email tidak valid</h3>
+        <p>Baris dilewati bila email kosong atau formatnya salah. Perbaiki di berkas, lalu impor ulang.</p>
+      </div>
+      <div class="card compact">
+        <h3>Kelas tidak ditemukan</h3>
+        <p>Nama kelas harus sama persis dengan yang ada di menu Kelas, termasuk spasi dan tingkat.</p>
+      </div>
+      <div class="card compact">
+        <h3>NIS sudah terdaftar</h3>
+        <p>Identitas ganda ditolak. Cari akun lama lewat kolom pencarian sebelum membuat yang baru.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="note mt6">
+    <b>Setelah impor.</b> Buka menu Pengguna, saring peran <i>Siswa</i>, lalu periksa beberapa akun baru: kelas, email, dan statusnya harus sesuai berkas.
+  </div>
+
+  <div class="foot"><span>Bab 06 · Reset kata sandi &amp; impor massal</span><span class="pnum">8</span></div>
+</section>
+
+<!-- ============ 9. KELAS ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 07 · Portal Superadmin</div>
+    <h1>Kelas &amp; penugasan</h1>
+    <p class="sub">Kelas adalah simpul utama: menentukan wali kelas, Guru BK pendamping, dan siapa boleh melihat data siswa.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop w72 mb6">
+    <img src="img/23-admin-kelas.png" alt="Halaman kelas dan penugasan">
+    <figcaption><b>Gambar 9.</b> Kelas &amp; penugasan: kartu per kelas dengan tahun ajaran, wali kelas, Guru BK, jumlah siswa, dan tiga aksi.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">7.1</span><h2>Membaca kartu kelas</h2></div>
+    <table class="t sm">
+      <tr><th style="width:30%">Bagian kartu</th><th>Keterangan</th></tr>
+      <tr><td>Nama kelas &amp; badge</td><td><i>X IPA 1</i> beserta status <i>Aktif</i>. Kelas nonaktif tidak muncul pada pilihan kenaikan kelas.</td></tr>
+      <tr><td>Tahun ajaran</td><td>Periode berlaku, mis. 2026/2027.</td></tr>
+      <tr><td>Jumlah siswa</td><td>Banyak siswa yang terdaftar di kelas tersebut.</td></tr>
+      <tr><td>Wali kelas</td><td>Guru pendamping administratif; boleh kosong.</td></tr>
+      <tr><td>Guru BK</td><td>Satu atau beberapa guru pendamping. Tanpa Guru BK, jurnal kelas ini tidak terbaca siapa pun.</td></tr>
+      <tr><td>Tiga aksi</td><td><b>Ubah kelas</b>, <b>Atur Guru BK</b>, <b>Lihat siswa</b>.</td></tr>
+    </table>
+  </div>
+
+  <div class="shot w48 mb4">
+    <img src="img/33-admin-tambah-kelas-dlg.png" alt="Dialog tambah kelas">
+    <figcaption><b>Gambar 10.</b> Dialog Tambah kelas: tahun ajaran wajib dipilih lebih dulu, lalu nama, tingkat, dan wali kelas.</figcaption>
+  </div>
+
+  <div class="note">
+    <b>Alur disarankan:</b> buat tahun ajaran → buat kelas → tugaskan Guru BK → tambah atau impor siswa → baru sosialisasikan aplikasi ke siswa.
+  </div>
+
+  <div class="foot"><span>Bab 07 · Kelas &amp; penugasan</span><span class="pnum">9</span></div>
+</section>
+
+<!-- ============ 10. UBAH KELAS & TUGASKAN BK ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 08 · Portal Superadmin</div>
+    <h1>Mengubah kelas &amp; menugaskan Guru BK</h1>
+    <p class="sub">Dua dialog yang paling sering dipakai saat tahun ajaran berganti.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot mb6" style="width:49%">
+    <img src="img/31-admin-ubah-kelas-dlg.png" alt="Dialog ubah kelas">
+    <figcaption><b>Gambar 11.</b> Dialog Ubah kelas: nama kelas, tingkat, wali kelas, dan status aktif.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">8.1</span><h2>Mengubah data kelas</h2></div>
+    <ol class="steps compact">
+      <li>Klik <b>Ubah kelas</b> pada kartu yang dituju.</li>
+      <li>Perbaiki <b>Nama kelas</b> dan <b>Tingkat</b> (X, XI, XII).</li>
+      <li>Isi atau kosongkan <b>Wali kelas</b>. Kosongkan bila belum ditetapkan.</li>
+      <li>Biarkan <b>Kelas aktif</b> tercentang agar kelas muncul di pilihan kenaikan kelas. Klik <b>Simpan perubahan</b>.</li>
+    </ol>
+  </div>
+
+  <div class="shot mb6" style="width:49%">
+    <img src="img/32-admin-tugaskan-bk-dlg.png" alt="Dialog tugaskan Guru BK">
+    <figcaption><b>Gambar 12.</b> Dialog Tugaskan Guru BK: pilih guru, lalu tandai kelas yang didampingi.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">8.2</span><h2>Menugaskan Guru BK</h2></div>
+    <ol class="steps compact">
+      <li>Klik <b>Atur Guru BK</b> pada kartu kelas, lalu pilih nama guru.</li>
+      <li>Centang satu atau beberapa kelas yang akan didampingi.</li>
+      <li>Simpan. Daftar di bawah hanya menampilkan kelas yang sudah didampingi guru tersebut.</li>
+    </ol>
+  </div>
+
+  <div class="grid2">
+    <div class="note">
+      <b>Satu guru, banyak kelas.</b> Penugasan berlaku per kelas, bukan per siswa, sehingga siswa baru otomatis ikut terpantau.
+    </div>
+    <div class="note warn">
+      <b>Melepas penugasan</b> memutus akses guru ke jurnal kelas itu, tetapi riwayat catatan konseling yang sudah dibuat tetap tersimpan.
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 08 · Mengubah kelas &amp; menugaskan Guru BK</span><span class="pnum">10</span></div>
+</section>
+
+<!-- ============ 11. TAHUN AJARAN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 09 · Portal Superadmin</div>
+    <h1>Tahun ajaran</h1>
+    <p class="sub">Menutup tahun lama dan menyiapkan periode baru sebelum siswa dipindahkan.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop w85 mb6">
+    <img src="img/24-admin-tahun-ajaran.png" alt="Halaman tahun ajaran">
+    <figcaption><b>Gambar 13.</b> Tahun ajaran: daftar periode, penanda <i>Aktif</i>, dan tombol Kenaikan kelas per periode.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">9.1</span><h2>Menambah tahun ajaran</h2></div>
+    <ol class="steps compact">
+      <li>Klik <b>Tambah tahun ajaran</b>, isi nama (mis. <i>2027/2028</i>) serta tanggal mulai dan selesai.</li>
+      <li>Simpan. Hanya satu tahun ajaran dapat berstatus <b>Aktif</b> pada satu waktu.</li>
+      <li>Sebelum menaikkan kelas, pastikan kelas tujuan untuk tahun baru sudah dibuat di menu <b>Kelas</b>.</li>
+    </ol>
+  </div>
+
+  <div class="shot mb4" style="width:68%">
+    <img src="img/34-admin-kenaikan-kelas-dlg.png" alt="Dialog kenaikan kelas">
+    <figcaption><b>Gambar 14.</b> Dialog Kenaikan kelas: opsi membawa penugasan Guru BK dan wali kelas, serta pemetaan kelas asal ke kelas tujuan.</figcaption>
+  </div>
+
+  <div class="grid2">
+    <div class="note">
+      <b>Bawa penugasan</b> menyalin Guru BK pendamping ke kelas tujuan. <b>Salin wali kelas</b> memindahkan wali kelas bila kelas tujuan belum punya.
+    </div>
+    <div class="note warn">
+      <b>Pilih kelulusan</b> untuk siswa tingkat akhir. Siswa yang diluluskan berubah menjadi <i>alumni</i> dan tidak lagi muncul di kelas aktif.
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 09 · Tahun ajaran</span><span class="pnum">11</span></div>
+</section>
+
+<!-- ============ 12. KENAIKAN KELAS ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 10 · Portal Superadmin</div>
+    <h1>Pratinjau sebelum menaikkan kelas</h1>
+    <p class="sub">Menghitung dampak tanpa mengubah data. Selalu jalankan pratinjau sebelum eksekusi.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot w60 mb6">
+    <img src="img/35-admin-pratinjau-kenaikan-dlg.png" alt="Konfirmasi pratinjau kenaikan kelas">
+    <figcaption><b>Gambar 15.</b> Konfirmasi pratinjau: sistem menjelaskan bahwa perhitungan berjalan tanpa mengubah data.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">10.1</span><h2>Alur aman kenaikan kelas</h2></div>
+    <ol class="steps">
+      <li><b>Pratinjau.</b> Klik <b>Pratinjau</b> pada dialog kenaikan kelas, lalu <b>Hitung pratinjau</b>. Hasilnya menampilkan jumlah siswa dipindahkan, siswa diluluskan, penugasan Guru BK disalin, dan wali kelas disalin.</li>
+      <li><b>Periksa angka.</b> Bandingkan dengan jumlah siswa di menu Kelas. Angka yang tidak wajar biasanya berarti pemetaan kelas belum lengkap.</li>
+      <li><b>Eksekusi.</b> Bila sesuai, klik <b>Eksekusi</b>. Proses berjalan sekali jalan dan tidak dapat dibatalkan otomatis.</li>
+      <li><b>Verifikasi.</b> Buka <b>Kelas</b> dan <b>Pengguna</b> untuk memastikan siswa sudah berada di kelas baru dan alumni berstatus benar.</li>
+    </ol>
+    <div class="note danger mt6">
+      <b>Tidak ada tombol urungkan.</b> Bila terjadi kesalahan, perbaiki manual per siswa melalui menu Pengguna. Karena itu pratinjau wajib dijalankan lebih dulu.
+    </div>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note">
+      <b>Kapan dijalankan?</b> Setelah pembagian kelas tahun baru final dan nilai rapor keluar, sebelum tahun ajaran baru diaktifkan.
+    </div>
+    <div class="note">
+      <b>Simpan bukti.</b> Catat jumlah siswa yang dipindahkan dan diluluskan untuk berita acara.
+    </div>
+  </div>
+
+  <div class="grid3 mt6">
+    <div class="card"><h3>Dipindahkan</h3><p>Siswa naik satu tingkat ke kelas tujuan yang dipetakan.</p></div>
+    <div class="card"><h3>Diluluskan</h3><p>Siswa tingkat akhir menjadi alumni dan keluar dari kelas aktif.</p></div>
+    <div class="card"><h3>Disalin</h3><p>Penugasan Guru BK dan wali kelas ikut ke kelas tujuan.</p></div>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">10.2</span><h2>Dua penyebab eksekusi gagal</h2></div>
+    <table class="t sm">
+      <tr><th style="width:34%">Penyebab</th><th>Tindakan</th></tr>
+      <tr><td>Kelas tujuan belum dibuat</td><td>Buat kelas untuk tahun ajaran baru di menu Kelas, lalu ulangi pratinjau.</td></tr>
+      <tr><td>Siswa tingkat akhir tanpa pilihan</td><td>Tentukan kelas tujuan atau tandai kelulusan sebelum menekan Eksekusi.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec mt6">
+    <div class="sec-head"><span class="sec-num">10.3</span><h2>Daftar periksa sebelum eksekusi</h2></div>
+    <div class="grid2">
+      <div class="card compact">
+        <h3>Data sudah siap</h3>
+        <ul class="plain" style="font-size:8.4pt">
+          <li>Kelas tujuan tahun baru sudah dibuat.</li>
+          <li>Pemetaan setiap kelas asal sudah dipilih.</li>
+          <li>Daftar siswa tingkat akhir sudah final.</li>
+        </ul>
+      </div>
+      <div class="card compact">
+        <h3>Setelah eksekusi</h3>
+        <ul class="plain" style="font-size:8.4pt">
+          <li>Jumlah siswa per kelas sesuai rencana.</li>
+          <li>Alumni tidak lagi muncul di kelas aktif.</li>
+          <li>Hasil pratinjau disimpan sebagai bukti.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 10 · Pratinjau kenaikan kelas</span><span class="pnum">12</span></div>
+</section>
+
+<!-- ============ 13. PENGUMUMAN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 11 · Portal Superadmin</div>
+    <h1>Pengumuman</h1>
+    <p class="sub">Menyampaikan informasi ke semua pengguna, peran tertentu, atau satu kelas.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot mb6" style="width:69%">
+    <img src="img/39-admin-buat-pengumuman-dlg.png" alt="Dialog buat pengumuman">
+    <figcaption><b>Gambar 16.</b> Dialog Buat pengumuman: judul, isi, audiens, serta jadwal terbit dan berakhir.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">11.1</span><h2>Membuat pengumuman</h2></div>
+    <ol class="steps compact">
+      <li>Buka menu <b>Pengumuman</b>, klik <b>Buat pengumuman</b>.</li>
+      <li>Isi <b>Judul</b> yang singkat dan <b>Isi</b> yang menjelaskan tindakan yang diharapkan.</li>
+      <li>Pilih <b>Audiens</b>: <i>Semua</i>, peran tertentu, atau kelas tertentu.</li>
+      <li>Kosongkan <b>Terbit</b> untuk langsung tayang, atau isi tanggal dan jam untuk menjadwalkan. Isi <b>Berakhir</b> bila pengumuman bersifat sementara.</li>
+      <li>Klik <b>Simpan</b>.</li>
+    </ol>
+  </div>
+
+  <div class="shot desktop w74 mb6">
+    <img src="img/40-admin-pengumuman-terisi.png" alt="Daftar pengumuman terisi">
+    <figcaption><b>Gambar 17.</b> Daftar pengumuman: badge status, audiens, isi ringkas, waktu terbit, dan tombol Arsipkan.</figcaption>
+  </div>
+
+  <div class="grid2">
+    <div class="note">
+      <b>Status pengumuman:</b> <i>published</i> (tayang), <i>scheduled</i> (terjadwal), dan <i>archived</i> (diarsipkan). Pengumuman terjadwal tayang otomatis pada waktunya.
+    </div>
+    <div class="note warn">
+      <b>Arsipkan, jangan hapus.</b> Pengumuman lama sebaiknya diarsipkan agar riwayat komunikasi sekolah tetap utuh dan dapat diaudit.
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 11 · Pengumuman</span><span class="pnum">13</span></div>
+</section>
+
+<!-- ============ 14. KONTEN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 12 · Portal Superadmin</div>
+    <h1>Konten pembelajaran</h1>
+    <p class="sub">Mengelola bahan bacaan dan pertanyaan pemandu yang dibaca siswa setiap hari.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop mb6">
+    <img src="img/26-admin-konten.png" alt="Halaman manajemen konten">
+    <figcaption><b>Gambar 18.</b> Manajemen konten: prompt curhat ABC, pertanyaan refleksi, kategori emosi, dan artikel tips beserta versinya.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">12.1</span><h2>Menambah dan menyunting konten</h2></div>
+    <ol class="steps compact">
+      <li>Klik <b>Tambah konten</b>, pilih tipe: <i>Prompt ABC</i>, <i>Pertanyaan refleksi</i>, <i>Kategori emosi</i>, atau <i>Artikel tips</i>.</li>
+      <li>Isi judul dan isi konten sesuai tipe. Gunakan bahasa Indonesia yang mudah dipahami siswa.</li>
+      <li>Simpan sebagai draf, lalu terbitkan bila sudah siap. Setiap perubahan menaikkan nomor <b>Versi</b>.</li>
+      <li>Gunakan ikon pensil untuk menyunting. Konten lama tetap tersimpan sebagai versi sebelumnya.</li>
+    </ol>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note">
+      <b>Mengapa berversi?</b> Perubahan pertanyaan refleksi dapat memengaruhi perbandingan jawaban antarperiode. Versi menjaga jejak perubahan tetap jelas.
+    </div>
+    <div class="note warn">
+      <b>Jangan menghapus prompt yang sedang dipakai.</b> Nonaktifkan saja, agar entri jurnal siswa lama tetap memiliki konteks pertanyaannya.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">12.2</span><h2>Empat tipe konten</h2></div>
+    <table class="t sm">
+      <tr><th style="width:32%">Tipe</th><th>Muncul di</th></tr>
+      <tr><td>Prompt ABC</td><td>Layar curhat siswa, sebagai pembuka sebelum menulis.</td></tr>
+      <tr><td>Pertanyaan refleksi</td><td>Ruang refleksi mandiri dan sesi refleksi terbimbing Guru BK.</td></tr>
+      <tr><td>Kategori emosi</td><td>Pemilih mood harian dan label emosi pada jurnal.</td></tr>
+      <tr><td>Artikel tips</td><td>Beranda siswa bagian bacaan singkat.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">12.3</span><h2>Kaidah menulis konten siswa</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Kalimat pendek</h3>
+        <p>Satu pertanyaan, satu maksud. Hindari kalimat majemuk yang membingungkan.</p>
+      </div>
+      <div class="card compact">
+        <h3>Tanpa label</h3>
+        <p>Gunakan pertanyaan terbuka, bukan cap seperti “anak pemalas” atau “bermasalah”.</p>
+      </div>
+      <div class="card compact">
+        <h3>Sertakan langkah</h3>
+        <p>Setiap tips diakhiri satu tindakan kecil yang bisa dicoba siswa hari itu juga.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 12 · Konten pembelajaran</span><span class="pnum">14</span></div>
+</section>
+
+<!-- ============ 15. LAPORAN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 13 · Portal Superadmin</div>
+    <h1>Laporan agregat</h1>
+    <p class="sub">Membaca tren sekolah tanpa membuka data pribadi satu siswa pun.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop w90 mb6">
+    <img src="img/28-admin-laporan.png" alt="Halaman laporan agregat">
+    <figcaption><b>Gambar 19.</b> Laporan agregat: rentang tanggal, rekap per kelas, dan catatan kelas yang disaring.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">13.1</span><h2>Membaca laporan</h2></div>
+    <ol class="steps compact">
+      <li>Buka menu <b>Laporan</b>, isi tanggal <b>Dari</b> dan <b>Sampai</b> sesuai periode yang ingin dibaca.</li>
+      <li>Klik <b>Terapkan</b>. Tabel <b>Per kelas</b> menampilkan jumlah siswa, siswa aktif, persentase mood positif dan negatif, kelengkapan profil, partisipasi refleksi, dan jumlah alert terbuka.</li>
+      <li>Bandingkan antarperiode untuk melihat dampak program sekolah, bukan menilai individu.</li>
+      <li>Klik <b>Ekspor CSV</b> untuk menyimpan hasil sebagai arsip rapat atau lampiran laporan tahunan.</li>
+    </ol>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note ok">
+      <b>Ambang privasi.</b> Kelas dengan kurang dari 10 siswa tidak ditampilkan agar angka tidak dipakai menebak kondisi individu.
+    </div>
+    <div class="note">
+      <b>Data agregat.</b> Isi jurnal, refleksi, dan catatan konseling tidak pernah masuk ke laporan admin.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">13.2</span><h2>Arti kolom laporan</h2></div>
+    <table class="t sm">
+      <tr><th style="width:34%">Kolom</th><th>Keterangan</th></tr>
+      <tr><td>Siswa</td><td>Jumlah anggota aktif kelas tersebut.</td></tr>
+      <tr><td>Aktif</td><td>Siswa yang tercatat beraktivitas pada rentang terpilih.</td></tr>
+      <tr><td>Mood + / Mood −</td><td>Persentase entri mood positif dan negatif dari seluruh entri mood kelas.</td></tr>
+      <tr><td>Profil</td><td>Persentase siswa dengan kelengkapan profil 80% ke atas.</td></tr>
+      <tr><td>Refleksi</td><td>Persentase siswa yang mengirim refleksi pada rentang terpilih.</td></tr>
+      <tr><td>Alert</td><td>Jumlah alert yang belum diselesaikan untuk kelas tersebut.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">13.3</span><h2>Pemanfaatan laporan</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Rapat wali kelas</h3>
+        <p>Bandingkan kelas pada periode yang sama, bukan antarindividu.</p>
+      </div>
+      <div class="card compact">
+        <h3>Evaluasi program</h3>
+        <p>Lihat apakah sosialisasi jurnal menaikkan siswa aktif bulan berikutnya.</p>
+      </div>
+      <div class="card compact">
+        <h3>Laporan tahunan</h3>
+        <p>Simpan rekap per semester sebagai lampiran dokumen sekolah.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 13 · Laporan agregat</span><span class="pnum">15</span></div>
+</section>
+
+<!-- ============ 16. AUDIT ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 14 · Portal Superadmin</div>
+    <h1>Audit log</h1>
+    <p class="sub">Menelusuri siapa mengakses apa, kapan, dan dengan alasan apa.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop mb6">
+    <img src="img/27-admin-audit.png" alt="Halaman audit log">
+    <figcaption><b>Gambar 20.</b> Audit log: waktu, aktor, aksi, entitas, subjek, alasan, dan alamat IP.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">14.1</span><h2>Membaca audit log</h2></div>
+    <ol class="steps compact">
+      <li>Saring dengan kolom <b>Filter aksi</b>, mis. <i>journal.viewed</i>, atau rentang tanggal.</li>
+      <li>Perhatikan kolom <b>Aktor</b> dan <b>Subjek</b>: keduanya menunjukkan siapa membuka data siapa.</li>
+      <li>Kolom <b>Alasan</b> terisi pada aksi yang diwajibkan memberi keterangan, seperti reset sandi.</li>
+      <li>Log bersifat <i>append-only</i> — tidak dapat disunting atau dihapus dari antarmuka.</li>
+    </ol>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note">
+      <b>Audit rutin.</b> Periksa log setiap bulan: akses jurnal di luar kelas dampingan, reset sandi massal, dan perubahan pengaturan.
+    </div>
+    <div class="note warn">
+      <b>Temuan mencurigakan?</b> Nonaktifkan akun terkait lebih dulu, lalu reset sandinya. Simpan tangkapan layar log sebagai bukti.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">14.2</span><h2>Aksi yang sering dicari</h2></div>
+    <table class="t sm">
+      <tr><th style="width:36%">Nama aksi</th><th>Arti</th></tr>
+      <tr><td><i>journal.viewed</i></td><td>Guru BK membuka isi jurnal seorang siswa.</td></tr>
+      <tr><td><i>user.password_reset</i></td><td>Admin mengembalikan sandi akun ke NIS/NIP beserta alasannya.</td></tr>
+      <tr><td><i>academic_year.promoted</i></td><td>Kenaikan kelas dijalankan: siswa dipindahkan dan penugasan disalin.</td></tr>
+      <tr><td><i>settings.updated</i></td><td>Pengaturan sekolah diubah, termasuk kebijakan retensi.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">14.3</span><h2>Menjaga jejak audit</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Jangan hapus</h3>
+        <p>Log bersifat tetap. Koreksi dilakukan dengan mencatat tindakan baru, bukan menghapus baris lama.</p>
+      </div>
+      <div class="card compact">
+        <h3>Simpan bukti</h3>
+        <p>Tangkap layar temuan penting dan simpan bersama berita acara pemeriksaan.</p>
+      </div>
+      <div class="card compact">
+        <h3>Tindak lanjuti</h3>
+        <p>Setiap temuan ditutup dengan tindakan: teguran, reset sandi, atau penonaktifan akun.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Bab 14 · Audit log</span><span class="pnum">16</span></div>
+</section>
+
+<!-- ============ 17. RETENSI ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 15 · Portal Superadmin</div>
+    <h1>Retensi data</h1>
+    <p class="sub">Memastikan data lama tidak disimpan melebihi kebijakan sekolah.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop mb6">
+    <img src="img/29-admin-retensi.png" alt="Halaman retensi dan penghapusan">
+    <figcaption><b>Gambar 21.</b> Retensi &amp; penghapusan: perkiraan akun dianonimkan, entri dihapus, batas tanggal, dan kebijakan.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">15.1</span><h2>Menjalankan retensi</h2></div>
+    <ol class="steps compact">
+      <li>Buka menu <b>Retensi</b>. Sistem menampilkan perkiraan jumlah akun alumni yang akan dianonimkan dan entri yang akan dihapus.</li>
+      <li>Periksa <b>batas tanggal</b> yang dipakai — biasanya mengikuti pengaturan <i>retensi setelah lulus</i>.</li>
+      <li>Pastikan angka sesuai ekspektasi, lalu klik <b>Jalankan retensi</b>, isi <b>alasan</b> pada dialog konfirmasi, dan setujui.</li>
+      <li>Setelah selesai, periksa kembali menu Pengguna untuk memastikan akun alumni sudah berstatus benar.</li>
+    </ol>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note danger">
+      <b>Tindakan permanen.</b> Jurnal, refleksi, dan data pribadi yang melewati batas akan dihapus dan tidak dapat dipulihkan.
+    </div>
+    <div class="note">
+      <b>Arsipkan lebih dulu.</b> Bila ragu, unduh laporan agregat dan simpan sebagai arsip sekolah sebelum menjalankan retensi.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">15.2</span><h2>Apa yang dihapus, apa yang disimpan</h2></div>
+    <table class="t sm">
+      <tr><th style="width:50%">Dihapus atau dianonimkan</th><th>Tetap disimpan</th></tr>
+      <tr><td>Nama, email, dan NIS siswa alumni (diganti label <i>Alumni Anonim</i> dan nomor <i>ANON-id</i>).</td><td>Angka agregat pada laporan tahunan.</td></tr>
+      <tr><td>Seluruh entri jurnal dan refleksi siswa tersebut.</td><td>Audit log akses dan tindakan admin.</td></tr>
+      <tr><td>Isi catatan konseling (diganti keterangan bahwa data dianonimkan).</td><td>Catatan mood, prestasi, dan berkas bukti tetap ada tanpa nama pemilik.</td></tr>
+    </table>
+  </div>
+
+  <div class="note mt6">
+    <b>Sekali setahun sudah cukup.</b> Jalankan retensi setelah proses kelulusan dan setelah arsip laporan tahunan diunduh, agar tidak ada data yang hilang sebelum dilaporkan.
+  </div>
+
+  <div class="note warn mt6">
+    <b>Uji pada satu angkatan.</b> Bila kebijakan retensi baru diubah, jalankan pada angkatan terlama lebih dulu, periksa hasilnya, baru lanjutkan ke angkatan berikutnya.
+  </div>
+
+  <div class="foot"><span>Bab 15 · Retensi data</span><span class="pnum">17</span></div>
+</section>
+
+<!-- ============ 18. PENGATURAN ============ -->
+<section class="page">
+  <div class="head">
+    <div class="kicker">Bab 16 · Portal Superadmin</div>
+    <h1>Pengaturan sekolah</h1>
+    <p class="sub">Identitas sekolah, kebijakan privasi, dan fitur yang boleh dipakai siswa.</p>
+    <div class="head-rule"></div>
+  </div>
+
+  <div class="shot desktop mb6">
+    <img src="img/30-admin-pengaturan.png" alt="Halaman pengaturan sekolah" class="h84">
+    <figcaption><b>Gambar 22.</b> Pengaturan: identitas sekolah, notifikasi &amp; privasi, dan sakelar fitur.</figcaption>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">16.1</span><h2>Yang perlu diisi</h2></div>
+    <table class="t sm">
+      <tr><th style="width:36%">Bagian</th><th>Keterangan</th></tr>
+      <tr><td>Nama sekolah, NPSN, zona waktu</td><td>Muncul pada laporan dan dokumen cetak. Zona waktu memengaruhi jadwal pengingat.</td></tr>
+      <tr><td>Alamat</td><td>Alamat lengkap sekolah untuk kop laporan.</td></tr>
+      <tr><td>Nomor WhatsApp layanan BK</td><td>Format internasional tanpa tanda plus, mis. <i>6281234567890</i>. Dipakai tombol Curhat ke Guru BK.</td></tr>
+      <tr><td>Jam layanan</td><td>Ditampilkan kepada siswa, mis. <i>Senin–Jumat 08.00–15.00</i>.</td></tr>
+      <tr><td>Jam ringkasan harian &amp; pengingat siswa</td><td>Waktu pengiriman ringkasan untuk Guru BK dan pengingat untuk siswa.</td></tr>
+      <tr><td>Versi kebijakan consent</td><td>Menaikkan versi akan meminta persetujuan ulang seluruh siswa.</td></tr>
+      <tr><td>Retensi setelah lulus</td><td>Jumlah tahun data disimpan setelah siswa lulus; dipakai halaman Retensi.</td></tr>
+      <tr><td>Sakelar fitur</td><td>Jurnal emosi, Portofolio prestasi, Ruang refleksi, dan Eskalasi WhatsApp dapat dinyalakan atau dimatikan.</td></tr>
+    </table>
+  </div>
+
+  <div class="grid2 mt6">
+    <div class="note">
+      <b>Simpan perubahan</b> menerapkan seluruh isian sekaligus. Perubahan versi consent dan retensi berdampak luas, jadi lakukan di awal tahun ajaran.
+    </div>
+    <div class="note warn">
+      <b>Matikan fitur dengan hati-hati.</b> Menonaktifkan jurnal atau refleksi menyembunyikan menu bagi siswa, tetapi data lama tetap tersimpan.
+    </div>
+  </div>
+
+  <div class="note mt6">
+    <b>Uji setelah menyimpan.</b> Masuk sebagai satu siswa dan satu Guru BK untuk memastikan menu, pengingat, dan tombol Curhat mengikuti pengaturan baru.
+  </div>
+
+  <div class="foot"><span>Bab 16 · Pengaturan sekolah</span><span class="pnum">18</span></div>
+</section>
+
+<!-- ============ 19. PENUTUP ============ -->
+<section class="page">
+  <div class="closing-band">
+    <div class="kicker" style="color:#a8b6ea;font-size:7.5pt;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;">Bab 17 · Penutup</div>
+    <h2>Tata kelola rapi, layanan berjalan</h2>
+    <p>Irama kerja tahunan yang menjaga data sekolah tetap akurat, aman, dan patuh kebijakan.</p>
+  </div>
+
+  <div class="sec mt8">
+    <div class="sec-head"><span class="sec-num">17.1</span><h2>Kalender kerja admin</h2></div>
+    <table class="t sm">
+      <tr><th style="width:22%">Irama</th><th>Kegiatan</th></tr>
+      <tr><td>Awal tahun</td><td>Buat tahun ajaran dan kelas, tugaskan Guru BK, impor siswa, tinjau pengaturan sekolah.</td></tr>
+      <tr><td>Bulanan</td><td>Periksa akun nonaktif, audit log, kapasitas penyimpanan, dan laporan agregat.</td></tr>
+      <tr><td>Akhir semester</td><td>Tinjau konten dan pengumuman, bersihkan akun uji, perbarui nomor layanan BK.</td></tr>
+      <tr><td>Akhir tahun</td><td>Jalankan pratinjau kenaikan kelas, eksekusi, lalu tinjau kebijakan retensi.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">17.2</span><h2>Bila ada masalah</h2></div>
+    <div class="grid2">
+      <div class="card compact">
+        <h3>Guru BK tidak melihat siswa</h3>
+        <p>Guru tersebut belum ditugaskan ke kelas mana pun. Tetapkan lewat tombol Atur Guru BK pada kartu kelas.</p>
+      </div>
+      <div class="card compact">
+        <h3>Kenaikan kelas gagal</h3>
+        <p>Biasanya kelas tujuan belum dibuat atau kelas asal sudah nonaktif. Lengkapi pemetaan, lalu ulangi pratinjau.</p>
+      </div>
+      <div class="card compact">
+        <h3>Siswa tidak menerima email</h3>
+        <p>Siswa dan Guru BK tidak memakai OTP. Bila email pemulihan tidak sampai, gunakan tombol reset sandi di menu Pengguna.</p>
+      </div>
+      <div class="card compact">
+        <h3>Laporan kosong</h3>
+        <p>Rentang tanggal terlalu sempit, atau kelas berisi kurang dari 10 siswa sehingga disembunyikan ambang privasi.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">17.3</span><h2>Daftar periksa bulanan</h2></div>
+    <div class="grid2">
+      <div class="card compact">
+        <h3>Data &amp; akses</h3>
+        <ul class="plain" style="font-size:8.4pt">
+          <li>Akun nonaktif dan alumni sudah benar.</li>
+          <li>Tidak ada Guru BK tanpa kelas dampingan.</li>
+          <li>Audit log bulan ini sudah diperiksa.</li>
+        </ul>
+      </div>
+      <div class="card compact">
+        <h3>Layanan</h3>
+        <ul class="plain" style="font-size:8.4pt">
+          <li>Pengumuman aktif sesuai kalender sekolah.</li>
+          <li>Konten tips dan prompt masih relevan.</li>
+          <li>Nomor WhatsApp layanan BK dan nomor Guru BK pada akun masing-masing masih benar.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">17.4</span><h2>Bila butuh bantuan</h2></div>
+    <div class="grid3">
+      <div class="card compact">
+        <h3>Admin lain</h3>
+        <p>Untuk hal yang tidak dapat Anda lakukan sendiri, mis. pemulihan akun superadmin.</p>
+      </div>
+      <div class="card compact">
+        <h3>Vendor aplikasi</h3>
+        <p>Untuk perubahan konfigurasi server, email pengirim OTP, atau penyesuaian kebijakan yang tidak tersedia di menu.</p>
+      </div>
+      <div class="card compact">
+        <h3>Tim IT sekolah</h3>
+        <p>Untuk masalah server, email pengirim OTP, dan pencadangan basis data.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head"><span class="sec-num">17.5</span><h2>Istilah yang sering muncul</h2></div>
+    <table class="t sm">
+      <tr><th style="width:28%">Istilah</th><th>Arti di portal admin</th></tr>
+      <tr><td>Retensi</td><td>Lama data disimpan sebelum dihapus atau dianonimkan.</td></tr>
+      <tr><td>Audit log</td><td>Catatan akses dan perubahan yang tidak dapat disunting.</td></tr>
+      <tr><td>Ambang privasi</td><td>Batas minimal jumlah siswa agar rekap agregat ditampilkan.</td></tr>
+      <tr><td>Versi consent</td><td>Nomor kebijakan persetujuan; naik berarti siswa menyetujui ulang.</td></tr>
+    </table>
+  </div>
+
+  <div class="note ok mt6">
+    <b>Pemisahan tugas:</b> siswa memegang kendali atas ceritanya, Guru BK mendampingi dengan konteks, dan admin memastikan layanan berjalan tanpa membaca isi psikologis siapa pun.
+  </div>
+
+  <div class="foot"><span>Panduan Superadmin SADAR DIRI · Versi 1.2 · Oktober 2026</span><span class="pnum">19</span></div>
+</section>
+
+</body>
+</html>

@@ -15,7 +15,7 @@ Dokumen ini menjelaskan kondisi kode saat ini: arsitektur, model data, seluruh e
 | Jenis | Aplikasi web monolit Laravel + Inertia/React (SPA tanpa API terpisah) |
 | Basis pengguna | Siswa, Guru BK, Superadmin |
 | Bahasa antarmuka | Bahasa Indonesia (seluruh teks, pesan validasi, dan pesan error) |
-| Jumlah route | 166 (128 di antaranya di bawah prefix `api/`) |
+| Jumlah route | 173 (135 di antaranya di bawah prefix `api/`) |
 | Jumlah tabel | 42 (33 tabel aplikasi + 9 tabel framework: users/reset/sessions, cache, jobs, notifications) |
 | Cakupan tes | 33 tes fitur + 1 tes unit (34 total) |
 
@@ -174,7 +174,7 @@ Skema utama ada di `database/migrations/2026_10_19_000001_create_sadar_diri_sche
 
 | Tabel | Kolom penting | Catatan |
 |---|---|---|
-| `users` | `name`, `email` (unik, nullable), `identity_number` (unik, NIS/NIP), `password`, `role`, `status`, `must_change_password`, `consent_version`, `consented_at`, `last_login_at`, `last_activity_at`, `deactivated_at`, `anonymized_at`, `mood_reminder_enabled`, `mood_reminder_hour` (default 19), `reflection_reminder_enabled`, `notification_channel` | `password` di-cast `hashed` → jangan panggil `Hash::make` saat menulis |
+| `users` | `name`, `email` (unik, nullable), `phone` (nomor WhatsApp Guru BK), `identity_number` (unik, NIS/NIP), `password`, `role`, `status`, `must_change_password`, `consent_version`, `consented_at`, `last_login_at`, `last_activity_at`, `deactivated_at`, `anonymized_at`, `mood_reminder_enabled`, `mood_reminder_hour` (default 19), `reflection_reminder_enabled`, `notification_channel` | `password` di-cast `hashed` → jangan panggil `Hash::make` saat menulis |
 | `academic_years` | `name` (mis. `2026/2027`), `starts_on`, `ends_on`, `is_active` | Satu tahun ajaran aktif |
 | `classes` | `academic_year_id`, `name`, `level`, `homeroom_teacher_name`, `is_active` | Unik per (`academic_year_id`, `name`) |
 | `class_student` | `class_id`, `student_id`, `academic_year_id`, `joined_at`, `left_at`, `status` (`active`/`moved`/`graduated`) | Riwayat keanggotaan; dasar `AccessScope` |
@@ -193,11 +193,11 @@ Skema utama ada di `database/migrations/2026_10_19_000001_create_sadar_diri_sche
 
 | Tabel | Kolom penting | Enkripsi |
 |---|---|---|
-| `mood_entries` | `student_id`, `entry_date`, `valence` (`positive`/`negative`), `intensity` (1–5), `emotion_tags` (JSON), `note` | Tidak (dipakai agregasi) |
+| `mood_entries` | `student_id`, `entry_date`, `valence` (`positive`/`negative`), `intensity` (1–5), `emotion_tags` (JSON), `note` (alasan, wajib) | Tidak (dipakai agregasi) |
 | `journal_entries` | `type` (`abc`/`grateful`), `entry_date`, `prompt_content_id`, `activating_event`, `belief`, `consequence`, `gratitude_text`, `happiness_text`, `status` (`draft`/`published`), `is_flagged`, `flagged_at`, `follow_up_requested`, `follow_up_requested_at` | 5 kolom teks jurnal |
 | `journal_replies` | `journal_entry_id`, `counselor_id`, `content` | `content` |
 | `reflection_sessions` | `counselor_id`, `class_id`/`student_id`, `topic`, `instructions`, `questions` (JSON), `due_at`, `status` (`scheduled`/`ongoing`/`completed`/`cancelled`), `extended_at`, `extension_reason` | — |
-| `reflections` | `type` (`self`/`guided`), `week_start`, `positive_experience`, `negative_experience`, `answers`, `status` (`draft`/`submitted`/`late`), `submitted_at` | 2 teks + `answers` (`encrypted:array`) |
+| `reflections` | `type` (`self`/`guided`), `week_start`, `gratitude_text`, `positive_experience`, `negative_experience`, `answers`, `status` (`draft`/`submitted`/`late`), `submitted_at` | 3 teks + `answers` (`encrypted:array`) |
 | `reflection_feedbacks` | `reflection_id`, `counselor_id`, `content`, `version` | Tidak |
 
 Unik: satu mood per siswa per hari; satu refleksi mandiri per (`student_id`, `type`, `week_start`); satu refleksi per (`student_id`, `session_id`).
@@ -209,7 +209,8 @@ Unik: satu mood per siswa per hari; satu refleksi mandiri per (`student_id`, `ty
 | `achievements` | `category` (`academic`/`non_academic`/`competition`/`soft_skill`), `title`, `organizer`, `level`, `achieved_at`, `rank`, `description`, `verification_status` (`pending`/`verified`/`rejected`), `verified_by`, `verified_at`, `rejection_reason`, `created_by` | Prestasi buatan Guru BK langsung berstatus verified |
 | `attachments` | `achievement_id`, `uploaded_by`, `disk`, `path`, `original_name`, `mime_type`, `size_bytes`, `checksum` | Diunduh lewat signed URL `GET /api/attachments/{attachment}` |
 | `action_plans` | `student_id`, `period_start`, `period_end`, `status` (`active`/`closed`) | Satu per periode |
-| `action_targets` | `action_plan_id`, `title`, `success_indicator`, `status` (`not_started`/`in_progress`/`achieved`/`not_achieved`), `progress_note`, `sort_order` | — |
+| `action_targets` | `action_plan_id`, `title`, `success_indicator`, `basis` (`general`/`reflection`/`future_plan`), `status` (`not_started`/`in_progress`/`achieved`/`not_achieved`), `progress_note`, `sort_order` | — |
+| `action_target_steps` | `action_target_id`, `title`, `is_done`, `sort_order` | Maksimal 10 langkah per target |
 | `action_evaluations` | `action_plan_id` (unik), `snapshot` (JSON), `evaluation_text`, `improvement_text` | 2 teks dienkripsi |
 | `future_plans` | `student_id` (unik), `dream`, `career_plan`, `education_plan`, `concrete_targets` | Semua dienkripsi |
 | `future_plan_versions` | `future_plan_id`, `version`, `snapshot` | — |
@@ -271,11 +272,12 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 |---|---|---|
 | GET | `/api/student/dashboard` | Mood hari ini, streak jurnal, target aktif, pengumuman |
 | GET | `/api/student/profile` | `biodata`, `self_profile`, `completeness_percent` |
-| PUT | `/api/student/profile/biodata` | Field tertutup (daftar tetap); mengabaikan field lain |
+| PUT | `/api/student/profile/biodata` | Field tertutup (daftar tetap); `extra_fields` (maks. 5 baris label/isi) — baris tidak lengkap dibuang, key yang tidak dikirim tidak menghapus data lama |
 | PUT | `/api/student/profile/self` | Simpan draf atau publikasikan (`publish`), menaikkan `version` |
 | PUT | `/api/student/account/password` | `throttle:10,1` — alias lama, ditangani `AuthController::updatePassword` |
 | GET | `/api/student/profile/versions` | Riwayat versi profil diri |
 | GET | `/api/student/counseling-summaries` | Ringkasan catatan konseling yang boleh dilihat |
+| GET | `/api/student/counselor-contacts` | Guru BK aktif yang ditugaskan ke kelas siswa dan punya `users.phone`, beserta tautan `wa.me` dengan pesan pembuka; jatuh ke `school.whatsapp_number` bernama “Layanan BK” bila tidak ada |
 | GET | `/api/student/privacy/access-log` | Jejak akses Guru BK ke data siswa |
 | GET/PUT | `/api/student/preferences/reminders` | Preferensi pengingat mood/refleksi |
 | POST | `/api/student/whatsapp-link` | Tautan eskalasi WhatsApp (bila fitur aktif) |
@@ -283,7 +285,7 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 | — | `/api/student/journals` (+ `draft`, `{journal}` GET/PUT/DELETE) | `consent:journaling` |
 | — | `/api/student/reflections`, `/reflection-sessions`, `/{session}/submit` | `consent:journaling` |
 | — | `/api/student/achievements` (+ upload/hapus lampiran, `export`) | `consent:portfolio` |
-| — | `/api/student/action-plans/*`, `/future-plan` | Rencana aksi, target, evaluasi, rencana masa depan |
+| — | `/api/student/action-plans/*`, `/action-targets/*`, `/action-steps/*`, `/future-plan` | Rencana aksi, target (dengan `basis` + `steps`), langkah yang bisa dicentang, evaluasi, rencana masa depan |
 
 ### 6.4 Guru BK (`role:counselor`)
 
@@ -317,7 +319,7 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 | GET/PUT | `/api/admin/settings` | Pengaturan sekolah (berversi) |
 | GET | `/api/admin/audit-logs` | Audit log |
 | GET | `/api/admin/classes/options` | Opsi kelas |
-| GET/POST | `/api/admin/users`, `/users/import`, `/users/{user}` | CRUD pengguna & impor CSV. Daftar: paginasi `page`/`per_page` (default 20, maksimum 100), akun `superadmin` selalu dikecualikan |
+| GET/POST | `/api/admin/users`, `/users/import`, `/users/{user}` | CRUD pengguna & impor CSV. `phone` (regex 8–15 digit) hanya disimpan untuk Guru BK dan dipakai tombol Chat siswa. Daftar: paginasi `page`/`per_page` (default 20, maksimum 100), akun `superadmin` selalu dikecualikan |
 | PATCH | `/api/admin/users/{user}/status` | Ubah status |
 | POST | `/api/admin/users/{user}/reset-password` | Reset sandi langsung ke NIS/NIP tanpa email, memutus sesi aktif, `must_change_password = true`; superadmin ditolak |
 | POST | `/api/admin/users/{user}/force-logout` | Paksa logout |
@@ -510,6 +512,7 @@ MAIL_FROM_NAME="${APP_NAME}"
 | `sadar:alerts` | Evaluasi seluruh aturan alert | harian 00:10 |
 | `sadar:overdue` | Tandai sesi refleksi lewat tenggat sebagai `completed`, lalu evaluasi alert | tiap jam |
 | `sadar:reminders` | Kirim pengingat mood sesuai `mood_reminder_hour` siswa yang belum mencatat mood hari ini | tiap jam |
+| `sadar:reflection-reminder` | Kirim pengingat refleksi pekanan ke siswa yang `reflection_reminder_enabled` dan belum mengirim refleksi mandiri pekan berjalan; dilewati bila `feature.reflection` mati | Jumat 15:00 & Minggu 18:00 (zona sekolah) |
 | `sadar:digest` | Ringkasan harian ke Guru BK: jumlah alert `new`, refleksi tertunda, dan siswa tidak aktif >7 hari (termasuk yang belum pernah aktif) | harian 07:00 |
 
 Dijadwalkan di `routes/console.php`. Saat pengembangan jalankan `php artisan schedule:work`.
@@ -598,6 +601,10 @@ Peran Guru BK tidak punya jenjang koordinator: kedua akun memakai `role = counse
 
 Saat kenaikan kelas dijalankan (`AcademicYearController::promote()`), penugasan Guru BK pada kelas asal **disalin** ke kelas tujuan di dalam transaksi yang sama, sehingga guru tetap mendampingi siswanya dari X sampai XII. Penyalinan ini bisa dimatikan lewat centang *Ikutkan Guru BK pendamping* pada dialog kenaikan kelas. Penugasan lama tidak dihapus agar riwayat dampingan tetap terbaca.
 
+Dialog **Kenaikan kelas** dibuka dari kartu **tahun tujuan**: kelas asal diambil dari tahun ajaran sebelumnya yang masih punya siswa aktif, sedangkan pilihan kelas tujuan hanya berisi kelas di tahun yang dipilih. Tombol *Pratinjau* menghitung jumlah siswa yang pindah/lulus serta penugasan Guru BK dan wali kelas yang akan disalin tanpa mengubah data.
+
+Wali kelas **bukan akun** dan tidak punya menu CRUD sendiri: namanya menempel langsung pada record kelas (`classes.homeroom_teacher_name`), sehingga satu kelas satu wali kelas per tahun ajaran dan riwayatnya otomatis mengikuti kelas lama. Superadmin dapat mengubahnya kapan saja lewat tombol **Ubah kelas** di menu **Kelas**; perubahan itu hanya menyentuh teks wali kelas (tidak memindahkan siswa maupun penugasan Guru BK) dan dicatat di audit `class.updated` beserta nilai lama/baru. Saat kenaikan kelas, wali kelas disalin ke kelas tujuan **hanya bila kelas tujuan belum punya wali kelas** (centang *Salin wali kelas*, default aktif), jadi pengisian manual tidak pernah tertimpa. Nama wali kelas tampil di kartu menu **Kelas** dan di kartu profil siswa (`GET /api/student/profile` → `data.class`).
+
 Isi seed: tahun ajaran `2026/2027`, 3 kelas satu angkatan (X IPA 1, X IPA 2, X IPS 1), 2 Guru BK yang keduanya memegang ketiga kelas, 36 siswa dengan profil terisi (70–100% kelengkapan), plus `ActivitySeeder` untuk data aktivitas. Email siswa berpola `nama.depan.nama.belakang@siswa.sadar-diri.test`, mis. `ayu.lestari@siswa.sadar-diri.test`.
 
 ### 12.4 Tes
@@ -613,6 +620,9 @@ php artisan test
 |---|---|---|
 | `AccessControlTest` | 6 | Redirect guest, isolasi antar peran, isolasi jurnal per kelas, superadmin tanpa akses jurnal, 2FA wajib untuk admin API |
 | `ClassCounselorAssignmentTest` | 7 | Tugaskan satu Guru BK ke banyak kelas, idempoten, kelas dengan >1 Guru BK, lepas guru terakhir, kenaikan kelas menyalin penugasan (dan bisa dimatikan), akses guru tetap setelah siswa naik |
+| `ClassHomeroomTest` | 9 | Wali kelas tampil di daftar kelas, ubah wali kelas tidak menyentuh siswa/Guru BK, audit nilai lama-baru, kenaikan kelas menyalin wali kelas ke kelas kosong (tanpa menimpa isian manual, bisa dimatikan, pratinjau tidak mengubah data), profil siswa menampilkan kelas + wali kelas |
+| `PasswordChangeTest` | 7 | Paksa ganti sandi saat login pertama, blokir rute peran sampai sandi diganti, endpoint ganti sandi semua peran, alias endpoint siswa |
+| `UserManagementTest` | 11 | Pagination 20/halaman, superadmin disembunyikan, akun baru langsung aktif dengan sandi NIS/NIP, reset sandi admin tanpa email |
 | `ClientFeatureAlignmentTest` | 11 | Guru BK baca/ubah biodata & profil diri, tolak siswa di luar kelas, tambah prestasi terverifikasi, permintaan/tanpa tindak lanjut, balasan jurnal terlihat siswa, enkripsi balasan, rencana aksi & masa depan |
 | `EmailAuthTest` | 9 | OTP superadmin, sekali pakai, kode salah/kedaluwarsa, cooldown kirim ulang, siswa & Guru BK tanpa OTP, reset sandi semua peran, anti-enumerasi |
 | `PrivacyFlowTest` | 4 | Sesi terbimbing tetap terbuka sampai ditutup, enkripsi jawaban, retensi alumni, ambang privasi agregat <10 |
@@ -680,3 +690,4 @@ Hal-hal berikut sudah diputuskan dan jangan diubah tanpa persetujuan pemilik pro
 | Rute halaman | `routes/web.php` |
 | Rute API | `routes/api.php` |
 | Perintah terjadwal | `routes/console.php` |
+| Kode OTP pengembangan | `config/sadar.php` (`SADAR_DEV_OTP_CODE`) — hanya berlaku saat `APP_ENV=local`; email tidak dikirim |

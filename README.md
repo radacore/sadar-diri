@@ -38,6 +38,8 @@ Untuk pengembangan: `npm run dev` + `php artisan serve`.
 
 Kedua akun Guru BK punya hak akses yang sama dan sama-sama mendampingi ketiga kelas di satu angkatan. Ini memperagakan pola sekolah dengan banyak kelas paralel dan satu tim BK: satu Guru BK boleh memegang banyak kelas, dan satu kelas boleh punya lebih dari satu Guru BK. Superadmin mengatur sendiri pembagiannya di menu **Kelas** (tombol *Tugaskan Guru BK* memakai pilihan banyak kelas sekaligus).
 
+Wali kelas tidak disimpan sebagai akun, melainkan sebagai nama pada record kelas. Superadmin bisa mengubahnya lewat tombol **Ubah kelas**; saat naik kelas, nama wali kelas ikut disalin ke kelas tujuan bila kelas tujuan belum punya wali kelas. Nama wali kelas tampil di menu **Kelas** dan di profil siswa.
+
 Superadmin masuk dengan kata sandi lalu mengonfirmasi **kode 6 digit yang dikirim ke email** akunnya (berlaku 10 menit, sekali pakai, kirim ulang tiap 60 detik).
 
 Akun baru yang dibuat lewat **Pengguna** atau **Impor CSV** langsung aktif dengan kata sandi awal NIS/NIP (Guru BK memakai kata sandi yang diisi admin atau tombol *Buat kata sandi otomatis*). Saat masuk pertama, pengguna dipaksa mengganti kata sandi di `/ganti-sandi` sebelum bisa membuka halaman lain.
@@ -122,3 +124,23 @@ php artisan test
 Cakupan: kontrol akses antar peran, isolasi jurnal per kelas, 2FA superadmin, siklus sesi refleksi terbimbing, enkripsi jawaban, retensi alumni, dan ambang privasi laporan agregat.
 
 Dokumentasi lengkap (arsitektur, skema data, seluruh endpoint, aturan bisnis, keputusan privasi): [`PROYEK.md`](PROYEK.md).
+
+## Panduan pengguna
+
+Panduan bergambar untuk pengguna akhir ada di [`docs/panduan/`](docs/panduan) — satu berkas per peran, tersedia sebagai HTML (sumber) dan PDF (siap cetak):
+
+| Peran | Berkas | Halaman | Tampilan |
+|---|---|---|---|
+| Siswa | `panduan-siswa.pdf` | 10 | Ponsel 420 × 900 |
+| Guru BK | `panduan-guru-bk.pdf` | 9 | Ponsel 420 × 900 |
+| Superadmin | `panduan-superadmin.pdf` | 19 | Desktop 1440 × 900 |
+
+Saat pengembangan, login superadmin tidak mengirim email: set `SADAR_DEV_OTP_CODE=123456` di `.env` (hanya berlaku bila `APP_ENV=local`), lalu masukkan kode itu pada layar verifikasi. Halaman verifikasi juga menampilkan kodenya selama mode pengembangan.
+
+Tangkapan layar diambil langsung dari aplikasi yang berjalan (`docs/panduan/img/`), sedangkan tata letak dokumen diatur `docs/panduan/panduan.css`. Untuk mencetak ulang setelah mengubah HTML:
+
+```bash
+cd docs/panduan
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-pdf-header-footer \
+  --print-to-pdf=panduan-siswa.pdf "file://$PWD/panduan-siswa.html"
+```
