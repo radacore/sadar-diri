@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Icon } from './Icons';
+import { Icon, MoodFace } from './Icons';
 
 const ToastContext = createContext({ push: () => {} });
 
@@ -533,15 +533,15 @@ export function Progress({ value = 0, label }) {
 
 export function MoodPicker({ value, onChange }) {
     const options = [
-        { value: 1, label: 'Sangat berat', emoji: '😢' },
-        { value: 2, label: 'Berat', emoji: '🙁' },
-        { value: 3, label: 'Biasa', emoji: '😐' },
-        { value: 4, label: 'Baik', emoji: '🙂' },
-        { value: 5, label: 'Sangat baik', emoji: '😄' },
+        { value: 1, label: 'Sangat berat' },
+        { value: 2, label: 'Berat' },
+        { value: 3, label: 'Biasa' },
+        { value: 4, label: 'Baik' },
+        { value: 5, label: 'Sangat baik' },
     ];
 
     return (
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Pilih mood">
+        <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Pilih mood">
             {options.map((option) => {
                 const active = value === option.value;
                 return (
@@ -552,14 +552,14 @@ export function MoodPicker({ value, onChange }) {
                         aria-checked={active}
                         aria-label={option.label}
                         onClick={() => onChange(option.value)}
-                        className={`flex h-[52px] w-[48px] flex-col items-center justify-center gap-1 rounded-[14px] border text-[10px] transition sm:h-[56px] sm:w-[56px] sm:text-[11px] ${
+                        className={`flex min-h-[68px] flex-col items-center justify-center gap-1.5 rounded-[16px] border px-1 py-2 text-center text-[10px] font-semibold leading-[1.15] transition ${
                             active
-                                ? 'border-2 border-[#3f51b5] bg-[#e8eaf6] font-semibold text-[#1e293b]'
+                                ? 'border-2 border-[#3f51b5] bg-[#e8eaf6] text-[#1e293b] shadow-[0_2px_8px_rgba(63,81,181,0.18)]'
                                 : 'border-[#e2e8f0] bg-white text-[#475569] hover:border-[#cbd5e1]'
                         }`}
                     >
-                        <span aria-hidden="true" className="text-[20px] leading-none">{option.emoji}</span>
-                        {option.label}
+                        <MoodFace level={option.value} size={30} />
+                        <span>{option.label}</span>
                     </button>
                 );
             })}

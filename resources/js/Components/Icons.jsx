@@ -47,3 +47,69 @@ export function Icon({ name, size = 19, className = '', strokeWidth = 2 }) {
         </svg>
     );
 }
+
+/**
+ * Wajah mood buatan sendiri (bukan emoji font) agar tampil sama di semua
+ * perangkat. Warna muka dan tinta mengikuti tingkat mood 1–5.
+ */
+const moodPalette = {
+    1: { face: '#fecaca', ink: '#b91c1c' },
+    2: { face: '#fed7aa', ink: '#c2410c' },
+    3: { face: '#e2e8f0', ink: '#64748b' },
+    4: { face: '#e0e7ff', ink: '#4338ca' },
+    5: { face: '#bbf7d0', ink: '#047857' },
+};
+
+export function MoodFace({ level = 3, size = 30, className = '' }) {
+    const { face, ink } = moodPalette[level] ?? moodPalette[3];
+    const stroke = { stroke: ink, strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+
+    return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className} aria-hidden="true">
+            <circle cx="24" cy="24" r="20" fill={face} stroke={ink} strokeWidth="2" />
+
+            {level === 1 ? (
+                <>
+                    <path d="M13.5 19.5 19.5 16.5M34.5 19.5 28.5 16.5" {...stroke} />
+                    <circle cx="17.5" cy="23.5" r="1.9" fill={ink} />
+                    <circle cx="30.5" cy="23.5" r="1.9" fill={ink} />
+                    <path d="M16.5 34.5c2.2-4.6 5-6.6 7.5-6.6s5.3 2 7.5 6.6" {...stroke} />
+                    <path d="M34.6 26.6c1.4 1.9 2.1 3.1 2.1 4a2.1 2.1 0 0 1-4.2 0c0-.9.7-2.1 2.1-4Z" fill="#3b82f6" />
+                </>
+            ) : null}
+
+            {level === 2 ? (
+                <>
+                    <path d="M13.8 18.6 19.6 17M34.2 18.6 28.4 17" {...stroke} />
+                    <circle cx="17.5" cy="23.8" r="1.9" fill={ink} />
+                    <circle cx="30.5" cy="23.8" r="1.9" fill={ink} />
+                    <path d="M17 33c2-3 4.4-4.4 7-4.4s5 1.4 7 4.4" {...stroke} />
+                </>
+            ) : null}
+
+            {level === 3 ? (
+                <>
+                    <circle cx="17.5" cy="22.5" r="2" fill={ink} />
+                    <circle cx="30.5" cy="22.5" r="2" fill={ink} />
+                    <path d="M18 31h12" {...stroke} />
+                </>
+            ) : null}
+
+            {level === 4 ? (
+                <>
+                    <circle cx="17.5" cy="22" r="2" fill={ink} />
+                    <circle cx="30.5" cy="22" r="2" fill={ink} />
+                    <path d="M15.8 28c2.5 5 5.4 7 8.2 7s5.7-2 8.2-7" {...stroke} />
+                </>
+            ) : null}
+
+            {level === 5 ? (
+                <>
+                    <path d="M13.5 22.5c1.4-3 3.2-4.4 4.5-4.4s3.1 1.4 4.5 4.4" {...stroke} />
+                    <path d="M25.5 22.5c1.4-3 3.2-4.4 4.5-4.4s3.1 1.4 4.5 4.4" {...stroke} />
+                    <path d="M15.5 28c2.5 4.6 5.3 6.9 8.5 6.9s6-2.3 8.5-6.9Z" fill={ink} fillOpacity="0.85" />
+                </>
+            ) : null}
+        </svg>
+    );
+}
