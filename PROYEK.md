@@ -277,10 +277,9 @@ Prefix `/api`. Semua respons memakai envelope `success/data/message`.
 | PUT | `/api/student/account/password` | `throttle:10,1` — alias lama, ditangani `AuthController::updatePassword` |
 | GET | `/api/student/profile/versions` | Riwayat versi profil diri |
 | GET | `/api/student/counseling-summaries` | Ringkasan catatan konseling yang boleh dilihat |
-| GET | `/api/student/counselor-contacts` | Guru BK aktif yang ditugaskan ke kelas siswa dan punya `users.phone`, beserta tautan `wa.me` dengan pesan pembuka; jatuh ke `school.whatsapp_number` bernama “Layanan BK” bila tidak ada |
 | GET | `/api/student/privacy/access-log` | Jejak akses Guru BK ke data siswa |
 | GET/PUT | `/api/student/preferences/reminders` | Preferensi pengingat mood/refleksi |
-| POST | `/api/student/whatsapp-link` | Tautan eskalasi WhatsApp (bila fitur aktif) |
+| POST | `/api/student/whatsapp-link` | Tautan `wa.me` dengan pesan pembuka untuk tombol **Curhat ke Guru BK**; memakai `users.phone` Guru BK kelas siswa, jatuh ke `school.whatsapp_number` bila kosong, dan 409 bila keduanya kosong. Mengembalikan `counselor_name`, `phone`, `source` (`counselor`/`school`), dan `service_hours` |
 | — | `/api/student/moods`, `/moods/summary` | `consent:journaling` |
 | — | `/api/student/journals` (+ `draft`, `{journal}` GET/PUT/DELETE) | `consent:journaling` |
 | — | `/api/student/reflections`, `/reflection-sessions`, `/{session}/submit` | `consent:journaling` |
