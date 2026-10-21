@@ -55,6 +55,7 @@ class PageController extends Controller
             'mode' => 'challenge',
             'maskedEmail' => $email && str_contains($email, '@') ? $this->maskEmail($email) : null,
             'resendSeconds' => $user ? app(EmailOtpService::class)->secondsUntilResend($user) : 0,
+            'devCode' => app()->environment('local') ? config('sadar.dev_otp_code') : null,
         ]);
     }
 

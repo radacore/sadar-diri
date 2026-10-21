@@ -63,6 +63,7 @@ class UserController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'phone' => $user->phone,
                     'identity_number' => $user->identity_number,
                     'role' => $user->role,
                     'status' => $user->status,
@@ -97,6 +98,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'regex:/^[0-9]{8,15}$/'],
             'identity_number' => ['required', 'string', 'max:30', 'unique:users,identity_number'],
             'role' => ['required', Rule::in(['student', 'counselor'])],
             'password' => ['nullable', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
@@ -112,6 +114,7 @@ class UserController extends Controller
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'] ?? null,
+                'phone' => $data['role'] === 'counselor' ? ($data['phone'] ?? null) : null,
                 'identity_number' => $data['identity_number'],
                 // Tanpa kata sandi eksplisit, akun memakai NIS/NIP sebagai kata sandi awal.
                 'password' => $data['password'] ?? $data['identity_number'],
@@ -170,6 +173,7 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'identity_number' => $user->identity_number,
                 'role' => $user->role,
                 'status' => $user->status,
@@ -190,6 +194,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => ['nullable', 'string', 'regex:/^[0-9]{8,15}$/'],
             'role' => ['sometimes', Rule::in(['student', 'counselor'])],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);

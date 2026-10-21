@@ -59,6 +59,42 @@ Artisan::command('sadar:reminders', function () {
     $this->info('Pengingat diproses.');
 })->purpose('Kirim pengingat mood sesuai preferensi siswa');
 
+Artisan::command('sadar:reflection-reminder', function () {
+    $settings = app(SettingsService::class);
+
+    if (! $settings->get('feature.reflection')) {
+        $this->info('Fitur refleksi nonaktif. Pengingat dilewati.');
+        return;
+    }
+
+    $timezone = $settings->get('school.timezone') ?: config('app.timezone');
+    $weekStart = \Illuminate\Support\Carbon::now($timezone)->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->toDateString();
+    $notifications = app(NotificationService::class);
+    $sent = 0;
+
+    User::query()
+        ->where('role', 'student')
+        ->where('status', 'active')
+        ->where('reflection_reminder_enabled', true)
+        ->chunkById(200, function ($students) use ($weekStart, $notifications, &$sent) {
+            $submitted = \App\Models\Reflection::query()
+                ->whereIn('student_id', $students->pluck('id'))
+                ->where('type', 'self')
+                ->whereDate('week_start', $weekStart)
+                ->where('status', 'submitted')
+                ->pluck('student_id');
+
+            foreach ($students as $student) {
+                if (! $submitted->contains($student->id)) {
+                    $notifications->reminder($student, 'reflection');
+                    $sent++;
+                }
+            }
+        });
+
+    $this->info("{$sent} pengingat refleksi dikirim.");
+})->purpose('Kirim pengingat refleksi pekanan ke siswa yang belum mengisi');
+
 Artisan::command('sadar:announcements', function () {
     $count = \App\Models\Announcement::query()
         ->where('status', 'scheduled')
@@ -82,4 +118,6 @@ Schedule::command('sadar:alerts')->dailyAt('00:10');
 Schedule::command('sadar:announcements')->everyMinute();
 Schedule::command('sadar:overdue')->hourly();
 Schedule::command('sadar:reminders')->hourly();
+Schedule::command('sadar:reflection-reminder')->weeklyOn(5, '15:00');
+Schedule::command('sadar:reflection-reminder')->weeklyOn(0, '18:00');
 Schedule::command('sadar:digest')->dailyAt('07:00');

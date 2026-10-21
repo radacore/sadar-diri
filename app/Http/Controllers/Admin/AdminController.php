@@ -126,7 +126,6 @@ class AdminController extends Controller
         foreach ($data['school'] ?? [] as $key => $value) {
             $values['school.'.$key] = $value;
         }
-
         $updated = $this->settings->updateMany($values, $request->user());
         $this->audit->record('settings.updated', 'settings', null, null, null, ['keys' => $updated]);
 

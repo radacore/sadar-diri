@@ -4,7 +4,7 @@ import AppShell from '../../Layouts/AppShell';
 import { api, download } from '../../lib/api';
 import { formatDate, label, relative } from '../../lib/format';
 
-const emptyForm = { name: '', email: '', identity_number: '', password: '', role: 'student', class_id: '', class_ids: [] };
+const emptyForm = { name: '', email: '', phone: '', identity_number: '', password: '', role: 'student', class_id: '', class_ids: [] };
 
 function randomPassword() {
     const digits = String(Math.floor(1000 + Math.random() * 9000));
@@ -26,6 +26,8 @@ export default function Users() {
     const [busy, setBusy] = useState(false);
     const [importResult, setImportResult] = useState(null);
     const [form, setForm] = useState(emptyForm);
+    const [editing, setEditing] = useState(null);
+    const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
 
     const load = useCallback(async () => {
         try {
@@ -82,6 +84,9 @@ export default function Users() {
                 ...(form.role === 'student'
                     ? [{ label: 'Kata sandi awal', value: form.identity_number }]
                     : []),
+                ...(form.role === 'counselor' && form.phone
+                    ? [{ label: 'Nomor WhatsApp', value: form.phone }]
+                    : []),
                 ...(form.role === 'counselor' && form.class_ids.length
                     ? [{ label: 'Kelas', value: `${form.class_ids.length} kelas` }]
                     : []),
@@ -100,10 +105,36 @@ export default function Users() {
                 password: form.role === 'counselor' ? form.password : null,
                 class_id: form.role === 'student' ? Number(form.class_id) : null,
                 class_ids: form.role === 'counselor' ? form.class_ids : [],
+                phone: form.role === 'counselor' ? (form.phone || null) : null,
             });
             toast.push(response.message ?? 'Akun dibuat.');
             setOpen(false);
             setForm(emptyForm);
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const openEdit = (user) => {
+        setEditing(user);
+        setEditForm({ name: user.name, email: user.email ?? '', phone: user.phone ?? '' });
+    };
+
+    const saveEdit = async (event) => {
+        event.preventDefault();
+        setBusy(true);
+
+        try {
+            await api.put(`/api/admin/users/${editing.id}`, {
+                name: editForm.name,
+                email: editForm.email || null,
+                phone: editing.role === 'counselor' ? (editForm.phone || null) : undefined,
+            });
+            toast.push('Data akun diperbarui.');
+            setEditing(null);
             await load();
         } catch (error) {
             toast.push(error.message, 'error');
@@ -266,6 +297,9 @@ export default function Users() {
                                         <td>
                                             <p className="font-semibold">{user.name}</p>
                                             <p className="text-[11px] text-[#475569]">{user.email ?? '—'}</p>
+                                            {user.role === 'counselor' ? (
+                                                <p className="tabular text-[11px] text-[#475569]">{user.phone ?? 'Nomor WA belum diisi'}</p>
+                                            ) : null}
                                         </td>
                                         <td className="tabular">{user.identity_number}</td>
                                         <td>{label('role', user.role)}</td>
@@ -286,6 +320,7 @@ export default function Users() {
                                         <td className="text-[11px] text-[#475569]">{relative(user.last_login_at)}</td>
                                         <td>
                                             <div className="flex items-center justify-end gap-1.5">
+                                                <IconButton icon="edit" label={`Ubah data ${user.name}`} variant="outline" onClick={() => openEdit(user)} />
                                                 <IconButton icon="key" label={`Reset kata sandi ${user.name}`} variant="primary" onClick={() => resetPassword(user)} />
                                                 <IconButton icon="logout" label={`Putus sesi ${user.name}`} variant="warning" onClick={() => forceLogout(user)} />
                                                 <IconButton
@@ -341,7 +376,7 @@ export default function Users() {
                             <Input id="identity" value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} required />
                         </Field>
                         <Field label="Peran" required htmlFor="role">
-                            <Select id="role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value, class_id: '', class_ids: [], password: '' })}>
+                            <Select id="role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value, class_id: '', class_ids: [], password: '', phone: '' })}>
                                 <option value="student">Siswa</option>
                                 <option value="counselor">Guru BK</option>
                             </Select>
@@ -366,6 +401,17 @@ export default function Users() {
                             Kata sandi awal otomatis memakai <strong>NIS</strong> yang diisi di atas. Siswa wajib menggantinya saat masuk pertama.
                         </p>
                     )}
+                    {form.role === 'counselor' ? (
+                        <Field label="Nomor WhatsApp" htmlFor="phone" hint="Dipakai tombol Chat siswa di halaman Jurnal. Format 628… tanpa tanda plus.">
+                            <Input
+                                id="phone"
+                                inputMode="numeric"
+                                placeholder="6281234567890"
+                                value={form.phone}
+                                onChange={(event) => setForm({ ...form, phone: event.target.value.replace(/[^0-9]/g, '') })}
+                            />
+                        </Field>
+                    ) : null}
                     {form.role === 'student' ? (
                         <Field label="Kelas" required htmlFor="class">
                             <Select id="class" value={form.class_id} onChange={(event) => setForm({ ...form, class_id: event.target.value })} required>
@@ -384,6 +430,38 @@ export default function Users() {
                             </div>
                         </Field>
                     )}
+                </form>
+            </Modal>
+
+            <Modal
+                open={Boolean(editing)}
+                onClose={() => setEditing(null)}
+                title="Ubah data akun"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setEditing(null)}>Batal</Button>
+                        <Button variant="primary" type="submit" form="edit-user-form" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</Button>
+                    </>
+                }
+            >
+                <form id="edit-user-form" onSubmit={saveEdit} className="space-y-3">
+                    <Field label="Nama lengkap" required htmlFor="edit-name">
+                        <Input id="edit-name" value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} required />
+                    </Field>
+                    <Field label="Email" htmlFor="edit-email">
+                        <Input id="edit-email" type="email" value={editForm.email} onChange={(event) => setEditForm({ ...editForm, email: event.target.value })} />
+                    </Field>
+                    {editing?.role === 'counselor' ? (
+                        <Field label="Nomor WhatsApp" htmlFor="edit-phone" hint="Dipakai tombol Chat siswa di halaman Jurnal.">
+                            <Input
+                                id="edit-phone"
+                                inputMode="numeric"
+                                placeholder="6281234567890"
+                                value={editForm.phone}
+                                onChange={(event) => setEditForm({ ...editForm, phone: event.target.value.replace(/[^0-9]/g, '') })}
+                            />
+                        </Field>
+                    ) : null}
                 </form>
             </Modal>
         </AppShell>

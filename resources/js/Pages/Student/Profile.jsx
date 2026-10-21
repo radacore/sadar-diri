@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '../../Components/Icons';
-import { Button, Card, Field, HeroCard, Input, ListRow, PageSection, PasswordInput, ProgressRing, ReadOnlyValue, Select, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
+import { Button, Card, Field, HeroCard, IconButton, Input, ListRow, PageSection, PasswordInput, ProgressRing, ReadOnlyValue, Select, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
 import { formatDate, initials } from '../../lib/format';
@@ -15,6 +15,7 @@ export default function Profile() {
     const [biodata, setBiodata] = useState({});
     const [self, setSelf] = useState({});
     const [completeness, setCompleteness] = useState(0);
+    const [classInfo, setClassInfo] = useState(null);
     const [versions, setVersions] = useState([]);
     const [openSection, setOpenSection] = useState('biodata');
     const [busy, setBusy] = useState(false);
@@ -31,6 +32,7 @@ export default function Profile() {
             setBiodata(profile.data.biodata ?? {});
             setSelf(profile.data.self_profile ?? {});
             setCompleteness(profile.data.completeness_percent ?? 0);
+            setClassInfo(profile.data.class ?? null);
             setVersions(versionList.data ?? []);
         } catch (error) {
             toast.push(error.message, 'error');
@@ -58,11 +60,31 @@ export default function Profile() {
             const response = await api.put('/api/student/profile/biodata', biodata);
             setCompleteness(response.data.completeness_percent);
             toast.push('Biodata tersimpan.');
+            await load();
         } catch (error) {
             toast.push(error.message, 'error');
         } finally {
             setBusy(false);
         }
+    };
+
+    const updateExtra = (index, key, value) => {
+        const rows = [...(biodata.extra_fields ?? [])];
+        rows[index] = { ...rows[index], [key]: value };
+        setBiodata({ ...biodata, extra_fields: rows });
+    };
+
+    const addExtra = () => {
+        const rows = biodata.extra_fields ?? [];
+        if (rows.length >= 5) return;
+        setBiodata({ ...biodata, extra_fields: [...rows, { label: '', value: '' }] });
+    };
+
+    const removeExtra = (index) => {
+        setBiodata({
+            ...biodata,
+            extra_fields: (biodata.extra_fields ?? []).filter((_, position) => position !== index),
+        });
     };
 
     const saveSelf = async (publish) => {
@@ -121,6 +143,16 @@ export default function Profile() {
                     eyebrow="Profil siswa"
                     title={user?.name ?? 'Siswa'}
                     description={`NIS ${user?.identity_number ?? '—'}`}
+                    meta={classInfo ? (
+                        <>
+                            <span className="sd-hero-tag">
+                                {classInfo.name}{classInfo.academic_year ? ` · ${classInfo.academic_year}` : ''}
+                            </span>
+                            <span className="sd-hero-tag">
+                                Wali kelas: {classInfo.homeroom_teacher_name || 'belum diisi'}
+                            </span>
+                        </>
+                    ) : null}
                 >
                     <div className="mt-4 flex items-center gap-3">
                         <span className="sd-avatar flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-[22px] font-bold">
@@ -193,6 +225,58 @@ export default function Profile() {
                                         <Field label="Catatan kesehatan" htmlFor="health_notes">
                                             <Textarea id="health_notes" rows={2} value={biodata.health_notes ?? ''} onChange={(e) => setBiodata({ ...biodata, health_notes: e.target.value })} />
                                         </Field>
+
+                                        <div className="rounded-[18px] border border-dashed border-[#cbd5e1] p-3">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-[12.5px] font-semibold">Data lain</p>
+                                                    <p className="mt-0.5 text-[11px] leading-snug text-[#64748b]">
+                                                        Tambahkan hal yang belum tercakup di atas, mis. ukuran seragam.
+                                                    </p>
+                                                </div>
+                                                <span className="shrink-0 text-[11px] tabular text-[#64748b]">
+                                                    {(biodata.extra_fields ?? []).length}/5
+                                                </span>
+                                            </div>
+
+                                            <div className="mt-2 space-y-2">
+                                                {(biodata.extra_fields ?? []).map((row, index) => (
+                                                    <div key={index} className="flex items-start gap-2">
+                                                        <Input
+                                                            className="h-11 min-w-0 flex-1"
+                                                            placeholder="Nama data"
+                                                            value={row.label ?? ''}
+                                                            aria-label={`Nama data tambahan ${index + 1}`}
+                                                            onChange={(event) => updateExtra(index, 'label', event.target.value)}
+                                                        />
+                                                        <Input
+                                                            className="h-11 min-w-0 flex-1"
+                                                            placeholder="Isi"
+                                                            value={row.value ?? ''}
+                                                            aria-label={`Isi data tambahan ${index + 1}`}
+                                                            onChange={(event) => updateExtra(index, 'value', event.target.value)}
+                                                        />
+                                                        <IconButton
+                                                            icon="trash"
+                                                            label={`Hapus data ${row.label || index + 1}`}
+                                                            variant="danger"
+                                                            size={44}
+                                                            onClick={() => removeExtra(index)}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="mt-2 h-11 w-full"
+                                                onClick={addExtra}
+                                                disabled={(biodata.extra_fields ?? []).length >= 5}
+                                            >
+                                                Tambah data lain
+                                            </Button>
+                                        </div>
                                         <Button type="submit" className="h-11 w-full" disabled={busy}>Simpan biodata</Button>
                                     </form>
                                 )}

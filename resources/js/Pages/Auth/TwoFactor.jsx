@@ -3,7 +3,7 @@ import { Button, Field, Input } from '../../Components/UI';
 import AuthLayout from '../../Layouts/AuthLayout';
 import { api } from '../../lib/api';
 
-export default function TwoFactor({ maskedEmail, resendSeconds = 0 }) {
+export default function TwoFactor({ maskedEmail, resendSeconds = 0, devCode = null }) {
     const [code, setCode] = useState('');
     const [message, setMessage] = useState('');
     const [notice, setNotice] = useState('');
@@ -63,12 +63,20 @@ export default function TwoFactor({ maskedEmail, resendSeconds = 0 }) {
         <AuthLayout
             title="Verifikasi dua faktor"
             subtitle={
-                maskedEmail
-                    ? `Kode 6 digit dikirim ke ${maskedEmail}.`
-                    : 'Kode 6 digit dikirim ke email akun Anda.'
+                devCode
+                    ? 'Mode pengembangan: email tidak dikirim, gunakan kode tetap di bawah.'
+                    : maskedEmail
+                        ? `Kode 6 digit dikirim ke ${maskedEmail}.`
+                        : 'Kode 6 digit dikirim ke email akun Anda.'
             }
         >
             <form onSubmit={submit} className="space-y-4">
+                {devCode ? (
+                    <p role="status" className="rounded-xl bg-[#e8eaf6] px-3 py-2 text-[12px] leading-relaxed text-[#303f9f]">
+                        Kode pengembangan: <b className="tabular tracking-[0.2em]">{devCode}</b>
+                    </p>
+                ) : null}
+
                 <Field label="Kode 6 digit" required htmlFor="code" hint="Berlaku 10 menit dan hanya dapat dipakai sekali.">
                     <Input
                         id="code"

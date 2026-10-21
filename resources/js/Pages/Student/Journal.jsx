@@ -7,6 +7,7 @@ import {
     EmptyState,
     Field,
     ListRow,
+    PageSection,
     Segmented,
     Skeleton,
     Textarea,
@@ -44,6 +45,8 @@ export default function Journal() {
     const [saving, setSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
     const [filter, setFilter] = useState('');
+    const [contacts, setContacts] = useState([]);
+    const [serviceHours, setServiceHours] = useState(null);
 
     const [abc, setAbc] = useState({ activating_event: '', belief: '', consequence: '' });
     const [grateful, setGrateful] = useState({ gratitude_text: '', happiness_text: '' });
@@ -68,6 +71,17 @@ export default function Journal() {
     useEffect(() => {
         load();
     }, [load]);
+
+    useEffect(() => {
+        api.get('/api/student/counselor-contacts')
+            .then((response) => {
+                setContacts(response.data.contacts ?? []);
+                setServiceHours(response.data.service_hours ?? null);
+            })
+            .catch(() => {
+                /* kontak bersifat pelengkap; kegagalan muat tidak menghalangi penulisan jurnal */
+            });
+    }, []);
 
     const saveDraft = useCallback(async (payload) => {
         try {
@@ -197,6 +211,38 @@ export default function Journal() {
                     value={tab}
                     onChange={setTab}
                 />
+
+                <PageSection
+                    title="Curhat & konseling"
+                    action={serviceHours ? <span className="text-[11px] text-[#64748b]">{serviceHours}</span> : null}
+                >
+                    {contacts.length === 0 ? (
+                        <EmptyState
+                            title="Nomor Guru BK belum diatur"
+                            description="Hubungi wali kelas atau admin sekolah untuk mendapatkan nomor layanan BK."
+                        />
+                    ) : (
+                        <div className="space-y-2">
+                            {contacts.map((contact) => (
+                                <ListRow
+                                    key={contact.phone}
+                                    title={contact.name}
+                                    subtitle={contact.phone}
+                                    trailing={
+                                        <Button
+                                            size="sm"
+                                            variant="info"
+                                            className="min-h-11"
+                                            onClick={() => window.open(contact.url, '_blank', 'noopener')}
+                                        >
+                                            Chat
+                                        </Button>
+                                    }
+                                />
+                            ))}
+                        </div>
+                    )}
+                </PageSection>
 
                 {tab === 'abc' ? (
                     <div className="space-y-5">

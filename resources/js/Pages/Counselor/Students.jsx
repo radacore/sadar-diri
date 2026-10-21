@@ -26,7 +26,7 @@ export default function Students() {
     const [students, setStudents] = useState([]);
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ search: '', class_id: '', activity: '' });
+    const [filters, setFilters] = useState({ search: '', class_id: '', activity: '', reflection: '' });
 
     const load = useCallback(async () => {
         try {
@@ -53,8 +53,8 @@ export default function Students() {
         return () => clearTimeout(timer);
     }, [load]);
 
-    const resetFilters = () => setFilters({ search: '', class_id: '', activity: '' });
-    const hasFilter = Boolean(filters.search || filters.class_id || filters.activity);
+    const resetFilters = () => setFilters({ search: '', class_id: '', activity: '', reflection: '' });
+    const hasFilter = Boolean(filters.search || filters.class_id || filters.activity || filters.reflection);
 
     return (
         <AppShell title="Siswa binaan" subtitle="Daftar siswa pada kelas yang Anda dampingi">
@@ -96,6 +96,15 @@ export default function Students() {
                 value={filters.activity}
                 onChange={(value) => setFilters({ ...filters, activity: value })}
             />
+
+            <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-1 [&>button]:min-h-[44px]" role="group" aria-label="Filter refleksi">
+                <Chip
+                    active={filters.reflection === 'missing'}
+                    onClick={() => setFilters({ ...filters, reflection: filters.reflection === 'missing' ? '' : 'missing' })}
+                >
+                    Belum refleksi pekan ini
+                </Chip>
+            </div>
 
             {!loading ? (
                 <p className="mt-3 text-[11.5px] text-[#64748b]">{students.length} siswa ditemukan</p>
@@ -139,6 +148,9 @@ export default function Students() {
                                         <Badge tone={student.alert_status === 'open' ? 'danger' : 'neutral'}>
                                             {student.alert_status === 'open' ? 'Perlu perhatian' : 'Terpantau'}
                                         </Badge>
+                                        {student.weekly_reflection_done === false ? (
+                                            <Badge tone="warning">Belum refleksi</Badge>
+                                        ) : null}
                                         <span className="text-[11px] text-[#94a3b8]">Profil {student.profile_completeness}%</span>
                                     </>
                                 }

@@ -69,6 +69,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::put('/account/password', [AuthController::class, 'updatePassword'])->middleware('throttle:10,1');
     Route::get('/profile/versions', [StudentController::class, 'profileVersions']);
     Route::get('/counseling-summaries', [StudentController::class, 'counselingSummaries']);
+    Route::get('/counselor-contacts', [StudentController::class, 'counselorContacts']);
     Route::get('/privacy/access-log', [StudentController::class, 'accessLog']);
     Route::get('/preferences/reminders', [StudentController::class, 'reminderPreferences']);
     Route::put('/preferences/reminders', [StudentController::class, 'updateReminderPreferences']);
@@ -109,6 +110,9 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::post('/action-plans/{plan}/targets', [ActionPlanController::class, 'storeTarget']);
     Route::put('/action-targets/{target}', [ActionPlanController::class, 'updateTarget']);
     Route::delete('/action-targets/{target}', [ActionPlanController::class, 'destroyTarget']);
+    Route::post('/action-targets/{target}/steps', [ActionPlanController::class, 'storeStep']);
+    Route::put('/action-steps/{step}', [ActionPlanController::class, 'updateStep']);
+    Route::delete('/action-steps/{step}', [ActionPlanController::class, 'destroyStep']);
     Route::get('/action-plans/{plan}/evaluation', [ActionPlanController::class, 'evaluation']);
     Route::post('/action-plans/{plan}/evaluation', [ActionPlanController::class, 'saveEvaluation']);
     Route::get('/future-plan', [ActionPlanController::class, 'futurePlan']);

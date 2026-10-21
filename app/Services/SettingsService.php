@@ -38,6 +38,7 @@ class SettingsService
                     $settings[$key] = match ($type) {
                         'boolean' => (bool) $value,
                         'integer' => (int) $value,
+                        'json' => $value,
                         default => $value,
                     };
                 }
@@ -96,7 +97,7 @@ class SettingsService
         $updated = [];
 
         foreach ($values as $key => $value) {
-            if (is_array($value)) {
+            if (is_array($value) && (self::DEFAULTS[$key][2] ?? null) !== 'json') {
                 foreach ($value as $nested => $nestedValue) {
                     $this->set($key.'.'.$nested, $nestedValue, $actor);
                     $updated[] = $key.'.'.$nested;

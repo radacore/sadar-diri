@@ -3,7 +3,7 @@ import { Icon } from '../../Components/Icons';
 import { Button, Card, CardTitle, EmptyState, Field, HeroCard, IconButton, Input, ListRow, ProgressRing, Select, Sheet, Skeleton, Textarea, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
-import { formatDate } from '../../lib/format';
+import { formatDate, label } from '../../lib/format';
 
 export default function Plan() {
     const toast = useToast();
@@ -12,9 +12,10 @@ export default function Plan() {
     const [future, setFuture] = useState({});
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const [targetForm, setTargetForm] = useState({ title: '', success_indicator: '' });
+    const [targetForm, setTargetForm] = useState({ title: '', success_indicator: '', basis: 'general', steps: [] });
     const [evaluation, setEvaluation] = useState({ evaluation_text: '', improvement_text: '' });
     const [evaluationOpen, setEvaluationOpen] = useState(false);
+    const [stepDraft, setStepDraft] = useState({});
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
@@ -60,12 +61,43 @@ export default function Plan() {
             await api.post(`/api/student/action-plans/${plan.id}/targets`, targetForm);
             toast.push('Target ditambahkan.');
             setModalOpen(false);
-            setTargetForm({ title: '', success_indicator: '' });
+            setTargetForm({ title: '', success_indicator: '', basis: 'general', steps: [] });
             await load();
         } catch (error) {
             toast.push(error.message, 'error');
         } finally {
             setBusy(false);
+        }
+    };
+
+    const addStep = async (target) => {
+        const title = (stepDraft[target.id] ?? '').trim();
+        if (!title) return;
+
+        try {
+            await api.post(`/api/student/action-targets/${target.id}/steps`, { title });
+            setStepDraft({ ...stepDraft, [target.id]: '' });
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
+        }
+    };
+
+    const removeStep = async (step) => {
+        try {
+            await api.delete(`/api/student/action-steps/${step.id}`);
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
+        }
+    };
+
+    const toggleStep = async (step) => {
+        try {
+            await api.put(`/api/student/action-steps/${step.id}`, { is_done: !step.is_done });
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
         }
     };
 
@@ -206,8 +238,8 @@ export default function Plan() {
                     ) : (
                         <div className="space-y-2">
                             {targets.map((target, index) => (
+                                <div key={target.id} className="space-y-2">
                                 <ListRow
-                                    key={target.id}
                                     leading={
                                         <span className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold ${ target.status === 'achieved' ? 'bg-[#d1fae5] text-[#047857]' : 'bg-[#e8edf5] text-[#475569]' }`}>
                                             {target.status === 'achieved' ? <Icon name="check" size={16} /> : index + 1}
@@ -232,6 +264,59 @@ export default function Plan() {
                                         <IconButton icon="trash" label={`Hapus ${target.title}`} variant="danger" size={44} onClick={() => removeTarget(target)} />
                                     }
                                 />
+                                <div className="-mt-1 ml-[52px] space-y-1.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">
+                                        {label('targetBasis', target.basis ?? 'general')}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-[#475569]">Langkah konkret</p>
+                                    {(target.steps ?? []).length === 0 ? (
+                                        <p className="text-[11.5px] text-[#94a3b8]">Belum ada langkah.</p>
+                                    ) : (
+                                        (target.steps ?? []).map((step) => (
+                                            <div key={step.id} className="flex min-h-10 items-center gap-2 rounded-[12px] bg-[#f8fafc] px-3 py-2 text-[12.5px]">
+                                                <input
+                                                    id={`step-${step.id}`}
+                                                    type="checkbox"
+                                                    className="h-4 w-4 accent-[#3f51b5]"
+                                                    checked={Boolean(step.is_done)}
+                                                    onChange={() => toggleStep(step)}
+                                                />
+                                                <label htmlFor={`step-${step.id}`} className={`min-w-0 flex-1 ${step.is_done ? 'text-[#94a3b8] line-through' : 'text-[#1e293b]'}`}>
+                                                    {step.title}
+                                                </label>
+                                                <IconButton icon="trash" label={`Hapus langkah ${step.title}`} variant="danger" size={36} onClick={() => removeStep(step)} />
+                                            </div>
+                                        ))
+                                    )}
+                                    {(target.steps ?? []).length < 10 ? (
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                className="min-w-0 flex-1"
+                                                placeholder="Tambah langkah…"
+                                                aria-label={`Tambah langkah untuk ${target.title}`}
+                                                value={stepDraft[target.id] ?? ''}
+                                                onChange={(event) => setStepDraft({ ...stepDraft, [target.id]: event.target.value })}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') {
+                                                        event.preventDefault();
+                                                        addStep(target);
+                                                    }
+                                                }}
+                                            />
+                                            <IconButton
+                                                icon="plus"
+                                                label={`Simpan langkah ${target.title}`}
+                                                variant="primary"
+                                                size={44}
+                                                disabled={!(stepDraft[target.id] ?? '').trim()}
+                                                onClick={() => addStep(target)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <p className="text-[11px] text-[#94a3b8]">Maksimal 10 langkah per target.</p>
+                                    )}
+                                </div>
+                                </div>
                             ))}
                         </div>
                     )}
@@ -298,18 +383,19 @@ export default function Plan() {
                 </Card>
 
                 <Card>
-                    <CardTitle>Rencana masa depan</CardTitle>
+                    <CardTitle>Rencana jangka panjang (opsional)</CardTitle>
+                    <p className="-mt-1 mb-3 text-[12px] leading-snug text-[#64748b]">Boleh dikosongkan bila belum menentukan arah karier; isi kapan saja.</p>
                     <div className="space-y-3">
-                        <Field label="Cita-cita" htmlFor="dream">
+                        <Field label="Cita-cita / gambaran masa depan" htmlFor="dream">
                             <Textarea id="dream" rows={3} value={future.dream ?? ''} onChange={(event) => setFuture({ ...future, dream: event.target.value })} />
                         </Field>
-                        <Field label="Perencanaan karir" htmlFor="career">
+                        <Field label="Rencana karier (opsional)" htmlFor="career">
                             <Textarea id="career" rows={3} value={future.career_plan ?? ''} onChange={(event) => setFuture({ ...future, career_plan: event.target.value })} />
                         </Field>
-                        <Field label="Perencanaan pendidikan" htmlFor="education">
+                        <Field label="Rencana pendidikan (opsional)" htmlFor="education">
                             <Textarea id="education" rows={3} value={future.education_plan ?? ''} onChange={(event) => setFuture({ ...future, education_plan: event.target.value })} />
                         </Field>
-                        <Field label="Target nyata" htmlFor="targets">
+                        <Field label="Langkah besar menuju rencana" htmlFor="targets">
                             <Textarea id="targets" rows={3} value={future.concrete_targets ?? ''} onChange={(event) => setFuture({ ...future, concrete_targets: event.target.value })} />
                         </Field>
                     </div>
@@ -336,6 +422,48 @@ export default function Plan() {
                     <Field label="Indikator keberhasilan" required htmlFor="indicator">
                         <Textarea id="indicator" rows={3} value={targetForm.success_indicator} onChange={(event) => setTargetForm({ ...targetForm, success_indicator: event.target.value })} required />
                     </Field>
+                    <Field label="Dasar target" htmlFor="basis" hint="Pilih dari mana target ini berasal.">
+                        <Select id="basis" value={targetForm.basis} onChange={(event) => setTargetForm({ ...targetForm, basis: event.target.value })}>
+                            <option value="general">Umum</option>
+                            <option value="reflection">Dari refleksi</option>
+                            <option value="future_plan">Dari rencana masa depan</option>
+                        </Select>
+                    </Field>
+                    <Field label="Langkah kecil (opsional)" hint="Maksimal 10 langkah. Bisa dicentang saat selesai.">
+                        <div className="space-y-2">
+                            {(targetForm.steps ?? []).map((step, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        className="min-w-0 flex-1"
+                                        placeholder={`Langkah ${index + 1}`}
+                                        aria-label={`Langkah ${index + 1}`}
+                                        value={step}
+                                        onChange={(event) => {
+                                            const steps = [...targetForm.steps];
+                                            steps[index] = event.target.value;
+                                            setTargetForm({ ...targetForm, steps });
+                                        }}
+                                    />
+                                    <IconButton
+                                        icon="trash"
+                                        label={`Hapus langkah ${index + 1}`}
+                                        variant="danger"
+                                        size={44}
+                                        onClick={() => setTargetForm({ ...targetForm, steps: targetForm.steps.filter((_, position) => position !== index) })}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </Field>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        disabled={(targetForm.steps ?? []).length >= 10}
+                        onClick={() => setTargetForm({ ...targetForm, steps: [...(targetForm.steps ?? []), ''] })}
+                    >
+                        Tambah langkah
+                    </Button>
                 </form>
             </Sheet>
         </AppShell>

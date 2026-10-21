@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, CardTitle, Skeleton, Stat, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
+import { formatDateNumeric } from '../../lib/format';
 
 export default function Retention() {
     const toast = useToast();
@@ -60,7 +61,7 @@ export default function Retention() {
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
                     <Card className="lg:col-span-3"><Stat label="Akan dianonimkan" value={preview.students_to_anonymize} hint="akun alumni" /></Card>
                     <Card className="lg:col-span-3"><Stat label="Entri dihapus" value={preview.journals_to_purge} hint="jurnal & refleksi" /></Card>
-                    <Card className="lg:col-span-3"><Stat label="Batas tanggal" value={preview.cutoff_date} hint="cutoff" /></Card>
+                    <Card className="lg:col-span-3"><Stat label="Batas tanggal" value={formatDateNumeric(preview.cutoff_date)} hint="cutoff" size="sm" /></Card>
                     <Card className="lg:col-span-3"><Stat label="Kebijakan" value={`${preview.policy_years_after_graduation} th`} hint="setelah lulus" /></Card>
 
                     <Card className="lg:col-span-7">

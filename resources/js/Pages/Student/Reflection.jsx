@@ -13,7 +13,7 @@ export default function Reflection() {
     const [reflections, setReflections] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ positive_experience: '', negative_experience: '' });
+    const [form, setForm] = useState({ gratitude_text: '', positive_experience: '', negative_experience: '' });
     const [currentWeek, setCurrentWeek] = useState(weekStart());
     const [activeSession, setActiveSession] = useState(null);
     const [answers, setAnswers] = useState([]);
@@ -33,6 +33,14 @@ export default function Reflection() {
             if (existing) {
                 const detailResponse = await api.get(`/api/student/reflections/${existing.id}`);
                 setDetail(detailResponse.data);
+                setForm({
+                    gratitude_text: detailResponse.data.gratitude_text ?? '',
+                    positive_experience: detailResponse.data.positive_experience ?? '',
+                    negative_experience: detailResponse.data.negative_experience ?? '',
+                });
+            } else {
+                setDetail(null);
+                setForm({ gratitude_text: '', positive_experience: '', negative_experience: '' });
             }
         } catch (error) {
             toast.push(error.message, 'error');
@@ -47,6 +55,12 @@ export default function Reflection() {
 
     const submitSelf = async (event) => {
         event.preventDefault();
+
+        if (!form.gratitude_text.trim() || !form.positive_experience.trim()) {
+            toast.push('Isi syukur dan hikmah pekan ini sebelum menyimpan.', 'error');
+            return;
+        }
+
         const decision = await confirm({
             title: 'Simpan refleksi?',
             description: 'Refleksi mandiri pekan ini akan disimpan.',
@@ -109,12 +123,27 @@ export default function Reflection() {
             <div className="space-y-5">
                 <Card>
                     <CardTitle action={<Badge tone="info">Pekan {formatDate(currentWeek)}</Badge>}>
-                        Refleksi & syukur pekan ini
+                        Refleksi, syukur & hikmah pekan ini
                     </CardTitle>
                     {loading ? <Skeleton rows={4} /> : (
                         <form onSubmit={submitSelf} className="space-y-3">
                             <div>
-                                <Field label="Hal yang saya syukuri pekan ini" required htmlFor="positive" hint="Mulai dari hal kecil yang membuat pekan ini terasa berarti.">
+                                <Field label="Hari ini saya bersyukur karena…" required htmlFor="gratitude" hint="Tulis satu hal konkret, sekecil apa pun.">
+                                    <Textarea
+                                        id="gratitude"
+                                        rows={3}
+                                        maxLength={MAX_LENGTH}
+                                        value={form.gratitude_text}
+                                        onChange={(event) => setForm({ ...form, gratitude_text: event.target.value })}
+                                        required
+                                    />
+                                </Field>
+                                <p className="mt-1 text-right text-[11px] tabular text-[#64748b]">
+                                    {form.gratitude_text.length}/{MAX_LENGTH} karakter
+                                </p>
+                            </div>
+                            <div>
+                                <Field label="Hikmah pekan ini" required htmlFor="positive" hint="Hal positif atau pemaknaan yang saya dapat pekan ini.">
                                     <Textarea
                                         id="positive"
                                         rows={4}
@@ -129,14 +158,13 @@ export default function Reflection() {
                                 </p>
                             </div>
                             <div>
-                                <Field label="Hal yang paling berat pekan ini" required htmlFor="negative" hint="Tulis apa adanya; tidak ada jawaban yang salah.">
+                                <Field label="Hal yang paling berat pekan ini" htmlFor="negative" hint="Opsional. Boleh dikosongkan.">
                                     <Textarea
                                         id="negative"
                                         rows={4}
                                         maxLength={MAX_LENGTH}
                                         value={form.negative_experience}
                                         onChange={(event) => setForm({ ...form, negative_experience: event.target.value })}
-                                        required
                                     />
                                 </Field>
                                 <p className="mt-1 text-right text-[11px] tabular text-[#64748b]">

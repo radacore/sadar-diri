@@ -6,6 +6,7 @@ use App\Mail\LoginOtpMail;
 use App\Models\LoginOtpCode;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class EmailOtpService
@@ -15,7 +16,8 @@ class EmailOtpService
 
     public function issue(User $user, ?string $ip = null): string
     {
-        $code = (string) random_int(100000, 999999);
+        $fixed = $this->devCode();
+        $code = $fixed ?? (string) random_int(100000, 999999);
 
         LoginOtpCode::query()
             ->where('user_id', $user->id)
@@ -29,7 +31,29 @@ class EmailOtpService
             'expires_at' => now()->addMinutes(self::TTL_MINUTES),
         ]);
 
-        Mail::to($user->email)->send(new LoginOtpMail($user, $code, self::TTL_MINUTES));
+        if ($fixed === null) {
+            Mail::to($user->email)->send(new LoginOtpMail($user, $code, self::TTL_MINUTES));
+        } else {
+            Log::info('Kode OTP pengembangan dipakai; email tidak dikirim.', [
+                'user_id' => $user->id,
+                'code' => $fixed,
+            ]);
+        }
+
+        return $code;
+    }
+
+    /**
+     * Kode tetap hanya berlaku di environment local agar alur produksi dan
+     * pengujian tidak pernah memakai kode yang bisa ditebak.
+     */
+    private function devCode(): ?string
+    {
+        $code = (string) config('sadar.dev_otp_code');
+
+        if (! app()->environment('local') || ! preg_match('/^\d{6}$/', $code)) {
+            return null;
+        }
 
         return $code;
     }

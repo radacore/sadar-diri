@@ -52,7 +52,7 @@ class MoodController extends Controller
             'intensity' => ['required', 'integer', 'between:1,5'],
             'emotion_tags' => ['required', 'array', 'min:1', 'max:5'],
             'emotion_tags.*' => ['string', 'max:30'],
-            'note' => ['nullable', 'string', 'max:1000'],
+            'note' => ['required', 'string', 'min:3', 'max:1000'],
         ]);
 
         $entryDate = $data['entry_date'] ?? now()->toDateString();
@@ -63,7 +63,7 @@ class MoodController extends Controller
                 'valence' => $data['valence'],
                 'intensity' => $data['intensity'],
                 'emotion_tags' => $data['emotion_tags'],
-                'note' => $data['note'] ?? null,
+                'note' => trim($data['note']),
             ],
         );
 

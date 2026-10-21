@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\AccessScope;
 use App\Services\AuditLogger;
 use App\Services\NotificationService;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -23,7 +24,15 @@ class CounselorController extends Controller
         private readonly AccessScope $access,
         private readonly AuditLogger $audit,
         private readonly NotificationService $notifications,
+        private readonly SettingsService $settings,
     ) {}
+
+    private function currentWeekStart(): string
+    {
+        $timezone = $this->settings->get('school.timezone') ?: config('app.timezone');
+
+        return Carbon::now($timezone)->startOfWeek(Carbon::MONDAY)->toDateString();
+    }
 
     public function dashboard(Request $request)
     {
@@ -43,6 +52,14 @@ class CounselorController extends Controller
             ->count();
 
         $pendingReflections = $this->pendingReflectionsCount($studentIds);
+        $weekStart = $this->currentWeekStart();
+        $weeklyDone = $studentIds === [] ? collect() : Reflection::query()
+            ->whereIn('student_id', $studentIds)
+            ->where('type', 'self')
+            ->whereDate('week_start', $weekStart)
+            ->where('status', 'submitted')
+            ->pluck('student_id')
+            ->unique();
 
         $trend = collect(range(13, 0))->map(function ($daysAgo) use ($studentIds) {
             $date = now()->subDays($daysAgo)->toDateString();
@@ -69,6 +86,11 @@ class CounselorController extends Controller
                     'low' => Alert::query()->whereIn('student_id', $studentIds)->where('severity', 'low')->where('status', '!=', 'resolved')->count(),
                 ],
                 'pending_reflections' => $pendingReflections,
+                'weekly_reflection' => [
+                    'week_start' => $weekStart,
+                    'done' => $weeklyDone->count(),
+                    'missing' => max(0, count($studentIds) - $weeklyDone->count()),
+                ],
                 'pending_verifications' => Achievement::query()
                     ->whereIn('student_id', $studentIds)
                     ->where('verification_status', 'pending')
@@ -102,16 +124,33 @@ class CounselorController extends Controller
                 : $query->where('last_activity_at', '>=', now()->subDays(7));
         }
 
+        if ($request->query('reflection') === 'missing') {
+            $done = Reflection::query()
+                ->whereIn('student_id', $studentIds)
+                ->where('type', 'self')
+                ->whereDate('week_start', $this->currentWeekStart())
+                ->where('status', 'submitted')
+                ->pluck('student_id');
+            $query->whereNotIn('id', $done);
+        }
+
         if ($request->filled('search')) {
             $search = $request->query('search');
             $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('identity_number', 'like', "%{$search}%"));
         }
 
         $students = $query->orderBy('name')->paginate(25);
+        $weeklyDone = Reflection::query()
+            ->whereIn('student_id', collect($students->items())->pluck('id'))
+            ->where('type', 'self')
+            ->whereDate('week_start', $this->currentWeekStart())
+            ->where('status', 'submitted')
+            ->pluck('student_id')
+            ->unique();
 
         return response()->json([
             'success' => true,
-            'data' => collect($students->items())->map(function (User $student) {
+            'data' => collect($students->items())->map(function (User $student) use ($weeklyDone) {
                 $moods = $student->moods()
                     ->where('entry_date', '>=', now()->subDays(7)->toDateString())
                     ->get();
@@ -127,6 +166,7 @@ class CounselorController extends Controller
                     'dominant_mood_7d' => $moods->count() === 0 ? null : $moods->groupBy('valence')->sortDesc()->keys()->first(),
                     'alert_status' => $student->open_alerts_count > 0 ? 'open' : 'clear',
                     'profile_completeness' => $student->profile?->completeness_percent ?? 0,
+                    'weekly_reflection_done' => $weeklyDone->contains($student->id),
                 ];
             }),
             'meta' => [
@@ -329,7 +369,17 @@ class CounselorController extends Controller
             'blood_type' => ['nullable', 'string', 'max:3'],
             'medical_history' => ['nullable', 'string', 'max:2000'],
             'health_notes' => ['nullable', 'string', 'max:2000'],
+            'extra_fields' => ['nullable', 'array', 'max:5'],
+            'extra_fields.*.label' => ['nullable', 'string', 'max:60'],
+            'extra_fields.*.value' => ['nullable', 'string', 'max:500'],
         ]);
+
+        if (array_key_exists('extra_fields', $data)) {
+            $data['extra_fields'] = collect($data['extra_fields'] ?? [])
+                ->filter(fn ($row) => filled($row['label'] ?? null) && filled($row['value'] ?? null))
+                ->map(fn ($row) => ['label' => trim($row['label']), 'value' => trim($row['value'])])
+                ->values()->all();
+        }
 
         $profile = StudentProfile::firstOrCreate(['user_id' => $student->id]);
         $profile->fill($data);
@@ -419,7 +469,7 @@ class CounselorController extends Controller
 
         $plan = $student->actionPlans()
             ->where('status', 'active')
-            ->with(['targets' => fn ($q) => $q->orderBy('sort_order'), 'evaluation'])
+            ->with(['targets' => fn ($q) => $q->orderBy('sort_order'), 'targets.steps', 'evaluation'])
             ->latest('period_start')
             ->first();
 
@@ -436,7 +486,14 @@ class CounselorController extends Controller
                         'id' => $t->id,
                         'title' => $t->title,
                         'success_indicator' => $t->success_indicator,
+                        'basis' => $t->basis ?? 'general',
                         'status' => $t->status,
+                        'progress_note' => $t->progress_note,
+                        'steps' => $t->steps->map(fn ($step) => [
+                            'id' => $step->id,
+                            'title' => $step->title,
+                            'is_done' => $step->is_done,
+                        ])->values(),
                     ])->values(),
                     'evaluation' => $plan->evaluation ? [
                         'evaluation_text' => $plan->evaluation->evaluation_text,

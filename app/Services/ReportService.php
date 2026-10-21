@@ -233,6 +233,7 @@ class ReportService
                     'blood_type' => $profile?->blood_type,
                     'medical_history' => $profile?->medical_history,
                     'health_notes' => $profile?->health_notes,
+                    'extra_fields' => $profile?->extra_fields ?? [],
                 ],
                 'self_profile' => [
                     'psychological_summary' => $profile?->psychological_summary,

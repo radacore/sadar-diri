@@ -9,8 +9,10 @@ use App\Models\AuditLog;
 use App\Models\CounselingNote;
 use App\Models\JournalEntry;
 use App\Models\MoodEntry;
+use App\Models\Reflection;
 use App\Models\StudentProfile;
 use App\Models\StudentProfileVersion;
+use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\ReportService;
 use App\Services\SettingsService;
@@ -25,6 +27,52 @@ class StudentController extends Controller
         private readonly AuditLogger $audit,
         private readonly SettingsService $settings,
     ) {}
+
+    public function counselorContacts(Request $request)
+    {
+        $classIds = \App\Models\ClassStudent::query()
+            ->where('student_id', $request->user()->id)
+            ->where('status', 'active')
+            ->pluck('class_id');
+
+        $contacts = \App\Models\CounselorClass::query()
+            ->whereIn('class_id', $classIds)
+            ->pluck('counselor_id')
+            ->unique()
+            ->pipe(fn ($ids) => User::query()
+                ->whereIn('id', $ids)
+                ->where('role', 'counselor')
+                ->where('status', 'active')
+                ->whereNotNull('phone')
+                ->orderBy('name')
+                ->get(['name', 'phone'])
+                ->map(fn (User $counselor) => ['name' => $counselor->name, 'phone' => $counselor->phone])
+                ->values());
+
+        if ($contacts->isEmpty()) {
+            $fallback = preg_replace('/\D+/', '', (string) $this->settings->get('school.whatsapp_number'));
+            $contacts = collect($fallback === '' ? [] : [['name' => 'Layanan BK', 'phone' => $fallback]]);
+        }
+
+        $class = $request->user()->activeClass();
+        $message = sprintf(
+            'Halo, saya %s%s. Saya ingin melanjutkan curhat dan meminta waktu konsultasi.',
+            $request->user()->name,
+            $class ? ' kelas '.$class->name : '',
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'contacts' => $contacts->map(fn ($row) => [
+                    'name' => $row['name'],
+                    'phone' => $row['phone'],
+                    'url' => 'https://wa.me/'.preg_replace('/\D+/', '', (string) $row['phone']).'?text='.rawurlencode($message),
+                ])->all(),
+                'service_hours' => $this->settings->get('school.service_hours'),
+            ],
+        ]);
+    }
 
     public function dashboard(Request $request)
     {
@@ -53,6 +101,7 @@ class StudentController extends Controller
                     'valence' => $mood->valence,
                     'intensity' => $mood->intensity,
                     'emotion_tags' => $mood->emotion_tags,
+                    'note' => $mood->note,
                 ] : null,
                 'journal_streak_days' => $this->reports->journalStreak($user),
                 'active_targets' => $activePlan?->targets->count() ?? 0,
@@ -63,6 +112,7 @@ class StudentController extends Controller
                     'success_indicator' => $t->success_indicator,
                 ])->all() ?? [],
                 'reflection_due' => $this->reports->pendingReflections($user) > 0,
+                'weekly_reflection' => $this->weeklyReflection($user),
                 'last_journal' => $lastJournal ? [
                     'id' => $lastJournal->id,
                     'type' => $lastJournal->type,
@@ -74,14 +124,46 @@ class StudentController extends Controller
         ]);
     }
 
+    private function weeklyReflection(User $user): array
+    {
+        $timezone = $this->settings->get('school.timezone') ?: config('app.timezone');
+        $weekStart = \Illuminate\Support\Carbon::now($timezone)->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->toDateString();
+
+        $reflection = \App\Models\Reflection::query()
+            ->where('student_id', $user->id)
+            ->where('type', 'self')
+            ->whereDate('week_start', $weekStart)
+            ->first();
+
+        $submitted = in_array($reflection?->status, ['submitted', 'late'], true);
+
+        return [
+            'week_start' => $weekStart,
+            'submitted' => $submitted,
+            'mandatory' => in_array(\Illuminate\Support\Carbon::now($timezone)->dayOfWeek, [0, 5, 6], true),
+            'done' => $submitted,
+            'id' => $reflection?->id,
+            'gratitude_text' => $reflection?->gratitude_text,
+            'positive_experience' => $reflection?->positive_experience,
+            'negative_experience' => $reflection?->negative_experience,
+        ];
+    }
+
     public function profile(Request $request)
     {
         $user = $request->user();
         $profile = StudentProfile::firstOrCreate(['user_id' => $user->id]);
+        $class = $user->activeClass();
 
         return response()->json([
             'success' => true,
             'data' => [
+                'class' => $class ? [
+                    'name' => $class->name,
+                    'level' => $class->level,
+                    'academic_year' => $class->academicYear?->name,
+                    'homeroom_teacher_name' => $class->homeroom_teacher_name,
+                ] : null,
                 'biodata' => [
                     'birth_date' => $profile->birth_date?->toDateString(),
                     'gender' => $profile->gender,
@@ -92,6 +174,7 @@ class StudentController extends Controller
                     'blood_type' => $profile->blood_type,
                     'medical_history' => $profile->medical_history,
                     'health_notes' => $profile->health_notes,
+                    'extra_fields' => $profile->extra_fields ?? [],
                 ],
                 'self_profile' => [
                     'psychological_summary' => $profile->psychological_summary,
@@ -118,7 +201,18 @@ class StudentController extends Controller
             'blood_type' => ['nullable', 'string', 'max:3'],
             'medical_history' => ['nullable', 'string', 'max:2000'],
             'health_notes' => ['nullable', 'string', 'max:2000'],
+            'extra_fields' => ['nullable', 'array', 'max:5'],
+            'extra_fields.*.label' => ['nullable', 'string', 'max:60'],
+            'extra_fields.*.value' => ['nullable', 'string', 'max:500'],
         ]);
+
+        // Baris yang belum lengkap dibuang agar formulir tidak gagal hanya karena baris kosong.
+        if (array_key_exists('extra_fields', $data)) {
+            $data['extra_fields'] = collect($data['extra_fields'] ?? [])
+                ->filter(fn ($row) => filled($row['label'] ?? null) && filled($row['value'] ?? null))
+                ->map(fn ($row) => ['label' => trim($row['label']), 'value' => trim($row['value'])])
+                ->values()->all();
+        }
 
         $profile = StudentProfile::firstOrCreate(['user_id' => $request->user()->id]);
         $profile->fill($data);

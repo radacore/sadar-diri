@@ -97,9 +97,10 @@ export default function Dashboard() {
                             icon="alert"
                         />
                         <StatTile
-                            label="Refleksi tertunda"
-                            value={data.pending_reflections}
-                            hint="Menunggu siswa"
+                            label="Belum refleksi"
+                            value={data.weekly_reflection?.missing ?? 0}
+                            hint={`${data.pending_reflections} sesi terbimbing tertunda`}
+                            tone={(data.weekly_reflection?.missing ?? 0) > 0 ? 'warning' : undefined}
                             icon="clock"
                         />
                         <StatTile

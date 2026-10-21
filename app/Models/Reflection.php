@@ -13,6 +13,7 @@ class Reflection extends Model
         'session_id',
         'type',
         'week_start',
+        'gratitude_text',
         'positive_experience',
         'negative_experience',
         'answers',
@@ -24,6 +25,7 @@ class Reflection extends Model
     {
         return [
             'week_start' => 'date',
+            'gratitude_text' => 'encrypted',
             'positive_experience' => 'encrypted',
             'negative_experience' => 'encrypted',
             'answers' => 'encrypted:array',

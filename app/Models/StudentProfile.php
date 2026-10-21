@@ -22,6 +22,7 @@ class StudentProfile extends Model
         'character_summary',
         'strengths',
         'weaknesses',
+        'extra_fields',
         'completeness_percent',
         'published_at',
         'version',
@@ -38,6 +39,7 @@ class StudentProfile extends Model
             'character_summary' => 'encrypted',
             'strengths' => 'encrypted',
             'weaknesses' => 'encrypted',
+            'extra_fields' => 'encrypted:array',
             'completeness_percent' => 'integer',
             'version' => 'integer',
         ];

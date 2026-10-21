@@ -504,13 +504,14 @@ export function Skeleton({ rows = 4 }) {    return (
     );
 }
 
-export function Stat({ label, value, hint, tone = 'default' }) {
+export function Stat({ label, value, hint, tone = 'default', size = 'lg' }) {
     const toneClass = tone === 'danger' ? 'text-[#b42318]' : tone === 'warning' ? 'text-[#b45309]' : 'text-[#1e293b]';
+    const sizeClass = size === 'sm' ? 'text-[26px]' : 'text-[36px]';
 
     return (
         <div>
             <p className="text-[13px] text-[#475569]">{label}</p>
-            <p className={`tabular text-[36px] font-extrabold leading-none tracking-tight ${toneClass}`}>{value}</p>
+            <p className={`tabular whitespace-nowrap font-extrabold leading-none tracking-tight ${sizeClass} ${toneClass}`}>{value}</p>
             {hint ? <p className="mt-1 text-[12px] text-[#475569]">{hint}</p> : null}
         </div>
     );
@@ -532,11 +533,11 @@ export function Progress({ value = 0, label }) {
 
 export function MoodPicker({ value, onChange }) {
     const options = [
-        { value: 1, label: 'Sangat berat', icon: 'M4 16l4-8 4 8 4-8 4 8' },
-        { value: 2, label: 'Berat', icon: 'M4 14c4-6 8 6 12 0' },
-        { value: 3, label: 'Biasa', icon: 'M8 12h8' },
-        { value: 4, label: 'Baik', icon: 'M4 12c4-6 8 6 12 0' },
-        { value: 5, label: 'Sangat baik', icon: 'M4 12h16' },
+        { value: 1, label: 'Sangat berat', emoji: '😢' },
+        { value: 2, label: 'Berat', emoji: '🙁' },
+        { value: 3, label: 'Biasa', emoji: '😐' },
+        { value: 4, label: 'Baik', emoji: '🙂' },
+        { value: 5, label: 'Sangat baik', emoji: '😄' },
     ];
 
     return (
@@ -549,6 +550,7 @@ export function MoodPicker({ value, onChange }) {
                         type="button"
                         role="radio"
                         aria-checked={active}
+                        aria-label={option.label}
                         onClick={() => onChange(option.value)}
                         className={`flex h-[52px] w-[48px] flex-col items-center justify-center gap-1 rounded-[14px] border text-[10px] transition sm:h-[56px] sm:w-[56px] sm:text-[11px] ${
                             active
@@ -556,9 +558,7 @@ export function MoodPicker({ value, onChange }) {
                                 : 'border-[#e2e8f0] bg-white text-[#475569] hover:border-[#cbd5e1]'
                         }`}
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                            <path d={option.icon} />
-                        </svg>
+                        <span aria-hidden="true" className="text-[20px] leading-none">{option.emoji}</span>
                         {option.label}
                     </button>
                 );

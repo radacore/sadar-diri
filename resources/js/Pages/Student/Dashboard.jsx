@@ -6,6 +6,7 @@ import {
     Button,
     Chip,
     EmptyState,
+    Field,
     HeroCard,
     ListRow,
     MoodPicker,
@@ -94,6 +95,10 @@ export default function Dashboard() {
             toast.push('Pilih minimal satu tag emosi.', 'error');
             return;
         }
+        if (note.trim().length < 3) {
+            toast.push('Tulis alasan perasaanmu (minimal 3 karakter).', 'error');
+            return;
+        }
 
         const decision = await confirm({
             title: 'Simpan mood hari ini?',
@@ -117,7 +122,7 @@ export default function Dashboard() {
             await api.post('/api/student/moods', {
                 ...payload,
                 emotion_tags: tags,
-                note: note || null,
+                note: note.trim(),
             });
             toast.push('Mood tersimpan.');
             await load();
@@ -172,6 +177,24 @@ export default function Dashboard() {
                         </Button>
                     </div>
                 </HeroCard>
+
+                {!loading && data?.weekly_reflection?.mandatory && !data.weekly_reflection.submitted ? (
+                    <section className="rounded-[18px] border border-[#fcd34d] bg-[#fffbeb] p-4">
+                        <p className="flex items-center gap-2 text-[13px] font-bold text-[#92400e]">
+                            <Icon name="alert" size={16} /> Refleksi pekan ini wajib diisi
+                        </p>
+                        <p className="mt-1 text-[11.5px] leading-relaxed text-[#92400e]">
+                            Tulis syukur dan hikmah pekanmu sebelum Minggu berakhir. Butuh sekitar lima menit.
+                        </p>
+                        <Button
+                            className="mt-3 min-h-11"
+                            variant="warning"
+                            onClick={() => (window.location.href = '/siswa/refleksi')}
+                        >
+                            Isi refleksi
+                        </Button>
+                    </section>
+                ) : null}
 
                 <div className="grid grid-cols-2 gap-3">
                     <StatTile label="Mood positif" value={data?.mood_7d?.positive_days ?? 0} hint="7 hari terakhir" tone="primary" icon="sparkle" />
@@ -316,12 +339,20 @@ export default function Dashboard() {
                         <p className="mt-2 text-[11px] text-[#64748b]">Pilih 1–5 tag. Satu entri per hari.</p>
                     </div>
 
-                    <Textarea
-                        value={note}
-                        onChange={(event) => setNote(event.target.value)}
-                        placeholder="Catatan singkat (opsional)"
-                        rows={3}
-                    />
+                    <Field
+                        label={mood === null ? 'Alasan perasaan hari ini' : `Mengapa kamu merasa ${tags[0] ?? (mood >= 3 ? 'senang' : 'tidak nyaman')}?`}
+                        required
+                        htmlFor="mood-reason"
+                    >
+                        <Textarea
+                            id="mood-reason"
+                            value={note}
+                            onChange={(event) => setNote(event.target.value)}
+                            placeholder={tags[0] ? `${tags[0]} karena…` : 'Hari ini saya merasa … karena …'}
+                            rows={3}
+                            required
+                        />
+                    </Field>
                 </div>
             </Sheet>
         </AppShell>

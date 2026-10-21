@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\ActionPlan;
 use App\Models\ActionTarget;
+use App\Models\ActionTargetStep;
 use App\Models\FuturePlan;
 use App\Models\FuturePlanVersion;
 use App\Services\ReportService;
@@ -50,13 +51,21 @@ class ActionPlanController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:190'],
             'success_indicator' => ['required', 'string', 'max:1000'],
+            'basis' => ['nullable', Rule::in(['general', 'reflection', 'future_plan'])],
             'status' => ['nullable', Rule::in(['not_started', 'in_progress', 'achieved', 'not_achieved'])],
+            'steps' => ['nullable', 'array', 'max:10'],
+            'steps.*' => ['nullable', 'string', 'max:190'],
         ]);
 
-        $target = $plan->targets()->create($data + [
+        $target = $plan->targets()->create([
+            'title' => $data['title'],
+            'success_indicator' => $data['success_indicator'],
+            'basis' => $data['basis'] ?? 'general',
             'status' => $data['status'] ?? 'not_started',
             'sort_order' => $plan->targets()->count() + 1,
         ]);
+
+        $this->syncSteps($target, $data['steps'] ?? []);
 
         return response()->json(['success' => true, 'data' => ['id' => $target->id, 'sort_order' => $target->sort_order]], 201);
     }
@@ -68,9 +77,17 @@ class ActionPlanController extends Controller
         $data = $request->validate([
             'title' => ['sometimes', 'string', 'max:190'],
             'success_indicator' => ['sometimes', 'string', 'max:1000'],
+            'basis' => ['sometimes', Rule::in(['general', 'reflection', 'future_plan'])],
             'status' => ['sometimes', Rule::in(['not_started', 'in_progress', 'achieved', 'not_achieved'])],
             'progress_note' => ['nullable', 'string', 'max:2000'],
+            'steps' => ['sometimes', 'array', 'max:10'],
+            'steps.*' => ['nullable', 'string', 'max:190'],
         ]);
+
+        if (array_key_exists('steps', $data)) {
+            $this->syncSteps($target, $data['steps'] ?? []);
+            unset($data['steps']);
+        }
 
         $target->fill($data)->save();
 
@@ -83,6 +100,46 @@ class ActionPlanController extends Controller
         $target->delete();
 
         return response()->json(['success' => true, 'data' => null, 'message' => 'Target dihapus']);
+    }
+
+    public function storeStep(Request $request, ActionTarget $target)
+    {
+        abort_unless($target->plan->student_id === $request->user()->id, 403);
+
+        if ($target->steps()->count() >= 10) {
+            return response()->json(['success' => false, 'error' => 'LIMIT_REACHED', 'message' => 'Maksimal 10 langkah per target.'], 409);
+        }
+
+        $data = $request->validate(['title' => ['required', 'string', 'max:190']]);
+
+        $step = $target->steps()->create([
+            'title' => $data['title'],
+            'sort_order' => $target->steps()->count() + 1,
+        ]);
+
+        return response()->json(['success' => true, 'data' => ['id' => $step->id, 'sort_order' => $step->sort_order]], 201);
+    }
+
+    public function updateStep(Request $request, ActionTargetStep $step)
+    {
+        abort_unless($step->target->plan->student_id === $request->user()->id, 403);
+
+        $data = $request->validate([
+            'title' => ['sometimes', 'string', 'max:190'],
+            'is_done' => ['sometimes', 'boolean'],
+        ]);
+
+        $step->fill($data)->save();
+
+        return response()->json(['success' => true, 'data' => ['id' => $step->id, 'is_done' => $step->is_done]]);
+    }
+
+    public function destroyStep(Request $request, ActionTargetStep $step)
+    {
+        abort_unless($step->target->plan->student_id === $request->user()->id, 403);
+        $step->delete();
+
+        return response()->json(['success' => true, 'data' => null, 'message' => 'Langkah dihapus']);
     }
 
     public function evaluation(Request $request, ActionPlan $plan)
@@ -179,6 +236,20 @@ class ActionPlanController extends Controller
         ]);
     }
 
+    private function syncSteps(ActionTarget $target, array $titles): void
+    {
+        $titles = collect($titles)->map(fn ($title) => trim((string) $title))->filter()->values();
+        $existing = $target->steps()->get()->keyBy(fn (ActionTargetStep $step) => mb_strtolower($step->title));
+
+        $target->steps()->delete();
+
+        $titles->each(fn ($title, $index) => $target->steps()->create([
+            'title' => $title,
+            'is_done' => (bool) $existing->get(mb_strtolower($title))?->is_done,
+            'sort_order' => $index + 1,
+        ]));
+    }
+
     private function planFor(Request $request): ActionPlan
     {
         $start = now()->startOfMonth()->toDateString();
@@ -189,7 +260,7 @@ class ActionPlanController extends Controller
                 'period_end' => now()->endOfMonth()->toDateString(),
                 'status' => 'active',
             ],
-        )->load('targets', 'evaluation');
+        )->load('targets.steps', 'evaluation');
     }
 
     private function planPayload(ActionPlan $plan): array
@@ -203,9 +274,16 @@ class ActionPlanController extends Controller
                 'id' => $t->id,
                 'title' => $t->title,
                 'success_indicator' => $t->success_indicator,
+                'basis' => $t->basis ?? 'general',
                 'status' => $t->status,
                 'progress_note' => $t->progress_note,
                 'sort_order' => $t->sort_order,
+                'steps' => $t->steps->map(fn ($step) => [
+                    'id' => $step->id,
+                    'title' => $step->title,
+                    'is_done' => $step->is_done,
+                    'sort_order' => $step->sort_order,
+                ])->all(),
             ])->all(),
             'evaluation' => $plan->evaluation ? [
                 'snapshot' => $plan->evaluation->snapshot,

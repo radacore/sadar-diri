@@ -6,6 +6,7 @@ import {
     CardTitle,
     EmptyState,
     Field,
+    IconButton,
     Input,
     ListRow,
     Progress,
@@ -51,6 +52,7 @@ const emptyBiodata = {
     blood_type: '',
     medical_history: '',
     health_notes: '',
+    extra_fields: [],
 };
 
 const emptySelf = {
@@ -123,6 +125,7 @@ export default function StudentDetail({ studentId }) {
             blood_type: biodata.blood_type ?? '',
             medical_history: biodata.medical_history ?? '',
             health_notes: biodata.health_notes ?? '',
+            extra_fields: biodata.extra_fields ?? [],
         });
 
         setSelfForm({
@@ -164,9 +167,21 @@ export default function StudentDetail({ studentId }) {
         }
     };
 
+    const updateExtraBiodata = (index, key, value) => {
+        const rows = [...(biodataForm.extra_fields ?? [])];
+        rows[index] = { ...rows[index], [key]: value };
+        setBiodataForm({ ...biodataForm, extra_fields: rows });
+    };
+
+    const removeExtraBiodata = (index) => {
+        setBiodataForm({
+            ...biodataForm,
+            extra_fields: (biodataForm.extra_fields ?? []).filter((_, position) => position !== index),
+        });
+    };
+
     const saveProfile = async (event) => {
         event.preventDefault();
-
         const decision = await confirm({
             title: 'Simpan perubahan profil siswa?',
             description: 'Perubahan dicatat di audit log dan riwayat versi profil.',
@@ -570,9 +585,25 @@ export default function StudentDetail({ studentId }) {
                                                 {target.success_indicator ? (
                                                     <p className="mt-0.5 text-[11.5px] text-[#64748b]">Indikator: {target.success_indicator}</p>
                                                 ) : null}
-                                                <Badge tone={target.status === 'achieved' ? 'success' : target.status === 'not_achieved' ? 'danger' : 'info'}>
-                                                    {label('targetStatus', target.status)}
-                                                </Badge>
+                                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                                    <Badge tone={target.status === 'achieved' ? 'success' : target.status === 'not_achieved' ? 'danger' : 'info'}>
+                                                        {label('targetStatus', target.status)}
+                                                    </Badge>
+                                                    <Badge tone="neutral">{label('targetBasis', target.basis ?? 'general')}</Badge>
+                                                </div>
+                                                {(target.steps ?? []).length > 0 ? (
+                                                    <ul className="mt-2 space-y-1">
+                                                        {target.steps.map((step) => (
+                                                            <li key={step.id} className="flex items-start gap-2 text-[11.5px] text-[#475569]">
+                                                                <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${step.is_done ? 'bg-[#047857]' : 'bg-[#cbd5e1]'}`} aria-hidden="true" />
+                                                                <span className={step.is_done ? 'line-through text-[#94a3b8]' : ''}>{step.title}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : null}
+                                                {target.progress_note ? (
+                                                    <p className="mt-2 text-[11.5px] text-[#64748b]">Catatan: {target.progress_note}</p>
+                                                ) : null}
                                             </div>
                                         ))}
                                     </div>
@@ -625,6 +656,9 @@ export default function StudentDetail({ studentId }) {
                                 <div><dt className="font-semibold">Alamat</dt><dd className="break-words text-[#475569]">{biodataForm.address || '—'}</dd></div>
                                 <div><dt className="font-semibold">Riwayat penyakit</dt><dd className="break-words text-[#475569]">{biodataForm.medical_history || '—'}</dd></div>
                                 <div><dt className="font-semibold">Catatan kesehatan</dt><dd className="break-words text-[#475569]">{biodataForm.health_notes || '—'}</dd></div>
+                                {(biodataForm.extra_fields ?? []).map((row, index) => (
+                                    <div key={index}><dt className="font-semibold">{row.label}</dt><dd className="break-words text-[#475569]">{row.value}</dd></div>
+                                ))}
                                 <div><dt className="font-semibold">Gambaran psikis</dt><dd className="break-words text-[#475569]">{selfForm.psychological_summary || '—'}</dd></div>
                                 <div><dt className="font-semibold">Karakter</dt><dd className="break-words text-[#475569]">{selfForm.character_summary || '—'}</dd></div>
                                 <div><dt className="font-semibold">Kelebihan</dt><dd className="break-words text-[#475569]">{selfForm.strengths || '—'}</dd></div>
@@ -740,6 +774,52 @@ export default function StudentDetail({ studentId }) {
                     <Field label="Catatan kesehatan" htmlFor="bio-health">
                         <Textarea id="bio-health" rows={2} value={biodataForm.health_notes} onChange={(event) => setBiodataForm({ ...biodataForm, health_notes: event.target.value })} />
                     </Field>
+
+                    <div className="rounded-[18px] border border-dashed border-[#cbd5e1] p-3">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-[12.5px] font-semibold">Data lain</p>
+                                <p className="mt-0.5 text-[11px] leading-snug text-[#64748b]">Tambahkan hal yang belum tercakup, mis. ukuran seragam.</p>
+                            </div>
+                            <span className="shrink-0 text-[11px] tabular text-[#64748b]">{(biodataForm.extra_fields ?? []).length}/5</span>
+                        </div>
+                        <div className="mt-2 space-y-2">
+                            {(biodataForm.extra_fields ?? []).map((row, index) => (
+                                <div key={index} className="flex items-start gap-2">
+                                    <Input
+                                        className="min-w-0 flex-1"
+                                        placeholder="Nama data"
+                                        value={row.label ?? ''}
+                                        aria-label={`Nama data tambahan ${index + 1}`}
+                                        onChange={(event) => updateExtraBiodata(index, 'label', event.target.value)}
+                                    />
+                                    <Input
+                                        className="min-w-0 flex-1"
+                                        placeholder="Isi"
+                                        value={row.value ?? ''}
+                                        aria-label={`Isi data tambahan ${index + 1}`}
+                                        onChange={(event) => updateExtraBiodata(index, 'value', event.target.value)}
+                                    />
+                                    <IconButton
+                                        icon="trash"
+                                        label={`Hapus data ${row.label || index + 1}`}
+                                        variant="danger"
+                                        size={44}
+                                        onClick={() => removeExtraBiodata(index)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-2 w-full"
+                            disabled={(biodataForm.extra_fields ?? []).length >= 5}
+                            onClick={() => setBiodataForm({ ...biodataForm, extra_fields: [...(biodataForm.extra_fields ?? []), { label: '', value: '' }] })}
+                        >
+                            Tambah data lain
+                        </Button>
+                    </div>
 
                     <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Profil diri</p>
                     <Field label="Gambaran psikis" htmlFor="self-psych">

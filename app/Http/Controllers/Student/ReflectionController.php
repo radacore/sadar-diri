@@ -5,12 +5,22 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Reflection;
 use App\Models\ReflectionSession;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class ReflectionController extends Controller
 {
+    public function __construct(private readonly SettingsService $settings) {}
+
+    private function currentWeekStart(): string
+    {
+        $timezone = $this->settings->get('school.timezone') ?: config('app.timezone');
+
+        return Carbon::now($timezone)->startOfWeek(Carbon::MONDAY)->toDateString();
+    }
+
     public function index(Request $request)
     {
         $query = Reflection::query()
@@ -46,12 +56,13 @@ class ReflectionController extends Controller
     {
         $data = $request->validate([
             'week_start' => ['nullable', 'date'],
+            'gratitude_text' => ['required', 'string', 'min:3', 'max:5000'],
             'positive_experience' => ['required', 'string', 'max:5000'],
-            'negative_experience' => ['required', 'string', 'max:5000'],
+            'negative_experience' => ['nullable', 'string', 'max:5000'],
             'status' => ['nullable', Rule::in(['draft', 'submitted'])],
         ]);
 
-        $weekStart = $data['week_start'] ?? now()->startOfWeek()->toDateString();
+        $weekStart = $data['week_start'] ?? $this->currentWeekStart();
 
         $existing = Reflection::query()
             ->where('student_id', $request->user()->id)
@@ -71,8 +82,9 @@ class ReflectionController extends Controller
             'student_id' => $request->user()->id,
             'type' => 'self',
             'week_start' => $weekStart,
+            'gratitude_text' => $data['gratitude_text'],
             'positive_experience' => $data['positive_experience'],
-            'negative_experience' => $data['negative_experience'],
+            'negative_experience' => $data['negative_experience'] ?? null,
             'status' => $data['status'] ?? 'submitted',
             'submitted_at' => ($data['status'] ?? 'submitted') === 'submitted' ? now() : null,
         ]);
@@ -101,6 +113,7 @@ class ReflectionController extends Controller
                 'id' => $reflection->id,
                 'type' => $reflection->type,
                 'week_start' => $reflection->week_start?->toDateString(),
+                'gratitude_text' => $reflection->gratitude_text,
                 'positive_experience' => $reflection->positive_experience,
                 'negative_experience' => $reflection->negative_experience,
                 'answers' => $reflection->answers,
@@ -128,13 +141,14 @@ class ReflectionController extends Controller
             return response()->json(['success' => false, 'error' => 'FORBIDDEN', 'message' => 'Refleksi terbimbing tidak dapat diubah.'], 403);
         }
 
-        if ($reflection->week_start && $reflection->week_start->lt(now()->startOfWeek())) {
+        if ($reflection->week_start && $reflection->week_start->lt($this->currentWeekStart())) {
             return response()->json(['success' => false, 'error' => 'CONFLICT', 'message' => 'Pekan refleksi sudah lewat.'], 409);
         }
 
         $data = $request->validate([
+            'gratitude_text' => ['required', 'string', 'min:3', 'max:5000'],
             'positive_experience' => ['required', 'string', 'max:5000'],
-            'negative_experience' => ['required', 'string', 'max:5000'],
+            'negative_experience' => ['nullable', 'string', 'max:5000'],
             'status' => ['nullable', Rule::in(['draft', 'submitted'])],
         ]);
 

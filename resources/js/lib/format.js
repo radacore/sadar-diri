@@ -35,6 +35,11 @@ export const labels = {
         achieved: 'Tercapai',
         not_achieved: 'Belum tercapai',
     },
+    targetBasis: {
+        general: 'Umum',
+        reflection: 'Dari refleksi',
+        future_plan: 'Dari rencana masa depan',
+    },
     audience: { all: 'Semua', role: 'Peran', class: 'Kelas' },
     content: {
         abc_prompt: 'Prompt ABC',
@@ -58,6 +63,20 @@ export function formatDate(value, withTime = false) {
         : { day: '2-digit', month: 'short', year: 'numeric' };
 
     return new Intl.DateTimeFormat('id-ID', options).format(date);
+}
+
+export function formatDateNumeric(value) {
+    if (!value) return '—';
+
+    const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    const pad = (number) => String(number).padStart(2, '0');
+
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
 }
 
 export function relative(value) {
