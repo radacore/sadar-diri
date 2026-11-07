@@ -34,6 +34,7 @@ const tabs = [
 
 const emptyAchievement = {
     category: 'academic',
+    is_competition: false,
     title: '',
     organizer: '',
     level: 'school',
@@ -197,7 +198,10 @@ export default function StudentDetail({ studentId }) {
         setBusy(true);
 
         try {
-            await api.post(`/api/counselor/students/${studentId}/achievements`, achievementForm);
+            await api.post(`/api/counselor/students/${studentId}/achievements`, {
+                ...achievementForm,
+                is_competition: achievementForm.category === 'soft_skill' ? false : Boolean(achievementForm.is_competition),
+            });
             toast.push('Prestasi ditambahkan.');
             setAchievementOpen(false);
             setAchievementForm(emptyAchievement);
@@ -755,15 +759,33 @@ export default function StudentDetail({ studentId }) {
                     <Field label="Judul prestasi" required htmlFor="ach-title">
                         <Input id="ach-title" value={achievementForm.title} onChange={(event) => setAchievementForm({ ...achievementForm, title: event.target.value })} required />
                     </Field>
+                    <div>
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Kategori (wajib)</p>
+                        <Segmented
+                            value={achievementForm.category}
+                            onChange={(value) => setAchievementForm({ ...achievementForm, category: value })}
+                            options={[
+                                { value: 'academic', label: 'Akademik' },
+                                { value: 'non_academic', label: 'Non-akademik' },
+                                { value: 'soft_skill', label: 'Soft skill' },
+                            ]}
+                        />
+                    </div>
+                    {(achievementForm.category === 'academic' || achievementForm.category === 'non_academic') ? (
+                        <div>
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Apakah ini lomba?</p>
+                            <Segmented
+                                value={achievementForm.is_competition ? 'yes' : 'no'}
+                                onChange={(value) => setAchievementForm({ ...achievementForm, is_competition: value === 'yes' })}
+                                options={[
+                                    { value: 'no', label: 'Tidak' },
+                                    { value: 'yes', label: 'Ya' },
+                                ]}
+                            />
+                            <p className="mt-2 text-[11px] text-[#64748b]">Bila ya, minta siswa mengunggah sertifikat sebagai bukti.</p>
+                        </div>
+                    ) : null}
                     <div className="grid grid-cols-2 gap-3">
-                        <Field label="Kategori" required htmlFor="ach-category">
-                            <select id="ach-category" className="sd-input" value={achievementForm.category} onChange={(event) => setAchievementForm({ ...achievementForm, category: event.target.value })}>
-                                <option value="academic">Akademik</option>
-                                <option value="non_academic">Non-akademik</option>
-                                <option value="competition">Lomba</option>
-                                <option value="soft_skill">Soft skill</option>
-                            </select>
-                        </Field>
                         <Field label="Tingkat" htmlFor="ach-level">
                             <select id="ach-level" className="sd-input" value={achievementForm.level} onChange={(event) => setAchievementForm({ ...achievementForm, level: event.target.value })}>
                                 <option value="school">Sekolah</option>
@@ -774,10 +796,10 @@ export default function StudentDetail({ studentId }) {
                                 <option value="international">Internasional</option>
                             </select>
                         </Field>
+                        <Field label="Tanggal" required htmlFor="ach-date">
+                            <Input id="ach-date" type="date" value={achievementForm.achieved_at} onChange={(event) => setAchievementForm({ ...achievementForm, achieved_at: event.target.value })} required />
+                        </Field>
                     </div>
-                    <Field label="Tanggal" required htmlFor="ach-date">
-                        <Input id="ach-date" type="date" value={achievementForm.achieved_at} onChange={(event) => setAchievementForm({ ...achievementForm, achieved_at: event.target.value })} required />
-                    </Field>
                     <Field label="Penyelenggara" htmlFor="ach-organizer">
                         <Input id="ach-organizer" value={achievementForm.organizer} onChange={(event) => setAchievementForm({ ...achievementForm, organizer: event.target.value })} />
                     </Field>

@@ -332,13 +332,18 @@ export default function Portfolio() {
                 }
             >
                 <form id="achievement-form" onSubmit={submit} className="space-y-3">
-                    <Field label="Kategori" required htmlFor="category">
-                        <Select id="category" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
-                            <option value="academic">Akademik</option>
-                            <option value="non_academic">Non-akademik</option>
-                            <option value="soft_skill">Soft skill</option>
-                        </Select>
-                    </Field>
+                    <div>
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Kategori (wajib)</p>
+                        <Segmented
+                            value={form.category}
+                            onChange={(value) => setForm({ ...form, category: value })}
+                            options={[
+                                { value: 'academic', label: 'Akademik' },
+                                { value: 'non_academic', label: 'Non-akademik' },
+                                { value: 'soft_skill', label: 'Soft skill' },
+                            ]}
+                        />
+                    </div>
                     {(form.category === 'academic' || form.category === 'non_academic') ? (
                         <div>
                             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Apakah ini lomba?</p>
