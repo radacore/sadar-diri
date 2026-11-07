@@ -7,6 +7,7 @@ import {
     EmptyState,
     Field,
     ListRow,
+    MoodPicker,
     Segmented,
     Skeleton,
     Textarea,
@@ -18,15 +19,14 @@ import { api } from '../../lib/api';
 import { formatDate, label } from '../../lib/format';
 
 const TABS = [
+    { id: 'mood', label: 'Mood hari ini' },
     { id: 'abc', label: 'Curhat ABC' },
-    { id: 'grateful', label: 'Grateful journal' },
     { id: 'history', label: 'Riwayat' },
 ];
 
 const FILTERS = [
     { value: '', label: 'Semua' },
     { value: 'abc', label: 'Curhat ABC' },
-    { value: 'grateful', label: 'Grateful' },
 ];
 
 const ABC_STEPS = [
@@ -34,11 +34,18 @@ const ABC_STEPS = [
     { key: 'belief', letter: 'B', label: 'Pikiran & keyakinan', placeholder: 'Apa yang kamu pikirkan saat itu?' },
     { key: 'consequence', letter: 'C', label: 'Akibat & perasaan', placeholder: 'Apa yang kamu rasakan dan lakukan setelahnya?' },
 ];
+const POSITIVE_TAGS = ['senang', 'tenang', 'bersemangat'];
+const NEGATIVE_TAGS = ['sedih', 'marah', 'cemas', 'takut', 'kecewa'];
+
+const tagsForMood = (mood) => (!mood ? [] : mood >= 3 ? POSITIVE_TAGS : NEGATIVE_TAGS);
 
 export default function Journal() {
     const toast = useToast();
     const confirm = useConfirm();
-    const [tab, setTab] = useState('abc');
+    const [tab, setTab] = useState(() => {
+        const initial = new URLSearchParams(window.location.search).get('tab');
+        return initial === 'abc' || initial === 'history' ? initial : 'mood';
+    });
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -46,7 +53,11 @@ export default function Journal() {
     const [filter, setFilter] = useState('');
 
     const [abc, setAbc] = useState({ activating_event: '', belief: '', consequence: '' });
-    const [grateful, setGrateful] = useState({ gratitude_text: '', happiness_text: '' });
+    const [mood, setMood] = useState(null);
+    const [tags, setTags] = useState([]);
+    const [note, setNote] = useState('');
+    const [tagsTouched, setTagsTouched] = useState(false);
+    const [moodSavedAt, setMoodSavedAt] = useState(null);
     const [followUp, setFollowUp] = useState(false);
     const [openEntry, setOpenEntry] = useState(null);
     const [detail, setDetail] = useState(null);
@@ -65,10 +76,93 @@ export default function Journal() {
         }
     }, [filter, toast]);
 
+    const loadTodayMood = useCallback(async () => {
+        try {
+            const response = await api.get('/api/student/dashboard');
+            const saved = response.data?.today_mood;
+            if (saved) {
+                const level = saved.valence === 'positive' ? saved.intensity : (saved.intensity >= 5 ? 1 : 2);
+                const allowed = tagsForMood(level);
+                setMood(level);
+                setTags((saved.emotion_tags ?? []).filter((tag) => allowed.includes(tag)));
+                setNote(saved.note ?? '');
+            }
+        } catch {
+            /* biarkan formulir mood kosong; pengguna tetap dapat mengisi manual */
+        }
+    }, []);
+
+    useEffect(() => {
+        if (tab === 'mood') {
+            loadTodayMood();
+        }
+    }, [tab, loadTodayMood]);
+
     useEffect(() => {
         load();
     }, [load]);
+    const handleMoodChange = (value) => {
+        setMood(value);
+        setTags((current) => {
+            const allowed = tagsForMood(value);
+            const kept = current.filter((tag) => allowed.includes(tag));
+            if (kept.length < current.length && tagsTouched) {
+                toast.push('Tag yang tidak sesuai mood dihapus otomatis.');
+            }
+            return kept;
+        });
+    };
 
+    const toggleTag = (tag) => {
+        setTagsTouched(true);
+        setTags((current) => {
+            if (current.includes(tag)) return current.filter((item) => item !== tag);
+            if (current.length >= 5) {
+                toast.push('Maksimal 5 tag emosi.', 'error');
+                return current;
+            }
+            return [...current, tag];
+        });
+    };
+
+    const saveMood = async () => {
+        if (!mood) {
+            toast.push('Pilih tingkat mood terlebih dahulu.', 'error');
+            return;
+        }
+        if (tags.length === 0) {
+            toast.push('Pilih minimal satu tag emosi.', 'error');
+            return;
+        }
+
+        const decision = await confirm({
+            title: 'Simpan mood hari ini?',
+            description: 'Hanya satu entri mood per hari. Entri hari ini akan diperbarui jika sudah ada.',
+            tone: 'primary',
+            icon: 'check',
+        });
+        if (!decision) return;
+
+        setSaving(true);
+
+        try {
+            const payload = mood >= 3
+                ? { valence: 'positive', intensity: mood }
+                : { valence: 'negative', intensity: mood === 1 ? 5 : 4 };
+
+            await api.post('/api/student/moods', {
+                ...payload,
+                emotion_tags: tags,
+                note: note.trim() === '' ? null : note.trim(),
+            });
+            setMoodSavedAt(new Date());
+            toast.push('Mood tersimpan.');
+        } catch (error) {
+            toast.push(error.message, 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
     const saveDraft = useCallback(async (payload) => {
         try {
             if (draftId.current) {
@@ -89,16 +183,10 @@ export default function Journal() {
     };
 
     const submit = async (type) => {
-        const payload = type === 'abc'
-            ? { type, ...abc, follow_up_requested: followUp }
-            : { type, ...grateful, follow_up_requested: followUp };
+        const payload = { type, ...abc, follow_up_requested: followUp };
 
-        if (type === 'abc' && Object.values(abc).some((value) => !value.trim())) {
+        if (Object.values(abc).some((value) => !value.trim())) {
             toast.push('Lengkapi A, B, dan C sebelum menyimpan.', 'error');
-            return;
-        }
-        if (type === 'grateful' && !grateful.gratitude_text.trim() && !grateful.happiness_text.trim()) {
-            toast.push('Isi minimal satu bagian grateful journal.', 'error');
             return;
         }
 
@@ -121,7 +209,7 @@ export default function Journal() {
             }
             draftId.current = null;
             setAbc({ activating_event: '', belief: '', consequence: '' });
-            setGrateful({ gratitude_text: '', happiness_text: '' });
+
             setFollowUp(false);
             setLastSaved(null);
             toast.push('Jurnal tersimpan.');
@@ -188,16 +276,10 @@ export default function Journal() {
         queueDraft({ type: 'abc', ...next });
     };
 
-    const updateGrateful = (key, value) => {
-        const next = { ...grateful, [key]: value };
-        setGrateful(next);
-        queueDraft({ type: 'grateful', ...next });
-    };
-
     return (
         <AppShell
             title="Jurnal emosi"
-            subtitle="Catat kejadian, pikiran, dan akibatnya."
+            subtitle="Curhat ABC dan mood harianmu."
             actions={<Button className="min-h-11" variant="info" onClick={openWhatsApp}>Curhat ke Guru BK</Button>}
         >
             <div className="space-y-5">
@@ -270,67 +352,65 @@ export default function Journal() {
                     </div>
                 ) : null}
 
-                {tab === 'grateful' ? (
-                    <section className="space-y-3">
-                        <div>
-                            <h2 className="text-[16px] font-bold leading-tight">Grateful journal</h2>
-                            <p className="mt-0.5 text-[12px] text-[#64748b]">Tuliskan hal kecil yang membuat harimu lebih baik.</p>
-                        </div>
+                {tab === 'mood' ? (
+                    <div className="space-y-5">
+                        <section className="space-y-3">
+                            <div>
+                                <h2 className="text-[16px] font-bold leading-tight">Mood hari ini</h2>
+                                <p className="mt-0.5 text-[12px] text-[#64748b]">
+                                    Satu entri per hari. Mengisi ulang akan memperbarui catatan hari ini.
+                                </p>
+                            </div>
 
-                        <div className="rounded-[20px] border border-[#e2e8f0] bg-white p-4">
-                            <label htmlFor="gratitude" className="mb-2 flex items-center gap-2 text-[#3f51b5]">
-                                <Icon name="sparkle" size={17} />
-                                <span className="text-[11px] font-bold uppercase tracking-[0.08em]">Saya bersyukur untuk…</span>
-                            </label>
-                            <Textarea
-                                id="gratitude"
-                                rows={4}
-                                value={grateful.gratitude_text}
-                                onChange={(event) => updateGrateful('gratitude_text', event.target.value)}
-                                placeholder="Satu hal yang membuatmu berterima kasih hari ini."
-                            />
-                        </div>
+                            <div className="rounded-[20px] border border-[#e2e8f0] bg-white p-4">
+                                <MoodPicker value={mood} onChange={handleMoodChange} />
 
-                        <div className="rounded-[20px] border border-[#e2e8f0] bg-white p-4">
-                            <label htmlFor="happiness" className="mb-2 flex items-center gap-2 text-[#047857]">
-                                <Icon name="check" size={17} />
-                                <span className="text-[11px] font-bold uppercase tracking-[0.08em]">Hal yang membuat bahagia</span>
-                            </label>
-                            <Textarea
-                                id="happiness"
-                                rows={4}
-                                value={grateful.happiness_text}
-                                onChange={(event) => updateGrateful('happiness_text', event.target.value)}
-                                placeholder="Momen kecil yang membuatmu tersenyum."
-                            />
-                        </div>
+                                <div className="mt-4">
+                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Tag emosi</p>
+                                    {mood === null ? (
+                                        <p className="text-[11px] text-[#64748b]">Pilih tingkat mood terlebih dahulu untuk melihat tag yang sesuai.</p>
+                                    ) : (
+                                        <>
+                                            <div className="flex flex-wrap gap-2">
+                                                {tagsForMood(mood).map((tag) => (
+                                                    <Chip key={tag} active={tags.includes(tag)} onClick={() => toggleTag(tag)}>
+                                                        {tag}
+                                                    </Chip>
+                                                ))}
+                                            </div>
+                                            <p className="mt-2 text-[11px] text-[#64748b]">Pilih tag yang sesuai mood. Wajib diisi minimal 1.</p>
+                                        </>
+                                    )}
+                                </div>
 
-                            <label className="flex items-start gap-3 rounded-[18px] border border-[#e2e8f0] bg-[#f8fafc] p-3.5">
-                                <input
-                                    type="checkbox"
-                                    checked={followUp}
-                                    onChange={(event) => setFollowUp(event.target.checked)}
-                                    className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#3f51b5]"
-                                />
-                                <span className="min-w-0">
-                                    <span className="block text-[12.5px] font-semibold text-[#1e293b]">Minta Guru BK menindaklanjuti</span>
-                                    <span className="mt-0.5 block text-[11px] leading-snug text-[#64748b]">
-                                        Opsional. Tanpa centang, Guru BK tetap bisa membaca tetapi tidak dihubungi untuk sesi konseling.
-                                    </span>
-                                </span>
-                            </label>
+                                <div className="mt-4">
+                                    <Field
+                                        label="Alasan perasaan (opsional)"
+                                        htmlFor="journal-mood-reason"
+                                        hint="Boleh dikosongkan. Tulis bila ada hal spesifik yang memengaruhi perasaanmu."
+                                    >
+                                        <Textarea
+                                            id="journal-mood-reason"
+                                            value={note}
+                                            onChange={(event) => setNote(event.target.value)}
+                                            placeholder={tags[0] ? `${tags[0]} karena…` : 'Hari ini saya merasa … karena …'}
+                                            rows={3}
+                                        />
+                                    </Field>
+                                </div>
+                            </div>
 
-                        <div className="flex flex-col gap-3">
-                            <p className="text-[11px] text-[#64748b]" aria-live="polite">
-                                {lastSaved ? `Draf tersimpan ${lastSaved.toLocaleTimeString('id-ID')}` : 'Minimal satu isian. Tersimpan otomatis sebagai draf.'}
-                            </p>
-                            <Button variant="primary" className="min-h-11 w-full" onClick={() => submit('grateful')} disabled={saving}>
-                                {saving ? 'Menyimpan…' : 'Simpan jurnal'}
+                            <Button variant="success" className="min-h-11 w-full" onClick={saveMood} disabled={saving || !mood || tags.length === 0}>
+                                {saving ? 'Menyimpan…' : 'Simpan mood'}
                             </Button>
-                        </div>
-                    </section>
+                            {moodSavedAt ? (
+                                <p className="text-center text-[11px] text-[#64748b]">
+                                    Tersimpan {moodSavedAt.toLocaleTimeString('id-ID')}
+                                </p>
+                            ) : null}
+                        </section>
+                    </div>
                 ) : null}
-
                 {tab === 'history' ? (
                     <section className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
@@ -365,7 +445,7 @@ export default function Journal() {
                                             subtitle={entry.excerpt}
                                             meta={
                                                 <>
-                                                    <Badge tone="info">{label('journal', entry.type)}</Badge>
+                                                    <Badge tone="info">Curhat ABC</Badge>
                                                     <Badge tone={entry.status === 'published' ? 'success' : 'warning'}>
                                                         {label('journalStatus', entry.status)}
                                                     </Badge>
@@ -388,18 +468,11 @@ export default function Journal() {
                                                     <Skeleton rows={2} />
                                                 ) : (
                                                     <>
-                                                        {detail?.type === 'abc' ? (
-                                                            <div className="space-y-1.5 text-[12px] leading-relaxed">
-                                                                <p><span className="font-semibold">A:</span> {detail.activating_event}</p>
-                                                                <p><span className="font-semibold">B:</span> {detail.belief}</p>
-                                                                <p><span className="font-semibold">C:</span> {detail.consequence}</p>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-1.5 text-[12px] leading-relaxed">
-                                                                <p><span className="font-semibold">Syukur:</span> {detail?.gratitude_text || '—'}</p>
-                                                                <p><span className="font-semibold">Bahagia:</span> {detail?.happiness_text || '—'}</p>
-                                                            </div>
-                                                        )}
+                                                        <div className="space-y-1.5 text-[12px] leading-relaxed">
+                                                            <p><span className="font-semibold">A:</span> {detail.activating_event}</p>
+                                                            <p><span className="font-semibold">B:</span> {detail.belief}</p>
+                                                            <p><span className="font-semibold">C:</span> {detail.consequence}</p>
+                                                        </div>
 
                                                         <div className="border-t border-[#e2e8f0] pt-3">
                                                             <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[#64748b]">Balasan Guru BK</p>

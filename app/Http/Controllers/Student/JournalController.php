@@ -19,9 +19,7 @@ class JournalController extends Controller
     {
         $query = JournalEntry::query()->where('student_id', $request->user()->id);
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->query('type'));
-        }
+        $query->where('type', 'abc');
 
         if ($request->filled('from')) {
             $query->where('entry_date', '>=', $request->date('from'));
@@ -192,7 +190,7 @@ class JournalController extends Controller
     private function validated(Request $request): array
     {
         return $request->validate([
-            'type' => ['required', Rule::in(['abc', 'grateful'])],
+            'type' => ['required', Rule::in(['abc'])],
             'entry_date' => ['nullable', 'date', 'before_or_equal:today'],
             'status' => ['nullable', Rule::in(['draft', 'published'])],
             'activating_event' => ['required_if:type,abc', 'nullable', 'string', 'max:5000'],

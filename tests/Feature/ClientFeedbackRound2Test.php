@@ -142,25 +142,30 @@ class ClientFeedbackRound2Test extends TestCase
             ->assertJsonPath('data.profile.biodata.extra_fields.0.label', 'Ukuran sepatu');
     }
 
-    public function test_mood_requires_a_reason(): void
+    public function test_mood_reason_is_optional_and_normalized(): void
     {
         $this->actingAs($this->student)
             ->postJson('/api/student/moods', [
                 'valence' => 'positive',
                 'intensity' => 4,
                 'emotion_tags' => ['senang'],
+                'note' => '   ',
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('note');
+            ->assertCreated();
+
+        $this->actingAs($this->student)
+            ->getJson('/api/student/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.today_mood.note', null);
 
         $this->actingAs($this->student)
             ->postJson('/api/student/moods', [
                 'valence' => 'positive',
                 'intensity' => 4,
                 'emotion_tags' => ['senang'],
-                'note' => 'Karena nilai ujian membaik.',
+                'note' => '  Karena nilai ujian membaik.   ',
             ])
-            ->assertCreated();
+            ->assertOk();
 
         $this->actingAs($this->student)
             ->getJson('/api/student/dashboard')

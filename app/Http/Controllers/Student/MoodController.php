@@ -52,18 +52,28 @@ class MoodController extends Controller
             'intensity' => ['required', 'integer', 'between:1,5'],
             'emotion_tags' => ['required', 'array', 'min:1', 'max:5'],
             'emotion_tags.*' => ['string', 'max:30'],
-            'note' => ['required', 'string', 'min:3', 'max:1000'],
+            'note' => ['nullable', 'string', 'max:1000'],
         ]);
+        $allowed = $data['valence'] === 'positive'
+            ? ['senang', 'tenang', 'bersemangat']
+            : ['sedih', 'marah', 'cemas', 'takut', 'kecewa'];
+
+        if (collect($data['emotion_tags'])->diff($allowed)->isNotEmpty()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'TAG_MISMATCH',
+                'message' => 'Tag emosi tidak sesuai dengan tingkat mood yang dipilih.',
+            ], 422);
+        }
 
         $entryDate = $data['entry_date'] ?? now()->toDateString();
-
         $mood = MoodEntry::query()->updateOrCreate(
             ['student_id' => $request->user()->id, 'entry_date' => $entryDate],
             [
                 'valence' => $data['valence'],
                 'intensity' => $data['intensity'],
                 'emotion_tags' => $data['emotion_tags'],
-                'note' => trim($data['note']),
+                'note' => filled($data['note'] ?? null) ? trim($data['note']) : null,
             ],
         );
 

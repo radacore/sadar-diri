@@ -4,25 +4,18 @@ import { Icon } from '../../Components/Icons';
 import {
     Badge,
     Button,
-    Chip,
     EmptyState,
-    Field,
     HeroCard,
     ListRow,
-    MoodPicker,
     PageSection,
-    Sheet,
     Skeleton,
     StatTile,
-    Textarea,
-    useConfirm,
     useToast,
 } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
 import { formatDate, label } from '../../lib/format';
 
-const TAGS = ['senang', 'tenang', 'sedih', 'marah', 'cemas', 'takut', 'kecewa', 'bersemangat'];
 
 function lastSevenDays(points = []) {
     return Array.from({ length: 7 }).map((_, index) => {
@@ -45,25 +38,15 @@ export default function Dashboard() {
     const { auth } = usePage().props;
     const user = auth.user;
     const toast = useToast();
-    const confirm = useConfirm();
+
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [mood, setMood] = useState(null);
-    const [tags, setTags] = useState([]);
-    const [note, setNote] = useState('');
-    const [saving, setSaving] = useState(false);
-    const [moodOpen, setMoodOpen] = useState(false);
 
     const load = useCallback(async () => {
         try {
             const response = await api.get('/api/student/dashboard');
             setData(response.data);
-            if (response.data.today_mood) {
-                const saved = response.data.today_mood;
-                setMood(saved.valence === 'positive' ? saved.intensity : (saved.intensity >= 5 ? 1 : 2));
-                setTags(saved.emotion_tags ?? []);
-                setNote(saved.note ?? '');
-            }
+
         } catch (error) {
             toast.push(error.message, 'error');
         } finally {
@@ -74,65 +57,6 @@ export default function Dashboard() {
     useEffect(() => {
         load();
     }, [load]);
-
-    const toggleTag = (tag) => {
-        setTags((current) => {
-            if (current.includes(tag)) return current.filter((item) => item !== tag);
-            if (current.length >= 5) {
-                toast.push('Maksimal 5 tag emosi.', 'error');
-                return current;
-            }
-            return [...current, tag];
-        });
-    };
-
-    const saveMood = async () => {
-        if (!mood) {
-            toast.push('Pilih tingkat mood terlebih dahulu.', 'error');
-            return;
-        }
-        if (tags.length === 0) {
-            toast.push('Pilih minimal satu tag emosi.', 'error');
-            return;
-        }
-        if (note.trim().length < 3) {
-            toast.push('Tulis alasan perasaanmu (minimal 3 karakter).', 'error');
-            return;
-        }
-
-        const decision = await confirm({
-            title: 'Simpan mood hari ini?',
-            description: 'Hanya satu entri mood per hari. Entri hari ini akan diperbarui jika sudah ada.',
-            details: [
-                { label: 'Mood', value: mood >= 3 ? `${mood}/5 positif` : 'negatif' },
-                { label: 'Tag emosi', value: tags.join(', ') },
-            ],
-            confirmLabel: 'Simpan mood',
-            tone: 'primary',
-            icon: 'check',
-        });
-        if (!decision) return;
-
-        setSaving(true);
-        try {
-            const payload = mood >= 3
-                ? { valence: 'positive', intensity: mood }
-                : { valence: 'negative', intensity: mood === 1 ? 5 : 4 };
-
-            await api.post('/api/student/moods', {
-                ...payload,
-                emotion_tags: tags,
-                note: note.trim(),
-            });
-            toast.push('Mood tersimpan.');
-            await load();
-            setMoodOpen(false);
-        } catch (error) {
-            toast.push(error.message, 'error');
-        } finally {
-            setSaving(false);
-        }
-    };
 
     const todayMood = data?.today_mood;
     const week = lastSevenDays(data?.mood_7d?.points ?? []);
@@ -169,7 +93,7 @@ export default function Dashboard() {
                     }
                 >
                     <div className="sd-hero-actions">
-                        <Button variant="outline" className="min-h-11" onClick={() => setMoodOpen(true)}>
+                        <Button variant="outline" className="min-h-11" onClick={() => { window.location.href = '/siswa/jurnal?tab=mood'; }}>
                             <span className="inline-flex items-center gap-1.5">
                                 <Icon name={todayMood ? 'edit' : 'plus'} size={16} />
                                 {todayMood ? 'Ubah mood' : 'Catat mood'}
@@ -266,7 +190,7 @@ export default function Dashboard() {
                     ) : (
                         <EmptyState
                             title="Belum ada jurnal"
-                            description="Mulai dengan curhat ABC atau grateful journal."
+                            description="Mulai dengan curhat ABC hari ini."
                             action={<Button className="min-h-11" variant="outline" onClick={() => (window.location.href = '/siswa/jurnal')}>Tulis jurnal</Button>}
                         />
                     )}
@@ -311,50 +235,6 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <Sheet
-                open={moodOpen}
-                onClose={() => setMoodOpen(false)}
-                title={todayMood ? 'Ubah mood hari ini' : 'Catat mood hari ini'}
-                footer={
-                    <>
-                        <Button variant="outline" className="min-h-11 flex-1" onClick={() => setMoodOpen(false)}>Batal</Button>
-                        <Button variant="success" className="min-h-11 flex-1" onClick={saveMood} disabled={saving}>
-                            {saving ? 'Menyimpan…' : 'Simpan mood'}
-                        </Button>
-                    </>
-                }
-            >
-                <div className="space-y-4">
-                    <MoodPicker value={mood} onChange={setMood} />
-
-                    <div>
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Tag emosi</p>
-                        <div className="flex flex-wrap gap-2">
-                            {TAGS.map((tag) => (
-                                <Chip key={tag} active={tags.includes(tag)} onClick={() => toggleTag(tag)}>
-                                    {tag}
-                                </Chip>
-                            ))}
-                        </div>
-                        <p className="mt-2 text-[11px] text-[#64748b]">Pilih 1–5 tag. Satu entri per hari.</p>
-                    </div>
-
-                    <Field
-                        label={mood === null ? 'Alasan perasaan hari ini' : `Mengapa kamu merasa ${tags[0] ?? (mood >= 3 ? 'senang' : 'tidak nyaman')}?`}
-                        required
-                        htmlFor="mood-reason"
-                    >
-                        <Textarea
-                            id="mood-reason"
-                            value={note}
-                            onChange={(event) => setNote(event.target.value)}
-                            placeholder={tags[0] ? `${tags[0]} karena…` : 'Hari ini saya merasa … karena …'}
-                            rows={3}
-                            required
-                        />
-                    </Field>
-                </div>
-            </Sheet>
         </AppShell>
     );
 }

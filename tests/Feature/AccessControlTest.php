@@ -96,9 +96,11 @@ class AccessControlTest extends TestCase
 
         JournalEntry::create([
             'student_id' => $students->first()->id,
-            'type' => 'grateful',
+            'type' => 'abc',
             'entry_date' => now()->toDateString(),
-            'gratitude_text' => 'Bersyukur bisa belajar.',
+            'activating_event' => 'Ulangan matematika.',
+            'belief' => 'Saya tidak akan bisa.',
+            'consequence' => 'Cemas sepanjang hari.',
             'status' => 'published',
         ]);
 

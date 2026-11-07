@@ -188,9 +188,11 @@ class PrivacyFlowTest extends TestCase
 
         JournalEntry::create([
             'student_id' => $oldAlumni->id,
-            'type' => 'grateful',
+            'type' => 'abc',
             'entry_date' => now()->toDateString(),
-            'gratitude_text' => 'Catatan lama.',
+            'activating_event' => 'Catatan lama.',
+            'belief' => 'Dulu khawatir.',
+            'consequence' => 'Tetap berjalan.',
             'status' => 'published',
         ]);
 
