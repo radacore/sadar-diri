@@ -201,6 +201,7 @@ export default function StudentDetail({ studentId }) {
             await api.post(`/api/counselor/students/${studentId}/achievements`, {
                 ...achievementForm,
                 is_competition: achievementForm.category === 'soft_skill' ? false : Boolean(achievementForm.is_competition),
+                rank: (achievementForm.category === 'soft_skill' || !achievementForm.is_competition) ? null : achievementForm.rank,
             });
             toast.push('Prestasi ditambahkan.');
             setAchievementOpen(false);
@@ -763,7 +764,7 @@ export default function StudentDetail({ studentId }) {
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Kategori (wajib)</p>
                         <Segmented
                             value={achievementForm.category}
-                            onChange={(value) => setAchievementForm({ ...achievementForm, category: value })}
+                            onChange={(value) => setAchievementForm({ ...achievementForm, category: value, ...(value === 'soft_skill' ? { is_competition: false, rank: '' } : {}) })}
                             options={[
                                 { value: 'academic', label: 'Akademik' },
                                 { value: 'non_academic', label: 'Non-akademik' },
@@ -776,7 +777,7 @@ export default function StudentDetail({ studentId }) {
                             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Apakah ini lomba?</p>
                             <Segmented
                                 value={achievementForm.is_competition ? 'yes' : 'no'}
-                                onChange={(value) => setAchievementForm({ ...achievementForm, is_competition: value === 'yes' })}
+                                onChange={(value) => setAchievementForm({ ...achievementForm, is_competition: value === 'yes', ...(value === 'no' ? { rank: '' } : {}) })}
                                 options={[
                                     { value: 'no', label: 'Tidak' },
                                     { value: 'yes', label: 'Ya' },
@@ -803,9 +804,11 @@ export default function StudentDetail({ studentId }) {
                     <Field label="Penyelenggara" htmlFor="ach-organizer">
                         <Input id="ach-organizer" value={achievementForm.organizer} onChange={(event) => setAchievementForm({ ...achievementForm, organizer: event.target.value })} />
                     </Field>
-                    <Field label="Peringkat" htmlFor="ach-rank">
-                        <Input id="ach-rank" value={achievementForm.rank} onChange={(event) => setAchievementForm({ ...achievementForm, rank: event.target.value })} />
-                    </Field>
+                    {achievementForm.category !== 'soft_skill' && achievementForm.is_competition ? (
+                        <Field label="Peringkat" htmlFor="ach-rank">
+                            <Input id="ach-rank" value={achievementForm.rank} onChange={(event) => setAchievementForm({ ...achievementForm, rank: event.target.value })} />
+                        </Field>
+                    ) : null}
                     <Field label="Keterangan" htmlFor="ach-desc">
                         <Textarea id="ach-desc" rows={3} value={achievementForm.description} onChange={(event) => setAchievementForm({ ...achievementForm, description: event.target.value })} />
                     </Field>

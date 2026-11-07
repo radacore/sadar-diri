@@ -56,15 +56,14 @@ class CompetitionFlagTest extends TestCase
 
     private function payload(array $overrides = []): array
     {
-        return [
+        return array_merge([
             'category' => 'academic',
             'title' => 'Juara 1 Olimpiade Matematika',
             'organizer' => 'Dinas Pendidikan',
             'level' => 'city',
             'achieved_at' => now()->subDay()->toDateString(),
-            'rank' => 'Juara 1',
             'description' => 'Olimpiade tingkat kota.',
-        ] + $overrides;
+        ], $overrides);
     }
 
     public function test_academic_entry_can_be_marked_as_competition(): void
@@ -81,6 +80,22 @@ class CompetitionFlagTest extends TestCase
         $this->actingAs($this->student)
             ->postJson('/api/student/achievements', $this->payload(['category' => 'competition']))
             ->assertCreated();
+    }
+
+    public function test_soft_skill_without_rank_is_accepted(): void
+    {
+        $payload = $this->payload(['category' => 'soft_skill', 'is_competition' => false, 'title' => 'Sertifikat Public Speaking']);
+        unset($payload['rank']);
+
+        $this->actingAs($this->student)
+            ->postJson('/api/student/achievements', $payload)
+            ->assertCreated();
+
+        $this->assertDatabaseHas('achievements', [
+            'student_id' => $this->student->id,
+            'category' => 'soft_skill',
+            'is_competition' => false,
+        ]);
     }
 
     public function test_competition_flag_can_be_toggled_off(): void

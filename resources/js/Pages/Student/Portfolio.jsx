@@ -113,6 +113,7 @@ export default function Portfolio() {
             const payload = {
                 ...form,
                 is_competition: form.category === 'soft_skill' ? false : Boolean(form.is_competition),
+                rank: (form.category === 'soft_skill' || !form.is_competition) ? null : form.rank,
             };
 
             if (editing) {
@@ -336,7 +337,7 @@ export default function Portfolio() {
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Kategori (wajib)</p>
                         <Segmented
                             value={form.category}
-                            onChange={(value) => setForm({ ...form, category: value })}
+                            onChange={(value) => setForm({ ...form, category: value, ...(value === 'soft_skill' ? { is_competition: false, rank: '' } : {}) })}
                             options={[
                                 { value: 'academic', label: 'Akademik' },
                                 { value: 'non_academic', label: 'Non-akademik' },
@@ -349,7 +350,7 @@ export default function Portfolio() {
                             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Apakah ini lomba?</p>
                             <Segmented
                                 value={form.is_competition ? 'yes' : 'no'}
-                                onChange={(value) => setForm({ ...form, is_competition: value === 'yes' })}
+                                onChange={(value) => setForm({ ...form, is_competition: value === 'yes', ...(value === 'no' ? { rank: '' } : {}) })}
                                 options={[
                                     { value: 'no', label: 'Tidak' },
                                     { value: 'yes', label: 'Ya' },
@@ -375,9 +376,11 @@ export default function Portfolio() {
                         <Field label="Penyelenggara" htmlFor="organizer">
                             <Input id="organizer" value={form.organizer} onChange={(event) => setForm({ ...form, organizer: event.target.value })} />
                         </Field>
-                        <Field label="Peringkat" htmlFor="rank">
-                            <Input id="rank" value={form.rank} onChange={(event) => setForm({ ...form, rank: event.target.value })} placeholder="Juara 1" />
-                        </Field>
+                        {form.category !== 'soft_skill' && form.is_competition ? (
+                            <Field label="Peringkat" htmlFor="rank">
+                                <Input id="rank" value={form.rank} onChange={(event) => setForm({ ...form, rank: event.target.value })} placeholder="Juara 1" />
+                            </Field>
+                        ) : null}
                     </div>
                     <Field label="Deskripsi" htmlFor="description">
                         <Textarea id="description" rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
