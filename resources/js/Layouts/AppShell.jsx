@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Icon } from '../Components/Icons';
+import { BrandLockup, BrandMark, Icon } from '../Components/Icons';
 import { Button, Sheet, useConfirm } from '../Components/UI';
 import { api } from '../lib/api';
 import { formatDate, initials } from '../lib/format';
@@ -396,8 +396,8 @@ export default function AppShell({ children, title, subtitle, actions }) {
                     ))}
                 </div>
                 <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-r-[28px] bg-[#374987]">
-                    <div className="flex h-[104px] items-center justify-center gap-2 pr-3 text-white">
-                        <span className="text-[19px] font-bold tracking-tight">SADAR DIRI</span>
+                    <div className="flex h-[104px] items-center justify-center pr-3 text-white">
+                        <BrandLockup size={34} textSize={19} tone="light" gap={10} />
                     </div>
                     <div className="mb-auto flex flex-col gap-2.5 pl-2.5 pr-0">
                         {items.map((item) => (
@@ -430,11 +430,14 @@ export default function AppShell({ children, title, subtitle, actions }) {
 
             <div className={`flex min-w-0 flex-1 flex-col ${mobileOnly ? 'min-h-0' : 'py-1 lg:pr-2'}`}>
                 <div className={`sd-mobile-bar flex items-center gap-3 px-4 pb-3 ${mobileOnly ? '' : 'lg:hidden'}`}>
-                    <div className="min-w-0 flex-1 leading-none">
-                        <span className="block truncate text-[16px] font-extrabold tracking-tight">SADAR DIRI</span>
-                        <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">
-                            {roleLabels[user?.role] ?? ''}
-                        </span>
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <BrandMark size={36} />
+                        <div className="min-w-0 leading-none">
+                            <span className="block truncate text-[16px] font-extrabold tracking-tight">SADAR DIRI</span>
+                            <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#64748b]">
+                                {roleLabels[user?.role] ?? ''}
+                            </span>
+                        </div>
                     </div>
                     <button
                         type="button"

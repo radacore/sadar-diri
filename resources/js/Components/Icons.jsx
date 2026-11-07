@@ -113,3 +113,56 @@ export function MoodFace({ level = 3, size = 30, className = '' }) {
         </svg>
     );
 }
+
+/**
+ * Logo SADAR DIRI: tunas bertumbuh (diri yang berkembang) dalam bingkai
+ * indigo. Versi `onDark` memakai bingkai kaca putih untuk latar gelap.
+ */
+export function BrandMark({ size = 36, onDark = false, className = '', idSuffix = '' }) {
+    const gid = `sdlg${idSuffix || size}${onDark ? 'd' : ''}`;
+    return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className} aria-hidden="true">
+            {!onDark ? (
+                <>
+                    <defs>
+                        <linearGradient id={gid} x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="#6B7FE0" />
+                            <stop offset="1" stopColor="#374987" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="2" y="2" width="44" height="44" rx="13" fill={`url(#${gid})`} />
+                </>
+            ) : (
+                <rect x="2" y="2" width="44" height="44" rx="13" fill="#fff" opacity="0.14" />
+            )}
+            <circle cx="24" cy="11" r="3" fill="#fff" />
+            <path d="M24 37V22" stroke="#fff" strokeWidth="3.6" strokeLinecap="round" />
+            <path d="M24 27.5C23 21.5 18.5 17.8 11.5 17.8c.6 6.8 5.2 10.6 12.5 9.7Z" fill="#fff" />
+            <path d="M24 31.5c1-5 5-8.2 12.5-8.2-.5 6.3-5 9.8-12.5 8.2Z" fill="#C3CFF7" />
+        </svg>
+    );
+}
+
+/**
+ * Logo + teks SADAR DIRI. Pakai `tone="dark"` di atas latar terang dan
+ * `tone="light"` di atas latar brand gelap.
+ */
+export function BrandLockup({ size = 36, tone = 'dark', gap = 10, textSize = 18, className = '' }) {
+    const light = tone === 'light';
+    return (
+        <span className={`inline-flex items-center ${className}`} style={{ gap }}>
+            <BrandMark size={size} onDark={light} idSuffix={`${size}${tone}`} />
+            <span
+                style={{
+                    fontSize: textSize,
+                    fontWeight: 800,
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1,
+                    color: light ? '#fff' : '#1e293b',
+                }}
+            >
+                SADAR&nbsp;DIRI
+            </span>
+        </span>
+    );
+}
