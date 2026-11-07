@@ -405,16 +405,16 @@
 }
 
 @keyframes sd-pop-in {
-    /* Frame akhir memakai `none` (bukan scale/translate identitas) agar elemen
-       dialog tidak menjadi containing block permanen bagi popup <select>
-       bawaan browser. Tampilan akhir identik. */
-    from { opacity: 0; transform: scale(0.94) translateY(10px); }
-    to { opacity: 1; transform: none; }
+    /* Sengaja hanya opacity: transform pada keyframes membuat browser
+       menahan status animasi saat viewport berubah (mis. DevTools dibuka)
+       sehingga kartu tampak patah/meleset. Fade murni selalu aman. */
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes sd-pop-over {
-    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-    to { opacity: 1; transform: none; }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes sd-slide-up {
@@ -423,8 +423,8 @@
 }
 
 @keyframes sd-toast-in {
-    from { opacity: 0; transform: translateY(10px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes sd-shake {
