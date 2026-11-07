@@ -66,6 +66,7 @@ class StudentController extends Controller
 
         $lastJournal = JournalEntry::query()
             ->where('student_id', $user->id)
+            ->where('type', 'abc')
             ->orderByDesc('entry_date')
             ->first();
 

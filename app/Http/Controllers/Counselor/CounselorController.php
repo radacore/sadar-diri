@@ -194,7 +194,7 @@ class CounselorController extends Controller
         $items = JournalEntry::query()
             ->where('student_id', $student->id)
             ->with(['replies.counselor'])
-            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->query('type')))
+            ->where('type', 'abc')
             ->orderByDesc('entry_date')
             ->paginate(20);
 
