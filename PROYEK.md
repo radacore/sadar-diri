@@ -193,7 +193,7 @@ Skema utama ada di `database/migrations/2026_10_19_000001_create_sadar_diri_sche
 
 | Tabel | Kolom penting | Enkripsi |
 |---|---|---|
-| `mood_entries` | `student_id`, `entry_date`, `valence` (`positive`/`negative`), `intensity` (1–5), `emotion_tags` (JSON), `note` (alasan, wajib) | Tidak (dipakai agregasi) |
+| `mood_entries` | `student_id`, `entry_date`, `valence` (`positive`/`negative`), `intensity` (1–5), `emotion_tags` (JSON), `note` (alasan, opsional) | Tidak (dipakai agregasi) |
 | `journal_entries` | `type` (`abc`/`grateful`), `entry_date`, `prompt_content_id`, `activating_event`, `belief`, `consequence`, `gratitude_text`, `happiness_text`, `status` (`draft`/`published`), `is_flagged`, `flagged_at`, `follow_up_requested`, `follow_up_requested_at` | 5 kolom teks jurnal |
 | `journal_replies` | `journal_entry_id`, `counselor_id`, `content` | `content` |
 | `reflection_sessions` | `counselor_id`, `class_id`/`student_id`, `topic`, `instructions`, `questions` (JSON), `due_at`, `status` (`scheduled`/`ongoing`/`completed`/`cancelled`), `extended_at`, `extension_reason` | — |
@@ -396,7 +396,7 @@ Setiap alert memakai `dedupe_key` berformat `{student_id}:{trigger_type}:{YYYY-M
 
 ### 7.5 Jurnal
 
-- Dua tipe: `abc` (Activating event, Belief, Consequence) dan `grateful` (syukur + kebahagiaan).
+- Satu tipe yang dapat dibuat: `abc` (Activating event, Belief, Consequence). Entri `grateful` lama tidak ditampilkan di daftar mana pun (tetap tersimpan di database).
 - Status `draft` → `published`. Draf hanya terlihat siswa.
 - Siswa dapat menandai `follow_up_requested` (minta konseling) atau **tidak**; Guru BK tetap dapat membaca jurnal meski tanpa permintaan tindak lanjut.
 - Guru BK membalas lewat `journal_replies`; balasan terenkripsi dan memicu notifikasi ke siswa.
