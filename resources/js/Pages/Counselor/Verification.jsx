@@ -110,7 +110,7 @@ export default function Verification() {
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-1.5">
                                                         <Badge tone="info">{label('category', item.category)}</Badge>
-                                                        {item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
+                                                        {item.category !== 'competition' && item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
                                                         {item.level ? <Badge tone="neutral">{label('level', item.level)}</Badge> : null}
                                                     </div>
                                                     <h3 className="mt-1.5 break-words text-[14.5px] font-bold leading-snug text-[#1e293b]">{item.title}</h3>
@@ -128,7 +128,9 @@ export default function Verification() {
 
                                             <div className="mt-3 flex flex-wrap gap-1.5">
                                                 {item.attachments.length === 0 ? (
-                                                    <span className="text-[11px] font-medium text-[#b45309]">Belum ada bukti terlampir</span>
+                                                    <span className={`text-[11px] font-semibold ${(item.is_competition || item.category === 'competition') ? 'text-[#b42318]' : 'font-medium text-[#b45309]'}`}>
+                                                        {(item.is_competition || item.category === 'competition') ? 'Belum ada bukti terlampir — sertifikat wajib untuk lomba' : 'Belum ada bukti terlampir'}
+                                                    </span>
                                                 ) : item.attachments.map((attachment) => (
                                                     <a
                                                         key={attachment.id}

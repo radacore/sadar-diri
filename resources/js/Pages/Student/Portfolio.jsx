@@ -253,7 +253,7 @@ export default function Portfolio() {
                                             <div className="min-w-0 flex-1">
                                                 <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                                                     <Badge tone="info">{label('category', item.category)}</Badge>
-                                                    {item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
+                                                    {item.category !== 'competition' && item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
                                                     {item.level ? <Badge tone="neutral">{label('level', item.level)}</Badge> : null}
                                                     <Badge tone={item.verification_status === 'verified' ? 'success' : item.verification_status === 'rejected' ? 'danger' : 'warning'}>
                                                         {label('verification', item.verification_status)}
@@ -272,7 +272,7 @@ export default function Portfolio() {
                                                         Alasan: {item.rejection_reason}
                                                     </p>
                                                 ) : null}
-                                                {item.is_competition && (item.attachments?.length ?? 0) === 0 ? (
+                                                {(item.is_competition || item.category === 'competition') && (item.attachments?.length ?? 0) === 0 ? (
                                                     <p className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#b42318]">
                                                         <Icon name="alert" size={14} /> Sertifikat wajib untuk validasi lomba.
                                                     </p>

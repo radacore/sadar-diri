@@ -600,7 +600,7 @@ export default function StudentDetail({ studentId }) {
                                         subtitle={`${label('category', item.category)} · ${label('level', item.level)} · ${formatDate(item.achieved_at)}`}
                                         meta={
                                             <>
-                                                {item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
+                                                {item.category !== 'competition' && item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
                                                 <Badge tone={item.verification_status === 'verified' ? 'success' : item.verification_status === 'rejected' ? 'danger' : 'warning'}>
                                                     {label('verification', item.verification_status)}
                                                 </Badge>
