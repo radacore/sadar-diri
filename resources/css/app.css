@@ -405,13 +405,16 @@
 }
 
 @keyframes sd-pop-in {
+    /* Frame akhir memakai `none` (bukan scale/translate identitas) agar elemen
+       dialog tidak menjadi containing block permanen bagi popup <select>
+       bawaan browser. Tampilan akhir identik. */
     from { opacity: 0; transform: scale(0.94) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    to { opacity: 1; transform: none; }
 }
 
 @keyframes sd-pop-over {
     from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 1; transform: none; }
 }
 
 @keyframes sd-slide-up {
