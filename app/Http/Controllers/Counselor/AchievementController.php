@@ -72,6 +72,7 @@ class AchievementController extends Controller
                 'student' => ['id' => $a->student->id, 'name' => $a->student->name],
                 'title' => $a->title,
                 'category' => $a->category,
+                'is_competition' => $a->is_competition,
                 'level' => $a->level,
                 'achieved_at' => $a->achieved_at->toDateString(),
                 'attachments_count' => $a->attachments_count,

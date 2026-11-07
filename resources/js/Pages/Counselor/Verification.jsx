@@ -110,6 +110,7 @@ export default function Verification() {
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-1.5">
                                                         <Badge tone="info">{label('category', item.category)}</Badge>
+                                                        {item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
                                                         {item.level ? <Badge tone="neutral">{label('level', item.level)}</Badge> : null}
                                                     </div>
                                                     <h3 className="mt-1.5 break-words text-[14.5px] font-bold leading-snug text-[#1e293b]">{item.title}</h3>

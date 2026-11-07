@@ -9,6 +9,7 @@ import {
     IconButton,
     Input,
     Select,
+    Segmented,
     Sheet,
     Skeleton,
     StatTile,
@@ -21,7 +22,8 @@ import { api, download } from '../../lib/api';
 import { formatDate, label } from '../../lib/format';
 
 const emptyForm = {
-    category: 'competition',
+    category: 'academic',
+    is_competition: false,
     title: '',
     organizer: '',
     level: 'school',
@@ -34,7 +36,6 @@ const CATEGORIES = [
     { value: '', label: 'Semua' },
     { value: 'academic', label: 'Akademik' },
     { value: 'non_academic', label: 'Non-akademik' },
-    { value: 'competition', label: 'Lomba' },
     { value: 'soft_skill', label: 'Soft skill' },
 ];
 
@@ -79,7 +80,8 @@ export default function Portfolio() {
     const openEdit = (item) => {
         setEditing(item);
         setForm({
-            category: item.category,
+            category: ['academic', 'non_academic', 'soft_skill'].includes(item.category) ? item.category : 'academic',
+            is_competition: item.category === 'competition' ? true : Boolean(item.is_competition),
             title: item.title,
             organizer: item.organizer ?? '',
             level: item.level ?? 'school',
@@ -108,11 +110,16 @@ export default function Portfolio() {
         setBusy(true);
 
         try {
+            const payload = {
+                ...form,
+                is_competition: form.category === 'soft_skill' ? false : Boolean(form.is_competition),
+            };
+
             if (editing) {
-                await api.put(`/api/student/achievements/${editing.id}`, form);
+                await api.put(`/api/student/achievements/${editing.id}`, payload);
                 toast.push('Prestasi diperbarui; menunggu verifikasi ulang.');
             } else {
-                await api.post('/api/student/achievements', form);
+                await api.post('/api/student/achievements', payload);
                 toast.push('Prestasi ditambahkan dan menunggu verifikasi.');
             }
             setSheetOpen(false);
@@ -246,6 +253,7 @@ export default function Portfolio() {
                                             <div className="min-w-0 flex-1">
                                                 <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                                                     <Badge tone="info">{label('category', item.category)}</Badge>
+                                                    {item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
                                                     {item.level ? <Badge tone="neutral">{label('level', item.level)}</Badge> : null}
                                                     <Badge tone={item.verification_status === 'verified' ? 'success' : item.verification_status === 'rejected' ? 'danger' : 'warning'}>
                                                         {label('verification', item.verification_status)}
@@ -262,6 +270,11 @@ export default function Portfolio() {
                                                 {item.rejection_reason ? (
                                                     <p className="mt-2 rounded-[12px] bg-[#fef2f2] px-3 py-2 text-[11px] text-[#b42318]">
                                                         Alasan: {item.rejection_reason}
+                                                    </p>
+                                                ) : null}
+                                                {item.is_competition && (item.attachments?.length ?? 0) === 0 ? (
+                                                    <p className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#b42318]">
+                                                        <Icon name="alert" size={14} /> Sertifikat wajib untuk validasi lomba.
                                                     </p>
                                                 ) : null}
                                             </div>
@@ -323,10 +336,23 @@ export default function Portfolio() {
                         <Select id="category" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
                             <option value="academic">Akademik</option>
                             <option value="non_academic">Non-akademik</option>
-                            <option value="competition">Lomba</option>
                             <option value="soft_skill">Soft skill</option>
                         </Select>
                     </Field>
+                    {(form.category === 'academic' || form.category === 'non_academic') ? (
+                        <div>
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Apakah ini lomba?</p>
+                            <Segmented
+                                value={form.is_competition ? 'yes' : 'no'}
+                                onChange={(value) => setForm({ ...form, is_competition: value === 'yes' })}
+                                options={[
+                                    { value: 'no', label: 'Tidak' },
+                                    { value: 'yes', label: 'Ya' },
+                                ]}
+                            />
+                            <p className="mt-2 text-[11px] text-[#64748b]">Bila ya, unggah sertifikat sebagai bukti agar cepat diverifikasi.</p>
+                        </div>
+                    ) : null}
                     <Field label="Judul prestasi" required htmlFor="title">
                         <Input id="title" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
                     </Field>

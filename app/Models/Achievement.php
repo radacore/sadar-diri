@@ -12,6 +12,7 @@ class Achievement extends Model
         'student_id',
         'created_by',
         'category',
+        'is_competition',
         'title',
         'organizer',
         'level',
@@ -29,6 +30,7 @@ class Achievement extends Model
         return [
             'achieved_at' => 'date',
             'verified_at' => 'datetime',
+            'is_competition' => 'boolean',
         ];
     }
 

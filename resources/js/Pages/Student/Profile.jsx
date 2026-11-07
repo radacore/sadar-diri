@@ -455,7 +455,7 @@ export default function Profile() {
                                 {loading ? <Skeleton rows={4} /> : (
                                     <div className="space-y-3">
                                         <div className="grid gap-3">
-                                            <Field label="Gambaran psikis" htmlFor="psychological">
+                                            <Field label="Keunikan diri" htmlFor="psychological">
                                                 <Textarea id="psychological" rows={3} value={self.psychological_summary ?? ''} onChange={(e) => setSelf({ ...self, psychological_summary: e.target.value })} placeholder="Bagaimana kamu menggambarkan dirimu akhir-akhir ini?" />
                                             </Field>
                                             <Field label="Karakter" htmlFor="character">

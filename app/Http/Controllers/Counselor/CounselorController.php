@@ -271,6 +271,7 @@ class CounselorController extends Controller
                 'id' => $a->id,
                 'title' => $a->title,
                 'category' => $a->category,
+                'is_competition' => $a->is_competition,
                 'level' => $a->level,
                 'achieved_at' => $a->achieved_at->toDateString(),
                 'verification_status' => $a->verification_status,
@@ -439,16 +440,18 @@ class CounselorController extends Controller
         $this->ensureAccess($request, $student);
 
         $data = $request->validate([
-            'category' => ['required', \Illuminate\Validation\Rule::in(['academic', 'non_academic', 'competition', 'soft_skill'])],
+            'category' => ['required', \Illuminate\Validation\Rule::in(['academic', 'non_academic', 'soft_skill', 'competition'])],
             'title' => ['required', 'string', 'max:190'],
             'organizer' => ['nullable', 'string', 'max:190'],
             'level' => ['nullable', \Illuminate\Validation\Rule::in(['school', 'district', 'city', 'province', 'national', 'international'])],
             'achieved_at' => ['required', 'date', 'before_or_equal:today'],
             'rank' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'is_competition' => ['sometimes', 'boolean'],
         ]);
 
         $achievement = Achievement::create($data + [
+            'is_competition' => (bool) ($data['is_competition'] ?? false),
             'student_id' => $student->id,
             'created_by' => $request->user()->id,
             'verification_status' => 'verified',

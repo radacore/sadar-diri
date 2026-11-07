@@ -419,7 +419,7 @@ export default function StudentDetail({ studentId }) {
                             <CardTitle>Ringkasan konseling</CardTitle>
                             <dl className="space-y-3 text-[12.5px]">
                                 <div>
-                                    <dt className="font-semibold">Gambaran psikis</dt>
+                                    <dt className="font-semibold">Keunikan diri</dt>
                                     <dd className="break-words text-[#475569]">{overview.profile.psychological_summary || '—'}</dd>
                                 </div>
                                 <div>
@@ -595,9 +595,12 @@ export default function StudentDetail({ studentId }) {
                                         title={item.title}
                                         subtitle={`${label('category', item.category)} · ${label('level', item.level)} · ${formatDate(item.achieved_at)}`}
                                         meta={
-                                            <Badge tone={item.verification_status === 'verified' ? 'success' : item.verification_status === 'rejected' ? 'danger' : 'warning'}>
-                                                {label('verification', item.verification_status)}
-                                            </Badge>
+                                            <>
+                                                {item.is_competition ? <Badge tone="warning">Lomba</Badge> : null}
+                                                <Badge tone={item.verification_status === 'verified' ? 'success' : item.verification_status === 'rejected' ? 'danger' : 'warning'}>
+                                                    {label('verification', item.verification_status)}
+                                                </Badge>
+                                            </>
                                         }
                                     />
                                 ))}
@@ -722,7 +725,7 @@ export default function StudentDetail({ studentId }) {
                                 {(biodataForm.extra_fields ?? []).map((row, index) => (
                                     <div key={index}><dt className="font-semibold">{row.label}</dt><dd className="break-words text-[#475569]">{row.value}</dd></div>
                                 ))}
-                                <div><dt className="font-semibold">Gambaran psikis</dt><dd className="break-words text-[#475569]">{selfForm.psychological_summary || '—'}</dd></div>
+                                <div><dt className="font-semibold">Keunikan diri</dt><dd className="break-words text-[#475569]">{selfForm.psychological_summary || '—'}</dd></div>
                                 <div><dt className="font-semibold">Karakter</dt><dd className="break-words text-[#475569]">{selfForm.character_summary || '—'}</dd></div>
                                 <div><dt className="font-semibold">Kelebihan</dt><dd className="break-words text-[#475569]">{selfForm.strengths || '—'}</dd></div>
                                 <div><dt className="font-semibold">Kekurangan</dt><dd className="break-words text-[#475569]">{selfForm.weaknesses || '—'}</dd></div>
@@ -1016,7 +1019,7 @@ export default function StudentDetail({ studentId }) {
                     </div>
 
                     <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Profil diri</p>
-                    <Field label="Gambaran psikis" htmlFor="self-psych">
+                    <Field label="Keunikan diri" htmlFor="self-psych">
                         <Textarea id="self-psych" rows={3} value={selfForm.psychological_summary} onChange={(event) => setSelfForm({ ...selfForm, psychological_summary: event.target.value })} />
                     </Field>
                     <Field label="Karakter" htmlFor="self-char">

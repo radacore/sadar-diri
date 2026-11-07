@@ -46,6 +46,7 @@ class AchievementController extends Controller
         $data = $this->validated($request);
 
         $achievement = Achievement::create($data + [
+            'is_competition' => (bool) ($data['is_competition'] ?? false),
             'student_id' => $request->user()->id,
             'verification_status' => 'pending',
         ]);
@@ -62,7 +63,7 @@ class AchievementController extends Controller
         $this->authorizeOwnership($request, $achievement);
 
         $data = $this->validated($request);
-        $achievement->fill($data + ['verification_status' => 'pending', 'verified_by' => null, 'verified_at' => null, 'rejection_reason' => null])->save();
+        $achievement->fill($data + ['is_competition' => (bool) ($data['is_competition'] ?? false), 'verification_status' => 'pending', 'verified_by' => null, 'verified_at' => null, 'rejection_reason' => null])->save();
 
         return response()->json([
             'success' => true,
@@ -170,13 +171,14 @@ class AchievementController extends Controller
     private function validated(Request $request): array
     {
         return $request->validate([
-            'category' => ['required', Rule::in(['academic', 'non_academic', 'competition', 'soft_skill'])],
+            'category' => ['required', Rule::in(['academic', 'non_academic', 'soft_skill', 'competition'])],
             'title' => ['required', 'string', 'max:190'],
             'organizer' => ['nullable', 'string', 'max:190'],
             'level' => ['nullable', Rule::in(['school', 'district', 'city', 'province', 'national', 'international'])],
             'achieved_at' => ['required', 'date', 'before_or_equal:today'],
             'rank' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'is_competition' => ['sometimes', 'boolean'],
         ]);
     }
 
@@ -190,6 +192,7 @@ class AchievementController extends Controller
         return [
             'id' => $achievement->id,
             'category' => $achievement->category,
+            'is_competition' => $achievement->is_competition,
             'title' => $achievement->title,
             'organizer' => $achievement->organizer,
             'level' => $achievement->level,
