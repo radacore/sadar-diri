@@ -22,7 +22,7 @@ export const labels = {
         tiri: 'Anak tiri',
         wali: 'Wali',
     },
-    journal: { abc: 'Curhat ABC', grateful: 'Grateful journal' },
+    journal: { abc: 'Curhat ABC' },
     journalStatus: { draft: 'Draf', published: 'Terbit' },
     reflection: { self: 'Mandiri', guided: 'Terbimbing' },
     reflectionStatus: { draft: 'Draf', submitted: 'Terkirim', late: 'Terlambat' },

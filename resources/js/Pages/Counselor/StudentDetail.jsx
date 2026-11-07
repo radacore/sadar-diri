@@ -461,14 +461,10 @@ export default function StudentDetail({ studentId }) {
                                                 </span>
                                             }
                                             title={formatDate(entry.entry_date)}
-                                            subtitle={
-                                                entry.type === 'abc'
-                                                    ? entry.activating_event
-                                                    : entry.gratitude_text || entry.happiness_text || '—'
-                                            }
+                                            subtitle={entry.activating_event}
                                             meta={
                                                 <>
-                                                    <Badge tone="info">{label('journal', entry.type)}</Badge>
+                                                    <Badge tone="info">Curhat ABC</Badge>
                                                     {entry.is_flagged ? <Badge tone="danger">Perlu perhatian</Badge> : null}
                                                     {entry.follow_up_requested ? <Badge tone="warning">Minta tindak lanjut</Badge> : null}
                                                     {entry.replies?.length ? <Badge tone="success">{entry.replies.length} balasan</Badge> : null}
@@ -484,18 +480,9 @@ export default function StudentDetail({ studentId }) {
                                         />
                                         {openJournal === entry.id ? (
                                             <div className="mt-2 space-y-1.5 break-words rounded-[16px] border border-[#e2e8f0] bg-white p-3 text-[12px]">
-                                                {entry.type === 'abc' ? (
-                                                    <>
-                                                        <p><span className="font-semibold">A:</span> {entry.activating_event}</p>
-                                                        <p><span className="font-semibold">B:</span> {entry.belief}</p>
-                                                        <p><span className="font-semibold">C:</span> {entry.consequence}</p>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <p><span className="font-semibold">Bersyukur:</span> {entry.gratitude_text || '—'}</p>
-                                                        <p><span className="font-semibold">Bahagia:</span> {entry.happiness_text || '—'}</p>
-                                                    </>
-                                                )}
+                                                <p><span className="font-semibold">A:</span> {entry.activating_event}</p>
+                                                <p><span className="font-semibold">B:</span> {entry.belief}</p>
+                                                <p><span className="font-semibold">C:</span> {entry.consequence}</p>
 
                                                 <div className="mt-3 border-t border-[#e2e8f0] pt-3">
                                                     <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#64748b]">Balasan Anda</p>
