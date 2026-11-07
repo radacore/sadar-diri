@@ -162,8 +162,10 @@ class ClientFeatureAlignmentTest extends TestCase
     {
         $response = $this->actingAs($this->student)
             ->postJson('/api/student/journals', [
-                'type' => 'grateful',
-                'gratitude_text' => 'Bersyukur bisa sekolah.',
+                'type' => 'abc',
+                'activating_event' => 'Presentasi kelompok.',
+                'belief' => 'Saya akan gagal.',
+                'consequence' => 'Cemas seharian.',
                 'follow_up_requested' => true,
                 'status' => 'published',
             ])
@@ -180,8 +182,10 @@ class ClientFeatureAlignmentTest extends TestCase
     {
         $response = $this->actingAs($this->student)
             ->postJson('/api/student/journals', [
-                'type' => 'grateful',
-                'gratitude_text' => 'Hari biasa saja.',
+                'type' => 'abc',
+                'activating_event' => 'Hari biasa saja.',
+                'belief' => 'Tidak ada yang istimewa.',
+                'consequence' => 'Biasa saja.',
                 'follow_up_requested' => false,
                 'status' => 'published',
             ])
@@ -216,9 +220,11 @@ class ClientFeatureAlignmentTest extends TestCase
     {
         $entry = JournalEntry::create([
             'student_id' => $this->outsider->id,
-            'type' => 'grateful',
+            'type' => 'abc',
             'entry_date' => now()->toDateString(),
-            'gratitude_text' => 'Hari ini tenang.',
+            'activating_event' => 'Latihan paduan suara.',
+            'belief' => 'Saya salah nada.',
+            'consequence' => 'Sedikit malu.',
             'status' => 'published',
         ]);
 
