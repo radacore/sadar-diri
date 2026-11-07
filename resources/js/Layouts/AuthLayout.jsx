@@ -5,7 +5,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#eceff4] p-4">
             <div className="grid w-full max-w-[980px] overflow-hidden rounded-[28px] bg-white shadow-[0_20px_32px_-8px_rgba(15,23,42,0.14)] lg:grid-cols-[380px_1fr]">
-                <div className="relative hidden flex-col justify-between bg-[#374987] p-8 text-white lg:flex">
+                <div className="relative hidden flex-col justify-between bg-[#7A4988] p-8 text-white lg:flex">
                     <BrandLockup size={40} textSize={18} tone="light" gap={10} />
                     <div>
                         <p className="text-[24px] font-bold leading-tight tracking-tight">

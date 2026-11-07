@@ -73,7 +73,7 @@ export default function Login() {
                     </p>
                 ) : null}
 
-                <Button type="submit" variant="primary" className="w-full" disabled={busy}>
+                <Button type="submit" variant="mauve" className="w-full" disabled={busy}>
                     {busy ? 'Memeriksa…' : 'Masuk'}
                 </Button>
             </form>

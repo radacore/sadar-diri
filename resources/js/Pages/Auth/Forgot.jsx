@@ -48,7 +48,7 @@ export default function Forgot() {
                 {message ? (
                     <p role="status" className="rounded-xl bg-[#e8eaf6] px-3 py-2 text-[12px] text-[#303f9f]">{message}</p>
                 ) : null}
-                <Button type="submit" className="w-full" disabled={busy}>{busy ? 'Mengirim…' : 'Kirim tautan reset'}</Button>
+                <Button type="submit" variant="mauve" className="w-full" disabled={busy}>{busy ? 'Mengirim…' : 'Kirim tautan reset'}</Button>
                 <p className="text-[11px] text-[#5b6b7f]">
                     Di lingkungan lokal, email ditulis ke <code>storage/logs/laravel.log</code>.
                 </p>

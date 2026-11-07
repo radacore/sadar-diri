@@ -227,6 +227,7 @@ export function CardTitle({ children, action }) {
 export function Button({ children, variant = 'primary', size = 'md', className = '', type = 'button', ...props }) {
     const map = {
         primary: 'sd-btn sd-btn-primary',
+        mauve: 'sd-btn sd-btn-mauve',
         success: 'sd-btn sd-btn-success',
         danger: 'sd-btn sd-btn-danger',
         warning: 'sd-btn sd-btn-warning',

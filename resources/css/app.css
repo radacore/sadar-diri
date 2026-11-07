@@ -119,13 +119,23 @@
     }
 
     .sd-btn-primary {
-        background: var(--color-primary);
+        background: #374987;
         color: #fff;
-        box-shadow: 0 6px 14px -8px rgba(63, 81, 181, 0.9);
+        box-shadow: 0 6px 14px -8px rgba(55, 73, 135, 0.9);
     }
 
     .sd-btn-primary:hover {
-        background: var(--color-primary-hover);
+        background: #2b3a6e;
+    }
+
+    .sd-btn-mauve {
+        background: #7A4988;
+        color: #fff;
+        box-shadow: 0 6px 14px -8px rgba(122, 73, 136, 0.9);
+    }
+
+    .sd-btn-mauve:hover {
+        background: #684077;
     }
 
     .sd-btn-success {
