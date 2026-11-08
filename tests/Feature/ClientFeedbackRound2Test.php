@@ -243,38 +243,48 @@ class ClientFeedbackRound2Test extends TestCase
             ->assertJsonPath('data.weekly_reflection.submitted', false);
     }
 
-    public function test_weekly_reflection_requires_gratitude_and_marks_dashboard(): void
+    public function test_weekly_reflection_requires_hardest_and_gratitude_and_marks_dashboard(): void
     {
         $this->actingAs($this->student)
             ->postJson('/api/student/reflections', [
-                'positive_experience' => 'Belajar bersama teman.',
-                'negative_experience' => 'Sulit bangun pagi.',
+                'gratitude_text' => 'Kesehatan keluarga.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('hardest_text');
+
+        $this->actingAs($this->student)
+            ->postJson('/api/student/reflections', [
+                'hardest_text' => 'Sulit bangun pagi.',
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('gratitude_text');
 
         $this->actingAs($this->student)
             ->postJson('/api/student/reflections', [
+                'hardest_text' => 'Sulit bangun pagi.',
                 'gratitude_text' => 'Kesehatan keluarga.',
-                'negative_experience' => 'Sulit bangun pagi.',
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('positive_experience');
-
-        $this->actingAs($this->student)
-            ->postJson('/api/student/reflections', [
-                'gratitude_text' => 'Kesehatan keluarga.',
-                'positive_experience' => 'Belajar bersama teman.',
             ])
             ->assertCreated();
 
         $this->assertSame('2026-10-19', Reflection::firstOrFail()->week_start->toDateString());
+        $this->assertSame('Sulit bangun pagi.', Reflection::firstOrFail()->negative_experience);
 
         $this->actingAs($this->student)
             ->getJson('/api/student/dashboard')
             ->assertOk()
             ->assertJsonPath('data.weekly_reflection.submitted', true)
             ->assertJsonPath('data.weekly_reflection.gratitude_text', 'Kesehatan keluarga.');
+    }
+
+    public function test_weekly_reflection_ignores_legacy_positive_experience(): void
+    {
+        $this->actingAs($this->student)
+            ->postJson('/api/student/reflections', [
+                'hardest_text' => 'Tugas menumpuk.',
+                'gratitude_text' => 'Teman membantu.',
+                'positive_experience' => 'Kolom lama yang dikirim ikut.',
+            ])
+            ->assertCreated();
     }
 
     public function test_reflection_reminder_only_notifies_students_without_entry(): void

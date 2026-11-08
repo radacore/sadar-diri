@@ -108,7 +108,7 @@ export default function Dashboard() {
                             <Icon name="alert" size={16} /> Refleksi pekan ini wajib diisi
                         </p>
                         <p className="mt-1 text-[11.5px] leading-relaxed text-[#92400e]">
-                            Tulis syukur dan hikmah pekanmu sebelum Minggu berakhir. Butuh sekitar lima menit.
+                            Tulis hal paling berat serta syukur dan hikmah pekanmu sebelum Minggu berakhir. Butuh sekitar lima menit.
                         </p>
                         <Button
                             className="mt-3 min-h-11"

@@ -13,7 +13,7 @@ export default function Reflection() {
     const [reflections, setReflections] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ gratitude_text: '', positive_experience: '', negative_experience: '' });
+    const [form, setForm] = useState({ hardest_text: '', gratitude_text: '' });
     const [currentWeek, setCurrentWeek] = useState(weekStart());
     const [activeSession, setActiveSession] = useState(null);
     const [answers, setAnswers] = useState([]);
@@ -34,13 +34,12 @@ export default function Reflection() {
                 const detailResponse = await api.get(`/api/student/reflections/${existing.id}`);
                 setDetail(detailResponse.data);
                 setForm({
+                    hardest_text: detailResponse.data.negative_experience ?? '',
                     gratitude_text: detailResponse.data.gratitude_text ?? '',
-                    positive_experience: detailResponse.data.positive_experience ?? '',
-                    negative_experience: detailResponse.data.negative_experience ?? '',
                 });
             } else {
                 setDetail(null);
-                setForm({ gratitude_text: '', positive_experience: '', negative_experience: '' });
+                setForm({ hardest_text: '', gratitude_text: '' });
             }
         } catch (error) {
             toast.push(error.message, 'error');
@@ -56,8 +55,8 @@ export default function Reflection() {
     const submitSelf = async (event) => {
         event.preventDefault();
 
-        if (!form.gratitude_text.trim() || !form.positive_experience.trim()) {
-            toast.push('Isi syukur dan hikmah pekan ini sebelum menyimpan.', 'error');
+        if (!form.hardest_text.trim() || !form.gratitude_text.trim()) {
+            toast.push('Isi kedua bagian refleksi sebelum menyimpan.', 'error');
             return;
         }
 
@@ -123,15 +122,30 @@ export default function Reflection() {
             <div className="space-y-5">
                 <Card>
                     <CardTitle action={<Badge tone="info">Pekan {formatDate(currentWeek)}</Badge>}>
-                        Refleksi, syukur & hikmah pekan ini
+                        Refleksi pekan ini
                     </CardTitle>
                     {loading ? <Skeleton rows={4} /> : (
                         <form onSubmit={submitSelf} className="space-y-3">
                             <div>
-                                <Field label="Hari ini saya bersyukur karena…" required htmlFor="gratitude" hint="Tulis satu hal konkret, sekecil apa pun.">
+                                <Field label="Hal yang paling berat pekan ini" required htmlFor="negative">
+                                    <Textarea
+                                        id="negative"
+                                        rows={4}
+                                        maxLength={MAX_LENGTH}
+                                        value={form.hardest_text}
+                                        onChange={(event) => setForm({ ...form, hardest_text: event.target.value })}
+                                        required
+                                    />
+                                </Field>
+                                <p className="mt-1 text-right text-[11px] tabular text-[#64748b]">
+                                    {form.hardest_text.length}/{MAX_LENGTH} karakter
+                                </p>
+                            </div>
+                            <div>
+                                <Field label="Hal yang saya syukuri / hikmah" required htmlFor="gratitude" hint="Satu hal yang disyukuri atau pelajaran yang didapat pekan ini.">
                                     <Textarea
                                         id="gratitude"
-                                        rows={3}
+                                        rows={4}
                                         maxLength={MAX_LENGTH}
                                         value={form.gratitude_text}
                                         onChange={(event) => setForm({ ...form, gratitude_text: event.target.value })}
@@ -142,37 +156,8 @@ export default function Reflection() {
                                     {form.gratitude_text.length}/{MAX_LENGTH} karakter
                                 </p>
                             </div>
-                            <div>
-                                <Field label="Hikmah pekan ini" required htmlFor="positive" hint="Hal positif atau pemaknaan yang saya dapat pekan ini.">
-                                    <Textarea
-                                        id="positive"
-                                        rows={4}
-                                        maxLength={MAX_LENGTH}
-                                        value={form.positive_experience}
-                                        onChange={(event) => setForm({ ...form, positive_experience: event.target.value })}
-                                        required
-                                    />
-                                </Field>
-                                <p className="mt-1 text-right text-[11px] tabular text-[#64748b]">
-                                    {form.positive_experience.length}/{MAX_LENGTH} karakter
-                                </p>
-                            </div>
-                            <div>
-                                <Field label="Hal yang paling berat pekan ini" htmlFor="negative" hint="Opsional. Boleh dikosongkan.">
-                                    <Textarea
-                                        id="negative"
-                                        rows={4}
-                                        maxLength={MAX_LENGTH}
-                                        value={form.negative_experience}
-                                        onChange={(event) => setForm({ ...form, negative_experience: event.target.value })}
-                                    />
-                                </Field>
-                                <p className="mt-1 text-right text-[11px] tabular text-[#64748b]">
-                                    {form.negative_experience.length}/{MAX_LENGTH} karakter
-                                </p>
-                            </div>
                             <p className="text-[11px] leading-snug text-[#5b6b7f]">Satu entri per pekan. Dapat diperbarui hingga pekan berakhir.</p>
-                            <Button type="submit" className="h-11 w-full" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan refleksi'}</Button>
+                            <Button type="submit" className="h-11 w-full" disabled={busy}>{busy ? 'Menyimpan...' : 'Simpan refleksi'}</Button>
                         </form>
                     )}
 

@@ -57,8 +57,7 @@ class ReflectionController extends Controller
         $data = $request->validate([
             'week_start' => ['nullable', 'date'],
             'gratitude_text' => ['required', 'string', 'min:3', 'max:5000'],
-            'positive_experience' => ['required', 'string', 'max:5000'],
-            'negative_experience' => ['nullable', 'string', 'max:5000'],
+            'hardest_text' => ['required', 'string', 'min:3', 'max:5000'],
             'status' => ['nullable', Rule::in(['draft', 'submitted'])],
         ]);
 
@@ -83,8 +82,7 @@ class ReflectionController extends Controller
             'type' => 'self',
             'week_start' => $weekStart,
             'gratitude_text' => $data['gratitude_text'],
-            'positive_experience' => $data['positive_experience'],
-            'negative_experience' => $data['negative_experience'] ?? null,
+            'negative_experience' => $data['hardest_text'],
             'status' => $data['status'] ?? 'submitted',
             'submitted_at' => ($data['status'] ?? 'submitted') === 'submitted' ? now() : null,
         ]);
@@ -147,10 +145,12 @@ class ReflectionController extends Controller
 
         $data = $request->validate([
             'gratitude_text' => ['required', 'string', 'min:3', 'max:5000'],
-            'positive_experience' => ['required', 'string', 'max:5000'],
-            'negative_experience' => ['nullable', 'string', 'max:5000'],
+            'hardest_text' => ['required', 'string', 'min:3', 'max:5000'],
             'status' => ['nullable', Rule::in(['draft', 'submitted'])],
         ]);
+
+        $data['negative_experience'] = $data['hardest_text'];
+        unset($data['hardest_text']);
 
         $reflection->fill($data);
 
