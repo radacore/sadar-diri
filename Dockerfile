@@ -6,7 +6,9 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignore-platform-reqs
 COPY . .
-RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
+# APP_ENV=testing: dump-autoload memicu artisan package:discover (boot Laravel);
+# tanpa .env maka APP_ENV default production dan guard AppServiceProvider menolak boot.
+RUN APP_ENV=testing composer dump-autoload --optimize --no-dev --classmap-authoritative
 
 # Stage 2: Node build (Vite)
 FROM node:22-bookworm AS frontend
@@ -66,6 +68,10 @@ WORKDIR /var/www/html
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
 COPY . .
+# Cadangan build Vite: compose me-mount ./public/build (kosong di git clone,
+# karena public/build gitignored) menutupi hasil build di image; entrypoint
+# menyalin ulang cadangan ini ke mount setiap start (lihat entrypoint.sh).
+RUN cp -a public/build /opt/build-baked
 
 # permissions
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache database \

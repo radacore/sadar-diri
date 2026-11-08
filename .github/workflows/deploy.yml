@@ -51,6 +51,8 @@ jobs:
           cache: npm
 
       - name: Install composer deps
+        env:
+          APP_ENV: testing
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Install npm deps
@@ -78,8 +80,6 @@ jobs:
     name: Build & push image
     runs-on: ubuntu-latest
     needs: [test]
-    outputs:
-      sha_tag: ${{ steps.meta.outputs.sha_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -102,6 +102,8 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -123,11 +125,11 @@ jobs:
             git pull --ff-only
             docker compose -f docker-compose.prod.yml pull app queue scheduler
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            # Hapus HANYA image lama sadar-diri (sisakan latest + yang sedang dipakai).
+            # Hapus HANYA image lama sadar-diri per TAG (sisakan latest + sha berjalan).
             # JANGAN: prune tanpa filter, compose down, system prune.
-            RUNNING="$(docker inspect sadar-app --format '{{.Image}}' 2>/dev/null || true)"
-            docker images "ghcr.io/${{ github.repository }}" --format '{{.Repository}}:{{.Tag}} {{.ID}}' \
-              | grep -v -e ':latest' -e "$RUNNING" \
-              | awk '{print $2}' | xargs -r docker rmi || true
+            RUNNING_SHA="$(docker inspect sadar-app --format '{{.Config.Labels}}' 2>/dev/null | grep -o 'org.opencontainers.image.revision=[^,} ]*' | cut -d= -f2 || true)"
+            for TAG in $(docker images "ghcr.io/${{ github.repository }}" --format '{{.Tag}}' | grep -v -e '^latest$' -e "^${RUNNING_SHA}$" -e '^<none>$' || true); do
+              docker rmi "ghcr.io/${{ github.repository }}:$TAG" || true
+            done
             docker logout ghcr.io
             docker compose -f docker-compose.prod.yml ps

@@ -2,10 +2,14 @@
 set -e
 
 # Fix permissions on every start (host volume may override)
-mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache storage/app/public database
-touch database/database.sqlite 2>/dev/null || true
-chown -R www-data:www-data storage bootstrap/cache database 2>/dev/null || true
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache storage/app/public database public/build
+# Pulihkan build Vite dari cadangan image: bind-mount ./public/build (kosong di
+# git clone karena gitignored) menutupi hasil build di image; salin ulang bila
+# manifest bawaan image lebih baru atau mount masih kosong.
+if [ -d /opt/build-baked ] && { [ ! -f public/build/manifest.json ] || [ /opt/build-baked/manifest.json -nt public/build/manifest.json ]; }; then
+  echo ">> Syncing baked frontend build to ./public/build"
+  cp -a /opt/build-baked/. public/build/
+fi
 
 # Generate .env if missing
 if [ ! -f .env ]; then

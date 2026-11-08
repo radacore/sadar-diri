@@ -14,6 +14,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Build-time (composer dump-autoload / package:discover tanpa .env):
+        // lewati guard agar image bisa dibangun; guard tetap berlaku saat runtime.
+        if ($this->app->runningInConsole() && ! file_exists($this->app->environmentFilePath())) {
+            return;
+        }
+
         // Produksi wajib memakai Resend dengan API key terisi; gagal cepat
         // saat boot agar tidak ada email yang terkirim diam-diam via mailer lain.
         if ($this->app->environment('production')) {
