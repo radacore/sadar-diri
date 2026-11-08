@@ -17,17 +17,14 @@ class ImportService
     public function __construct(private readonly AuditLogger $audit) {}
 
     // Header template Indonesia -> kolom internal. Kunci: mb_strtolower + spasi dirapatkan.
+    // Impor khusus siswa: kolom Peran/Kata Sandi tidak dipetakan dan diabaikan bila ada di file lama.
     private const HEADER_ALIASES = [
         'nama' => 'name',
         'nis/nip' => 'identity_number',
         'nis' => 'identity_number',
         'nip' => 'identity_number',
         'identity_number' => 'identity_number',
-        'peran' => 'role',
-        'role' => 'role',
         'email' => 'email',
-        'kata sandi' => 'password',
-        'password' => 'password',
         'id kelas' => 'class_id',
         'id_kelas' => 'class_id',
         'class_id' => 'class_id',
@@ -38,18 +35,6 @@ class ImportService
         'name' => 'name',
     ];
 
-    private const ROLE_ALIASES = [
-        'siswa' => 'student',
-        'student' => 'student',
-        'murid' => 'student',
-        'guru bk' => 'counselor',
-        'guru_bk' => 'counselor',
-        'guru-bk' => 'counselor',
-        'gurubk' => 'counselor',
-        'counselor' => 'counselor',
-        'konselor' => 'counselor',
-    ];
-
     private function normalizeHeader(string $header): string
     {
         $key = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $header) ?? ''));
@@ -57,15 +42,6 @@ class ImportService
         return self::HEADER_ALIASES[$key] ?? Str::snake($key);
     }
 
-    private function normalizeRole(?string $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-        $key = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $value) ?? ''));
-
-        return self::ROLE_ALIASES[$key] ?? $value;
-    }
 
 
     public function handle(ImportBatch $batch, User $actor): ImportBatch
@@ -223,21 +199,20 @@ class ImportService
                 'name' => $payload['name'],
                 'email' => $payload['email'] ?: null,
                 'identity_number' => $payload['identity_number'],
-                'password' => ($payload['password'] ?? null) ?: $payload['identity_number'],
-                'role' => $payload['role'],
+                'password' => $payload['identity_number'],
+                'role' => 'student',
                 'status' => 'active',
                 'must_change_password' => true,
             ]);
 
-            if ($class && $user->isStudent()) {
-                ClassStudent::create([
-                    'class_id' => $class->id,
-                    'student_id' => $user->id,
-                    'academic_year_id' => $class->academic_year_id,
-                    'joined_at' => now()->toDateString(),
-                    'status' => 'active',
-                ]);
-            }
+            ClassStudent::create([
+                'class_id' => $class->id,
+                'student_id' => $user->id,
+                'academic_year_id' => $class->academic_year_id,
+                'joined_at' => now()->toDateString(),
+                'status' => 'active',
+            ]);
+
 
             ImportBatchRow::create([
                 'import_batch_id' => $batch->id,
@@ -276,9 +251,9 @@ class ImportService
             }
         }
 
-        if (array_key_exists('role', $payload)) {
-            $payload['role'] = $this->normalizeRole($payload['role']);
-        }
+        // Impor khusus siswa: peran dipaksa, kolom Kata Sandi file lama diabaikan.
+        unset($payload['password']);
+        $payload['role'] = 'student';
 
         if (array_key_exists('class_id', $payload) && $payload['class_id'] !== null) {
             $raw = trim((string) $payload['class_id']);
@@ -294,14 +269,10 @@ class ImportService
 
     private function validateRow(array $payload): ?string
     {
-        foreach (['name', 'identity_number', 'role'] as $field) {
+        foreach (['name', 'identity_number'] as $field) {
             if (blank($payload[$field] ?? null)) {
                 return "Kolom {$field} wajib diisi";
             }
-        }
-
-        if (! in_array($payload['role'], ['student', 'counselor'], true)) {
-            return 'Peran tidak dikenal';
         }
 
         if (! blank($payload['email'] ?? null) && ! filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
@@ -316,24 +287,23 @@ class ImportService
             return 'Email sudah terdaftar';
         }
 
-        if ($payload['role'] === 'student') {
-            $class = $this->resolveClassForRow($payload);
+        $class = $this->resolveClassForRow($payload);
 
-            if ($class === null) {
-                if (! blank($payload['class_id'] ?? null)) {
-                    return 'ID kelas tidak ditemukan atau sudah diarsip';
-                }
-
-                if (blank($payload['class_name'] ?? null)) {
-                    return 'Kelas wajib untuk siswa';
-                }
-
-                return 'Kelas tidak ditemukan';
+        if ($class === null) {
+            if (! blank($payload['class_id'] ?? null)) {
+                return 'ID kelas tidak ditemukan atau sudah diarsip';
             }
+
+            if (blank($payload['class_name'] ?? null)) {
+                return 'Kelas wajib untuk siswa';
+            }
+
+            return 'Kelas tidak ditemukan';
         }
 
         return null;
     }
+
 
     private function resolveClassForRow(array $payload): ?SchoolClass
     {

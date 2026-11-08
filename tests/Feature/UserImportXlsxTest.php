@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class UserImportXlsxTest extends TestCase
@@ -65,11 +66,11 @@ class UserImportXlsxTest extends TestCase
             ->assertStatus(202);
     }
 
-    public function test_xlsx_header_indonesia_dan_id_kelas_membuat_siswa(): void
+    public function test_xlsx_empat_kolom_membuat_siswa_dengan_password_nis(): void
     {
         $this->importAsAdmin($this->xlsxFile([
-            ['Nama', 'NIS/NIP', 'Peran', 'Email', 'Kata Sandi', 'ID Kelas'],
-            ['Ayu Lestari', '2024001', 'siswa', '', '', (string) $this->class->id],
+            ['Nama', 'NIS/NIP', 'Email', 'ID Kelas'],
+            ['Ayu Lestari', '2024001', '', (string) $this->class->id],
         ]));
 
         $batch = ImportBatch::firstOrFail();
@@ -78,32 +79,51 @@ class UserImportXlsxTest extends TestCase
 
         $user = User::where('identity_number', '2024001')->firstOrFail();
         $this->assertSame('student', $user->role);
+        $this->assertTrue(Hash::check('2024001', $user->password));
         $this->assertTrue($user->must_change_password);
 
         $membership = ClassStudent::where('student_id', $user->id)->firstOrFail();
         $this->assertSame($this->class->id, $membership->class_id);
     }
 
-    public function test_xlsx_peran_guru_bk_tanpa_kelas_berhasil(): void
+    public function test_xlsx_file_lama_enam_kolom_peran_dan_sandi_diabaikan(): void
     {
         $this->importAsAdmin($this->xlsxFile([
             ['Nama', 'NIS/NIP', 'Peran', 'Email', 'Kata Sandi', 'ID Kelas'],
-            ['Budi Santoso', '198501012010', 'guru bk', 'budi@sekolah.sch.id', '', ''],
+            ['Budi Santoso', '198501012010', 'guru bk', 'budi@sekolah.sch.id', 'Rahasia123', (string) $this->class->id],
         ]));
 
         $batch = ImportBatch::firstOrFail();
         $this->assertSame(1, $batch->success_rows);
 
         $user = User::where('identity_number', '198501012010')->firstOrFail();
-        $this->assertSame('counselor', $user->role);
-        $this->assertSame(0, ClassStudent::where('student_id', $user->id)->count());
+        $this->assertSame('student', $user->role);
+        $this->assertTrue(Hash::check('198501012010', $user->password));
+        $this->assertFalse(Hash::check('Rahasia123', $user->password));
+    }
+
+    public function test_xlsx_tanpa_id_kelas_ditolak(): void
+    {
+        $this->importAsAdmin($this->xlsxFile([
+            ['Nama', 'NIS/NIP', 'Email', 'ID Kelas'],
+            ['Citra Dewi', '2024003', '', ''],
+        ]));
+
+        $batch = ImportBatch::firstOrFail();
+        $this->assertSame(0, $batch->success_rows);
+        $this->assertSame(1, $batch->failed_rows);
+        $this->assertSame(
+            'Kelas wajib untuk siswa',
+            $batch->rows()->firstOrFail()->error_message
+        );
+        $this->assertNull(User::where('identity_number', '2024003')->first());
     }
 
     public function test_xlsx_id_kelas_tak_ada_ditolak_dengan_pesan_jelas(): void
     {
         $this->importAsAdmin($this->xlsxFile([
-            ['Nama', 'NIS/NIP', 'Peran', 'Email', 'Kata Sandi', 'ID Kelas'],
-            ['Citra Dewi', '2024003', 'siswa', '', '', '999999'],
+            ['Nama', 'NIS/NIP', 'Email', 'ID Kelas'],
+            ['Dimas Anggara', '2024004', '', '999999'],
         ]));
 
         $batch = ImportBatch::firstOrFail();
@@ -113,24 +133,6 @@ class UserImportXlsxTest extends TestCase
             'ID kelas tidak ditemukan atau sudah diarsip',
             $batch->rows()->firstOrFail()->error_message
         );
-        $this->assertNull(User::where('identity_number', '2024003')->first());
-    }
-
-    public function test_csv_inggris_nama_kelas_lama_tetap_kompatibel(): void
-    {
-        $csv = "name,identity_number,role,email,password,class_name\nDimas Anggara,2024004,student,,,\"X IPA 1\"\n";
-
-        $this->actingAs($this->admin)
-            ->withoutMiddleware(\App\Http\Middleware\EnsureTwoFactor::class)
-            ->postJson('/api/admin/users/import', [
-                'file' => UploadedFile::fake()->createWithContent('lama.csv', $csv),
-            ])
-            ->assertStatus(202);
-
-        $batch = ImportBatch::firstOrFail();
-        $this->assertSame(1, $batch->success_rows);
-
-        $user = User::where('identity_number', '2024004')->firstOrFail();
-        $this->assertSame($this->class->id, ClassStudent::where('student_id', $user->id)->firstOrFail()->class_id);
+        $this->assertNull(User::where('identity_number', '2024004')->first());
     }
 }

@@ -212,7 +212,7 @@ export default function Users() {
     const importCsv = async (file) => {
         const decision = await confirm({
             title: 'Impor akun dari file?',
-            description: 'CSV atau XLSX dengan header bahasa Indonesia. Akun hasil impor langsung aktif. Kata sandi awal memakai NIS/NIP, atau kolom "Kata Sandi" bila diisi. ID Kelas wajib untuk siswa (lihat halaman Kelas).',
+            description: 'Impor khusus siswa dari CSV atau XLSX. Kata sandi awal selalu NIS siswa. ID Kelas wajib (lihat halaman Kelas). Guru BK ditambahkan manual lewat tombol Tambah akun.',
             details: [{ label: 'Berkas', value: file.name }],
             confirmLabel: 'Impor',
             tone: 'warning',
@@ -236,16 +236,17 @@ export default function Users() {
 
     const downloadTemplate = () => {
         const rows = [
-            ['Nama', 'NIS/NIP', 'Peran', 'Email', 'Kata Sandi', 'ID Kelas'],
-            ['Ayu Lestari', '2024001', 'siswa', '', '', '1'],
-            ['Budi Santoso', '198501012010', 'guru bk', 'budi@sekolah.sch.id', '', ''],
+            ['Nama', 'NIS/NIP', 'Email', 'ID Kelas'],
+            ['Ayu Lestari', '2024001', '', '1'],
+            ['Budi Santoso', '198501012010', 'budi@sekolah.sch.id', '1'],
         ];
         const sheet = XLSX.utils.aoa_to_sheet(rows);
-        sheet['!cols'] = [{ wch: 24 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 10 }];
+        sheet['!cols'] = [{ wch: 24 }, { wch: 18 }, { wch: 30 }, { wch: 10 }];
         const book = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(book, sheet, 'Template');
         XLSX.writeFile(book, 'template-impor-akun.xlsx');
     };
+
 
 
     return (
