@@ -3,10 +3,10 @@ set -e
 
 # Fix permissions on every start (host volume may override)
 mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache storage/app/public database public/build
-# Pulihkan build Vite dari cadangan image bila mount ./public/build masih kosong
-# (gitignored sehingga tidak ikut git clone): salin ulang dari /opt/build-baked.
-if [ -d /opt/build-baked ] && [ ! -f public/build/manifest.json ]; then
-  echo ">> Restoring baked frontend build to ./public/build"
+# Salin build Vite dari cadangan image ke volume bersama bila volume kosong
+# atau lebih lama dari build bawaan image (tiap rilis hash aset berubah).
+if [ -d /opt/build-baked ] && { [ ! -f public/build/manifest.json ] || [ /opt/build-baked/manifest.json -nt public/build/manifest.json ]; }; then
+  echo ">> Syncing baked frontend build to shared volume"
   cp -a /opt/build-baked/. public/build/ && chown -R www-data:www-data public/build 2>/dev/null || true
 fi
 
