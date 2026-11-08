@@ -1,0 +1,177 @@
+# Produksi VPS — image jadi dari GHCR, tanpa build di server.
+# Proteksi tetangga: semua container_name berprefix sadar-, port host 3311/6382,
+# nginx tanpa port host (diakses via NPM di network rotasi_rotasi).
+# .env produksi (tidak di-commit) diletakkan sejajar file ini di /root/sadar-diri.
+name: sadar-diri
+
+services:
+  app:
+    image: ghcr.io/radacore/sadar-diri:latest
+    container_name: sadar-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: "${DB_CONNECTION:-mysql}"
+      DB_HOST: "${DB_HOST:-mysql}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-sadar}"
+      DB_USERNAME: "${DB_USERNAME:-sadar}"
+      DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD belum diisi di .env}"
+      CACHE_STORE: "${CACHE_STORE:-redis}"
+      SESSION_DRIVER: "${SESSION_DRIVER:-redis}"
+      QUEUE_CONNECTION: "${QUEUE_CONNECTION:-redis}"
+      REDIS_HOST: "${REDIS_HOST:-redis}"
+      REDIS_PORT: "${REDIS_PORT:-6379}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-null}"
+      FILESYSTEM_DISK: "${FILESYSTEM_DISK:-s3}"
+      SADAR_UPLOAD_DISK: "${SADAR_UPLOAD_DISK:-s3}"
+    volumes:
+      - ./.env:/var/www/html/.env
+      - ./public/build:/var/www/html/public/build:ro
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sadar
+    healthcheck:
+      test: ["CMD", "php", "artisan", "about"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sadar-nginx
+    restart: unless-stopped
+    expose:
+      - "80"
+    volumes:
+      - ./public:/var/www/html/public:ro
+      - ./storage/app/public:/var/www/html/storage/app/public:ro
+      - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public/build:/var/www/html/public/build:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - sadar
+      - rotasi
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  mysql:
+    image: mysql:8.0
+    container_name: sadar-mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD belum diisi di .env}"
+      MYSQL_DATABASE: "${DB_DATABASE:-sadar}"
+      MYSQL_USER: "${DB_USERNAME:-sadar}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD belum diisi di .env}"
+    ports:
+      - "3311:3306" # 3311 agar tidak bentrok 3307-3310 milik tetangga
+    volumes:
+      - sadar_mysql_data:/var/lib/mysql
+    networks:
+      - sadar
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sadar-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6382:6379" # 6382 agar tidak bentrok 6380-6381 milik tetangga
+    volumes:
+      - sadar_redis_data:/data
+    networks:
+      - sadar
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  queue:
+    image: ghcr.io/radacore/sadar-diri:latest
+    container_name: sadar-queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: "${DB_CONNECTION:-mysql}"
+      DB_HOST: "${DB_HOST:-mysql}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-sadar}"
+      DB_USERNAME: "${DB_USERNAME:-sadar}"
+      DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD belum diisi di .env}"
+      CACHE_STORE: "${CACHE_STORE:-redis}"
+      SESSION_DRIVER: "${SESSION_DRIVER:-redis}"
+      QUEUE_CONNECTION: "${QUEUE_CONNECTION:-redis}"
+      REDIS_HOST: "${REDIS_HOST:-redis}"
+      REDIS_PORT: "${REDIS_PORT:-6379}"
+    volumes:
+      - ./.env:/var/www/html/.env
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - sadar
+
+  scheduler:
+    image: ghcr.io/radacore/sadar-diri:latest
+    container_name: sadar-scheduler
+    restart: unless-stopped
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: "${DB_CONNECTION:-mysql}"
+      DB_HOST: "${DB_HOST:-mysql}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-sadar}"
+      DB_USERNAME: "${DB_USERNAME:-sadar}"
+      DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD belum diisi di .env}"
+      CACHE_STORE: "${CACHE_STORE:-redis}"
+      REDIS_HOST: "${REDIS_HOST:-redis}"
+      REDIS_PORT: "${REDIS_PORT:-6379}"
+    volumes:
+      - ./.env:/var/www/html/.env
+      - ./storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - sadar
+
+volumes:
+  sadar_mysql_data:
+    driver: local
+  sadar_redis_data:
+    driver: local
+
+networks:
+  sadar:
+    driver: bridge
+  rotasi:
+    external: true
+    name: rotasi_rotasi
