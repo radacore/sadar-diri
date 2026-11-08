@@ -240,7 +240,7 @@ export default function Classes() {
                         <Card key={item.id}>
                             <div className="mb-2 flex items-start justify-between gap-2">
                                 <div>
-                                    <p className="text-[15px] font-bold">{item.name}</p>
+                                    <p className="text-[15px] font-bold">{item.name} <span className="ml-1 inline-flex items-center rounded-full bg-[#eef2ff] px-2 py-0.5 align-middle text-[11px] font-bold text-[#3f51b5]">ID {item.id}</span></p>
                                     <p className="text-[11px] text-[#475569]">Tahun {item.academic_year} · {item.students_count} siswa</p>
                                     <p className="text-[11px] text-[#475569]">Wali kelas: {item.homeroom_teacher_name || 'belum diisi'}</p>
                                 </div>

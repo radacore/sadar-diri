@@ -322,13 +322,15 @@ class UserController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:2048'],
         ]);
 
         $file = $request->file('file');
+        $ext = strtolower($file->getClientOriginalExtension());
+        $ext = in_array($ext, ['csv', 'txt', 'xlsx'], true) ? $ext : 'csv';
 
         try {
-            $path = $file->storeAs('private/imports', Str::uuid().'.csv', config('filesystems.upload_disk', 'local'));
+            $path = $file->storeAs('private/imports', Str::uuid().'.'.$ext, config('filesystems.upload_disk', 'local'));
         } catch (\Throwable $e) {
             report($e);
 

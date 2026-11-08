@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { Badge, Button, Card, CardTitle, Chip, EmptyState, Field, IconButton, Input, Modal, Pagination, PasswordInput, Select, Skeleton, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api, download } from '../../lib/api';
@@ -210,8 +211,8 @@ export default function Users() {
 
     const importCsv = async (file) => {
         const decision = await confirm({
-            title: 'Impor akun dari CSV?',
-            description: 'Akun hasil impor langsung aktif. Kata sandi awal memakai NIS/NIP, atau kolom "password" bila diisi.',
+            title: 'Impor akun dari file?',
+            description: 'CSV atau XLSX dengan header bahasa Indonesia. Akun hasil impor langsung aktif. Kata sandi awal memakai NIS/NIP, atau kolom "Kata Sandi" bila diisi. ID Kelas wajib untuk siswa (lihat halaman Kelas).',
             details: [{ label: 'Berkas', value: file.name }],
             confirmLabel: 'Impor',
             tone: 'warning',
@@ -234,19 +235,18 @@ export default function Users() {
     };
 
     const downloadTemplate = () => {
-        const header = 'name,identity_number,role,email,password,class_name';
         const rows = [
-            'Ayu Lestari,2024001,student,,,"X IPA 1"',
-            'Budi Santoso,198501012010,counselor,budi@sekolah.sch.id,,',
+            ['Nama', 'NIS/NIP', 'Peran', 'Email', 'Kata Sandi', 'ID Kelas'],
+            ['Ayu Lestari', '2024001', 'siswa', '', '', '1'],
+            ['Budi Santoso', '198501012010', 'guru bk', 'budi@sekolah.sch.id', '', ''],
         ];
-        const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'template-impor-akun.csv';
-        link.click();
-        URL.revokeObjectURL(url);
+        const sheet = XLSX.utils.aoa_to_sheet(rows);
+        sheet['!cols'] = [{ wch: 24 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 10 }];
+        const book = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(book, sheet, 'Template');
+        XLSX.writeFile(book, 'template-impor-akun.xlsx');
     };
+
 
     return (
         <AppShell
@@ -256,8 +256,8 @@ export default function Users() {
                 <>
                     <Button variant="outline" onClick={downloadTemplate}>Unduh template</Button>
                     <label className="sd-btn sd-btn-outline cursor-pointer">
-                        Impor CSV
-                        <input type="file" accept=".csv" className="sr-only" onChange={(event) => {
+                        Impor
+                        <input type="file" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={(event) => {
                             const file = event.target.files?.[0];
                             if (file) importCsv(file);
                             event.target.value = '';
