@@ -61,7 +61,7 @@ services:
       - sadar
       - rotasi
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/up"]
+      test: ["CMD-SHELL", "wget -qO- --header='Host: sadar-diri.my.id' http://127.0.0.1/up || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
