@@ -233,12 +233,28 @@ export default function Users() {
         }
     };
 
+    const downloadTemplate = () => {
+        const header = 'name,identity_number,role,email,password,class_name';
+        const rows = [
+            'Ayu Lestari,2024001,student,,,"X IPA 1"',
+            'Budi Santoso,198501012010,counselor,budi@sekolah.sch.id,,',
+        ];
+        const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'template-impor-akun.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <AppShell
             title="Akun pengguna"
             subtitle="Kelola siswa dan Guru BK"
             actions={
                 <>
+                    <Button variant="outline" onClick={downloadTemplate}>Unduh template</Button>
                     <label className="sd-btn sd-btn-outline cursor-pointer">
                         Impor CSV
                         <input type="file" accept=".csv" className="sr-only" onChange={(event) => {
@@ -256,12 +272,12 @@ export default function Users() {
                     <CardTitle>Pengguna</CardTitle>
                     <div className="flex flex-1 flex-wrap justify-end gap-2">
                         <Input className="h-9 w-full max-w-[220px] text-[12px]" placeholder="Cari nama/email/NIS" value={filters.search} onChange={(event) => changeFilter('search', event.target.value)} />
-                        <select className="sd-input h-9 w-auto px-3 text-[12px]" value={filters.role} onChange={(event) => changeFilter('role', event.target.value)} aria-label="Filter peran">
+                        <select className="sd-input h-9 w-[150px] flex-none px-3 pr-10 text-[12px]" value={filters.role} onChange={(event) => changeFilter('role', event.target.value)} aria-label="Filter peran">
                             <option value="">Semua peran</option>
                             <option value="student">Siswa</option>
                             <option value="counselor">Guru BK</option>
                         </select>
-                        <select className="sd-input h-9 w-auto px-3 text-[12px]" value={filters.status} onChange={(event) => changeFilter('status', event.target.value)} aria-label="Filter status">
+                        <select className="sd-input h-9 w-[150px] flex-none px-3 pr-10 text-[12px]" value={filters.status} onChange={(event) => changeFilter('status', event.target.value)} aria-label="Filter status">
                             <option value="">Semua status</option>
                             <option value="active">Aktif</option>
                             <option value="pending">Menunggu</option>
