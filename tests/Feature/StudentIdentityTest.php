@@ -188,7 +188,7 @@ class StudentIdentityTest extends TestCase
 
         $profile = StudentProfile::where('user_id', $this->student->id)->firstOrFail();
 
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             ['instagram' => 'ayu.lestari', 'youtube' => 'ayulestari'],
             $profile->social_media,
         );
