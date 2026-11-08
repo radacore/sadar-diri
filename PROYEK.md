@@ -481,7 +481,7 @@ Validasi per baris: peran dikenal (`student`/`counselor`), format email, NIS/NIP
 
 ## 9. Email
 
-Semua email transaksional lewat Resend.
+Semua email transaksional lewat Resend **khusus produksi**; lokal memakai Mailpit (`MAIL_MAILER=smtp` ke `127.0.0.1:1025`, UI `http://localhost:8025` via `docker compose up -d mailpit`). Produksi tanpa `RESEND_API_KEY` menolak boot (`Konfigurasi email produksi belum lengkap.`).
 
 | Mailable | Pemicu |
 |---|---|
@@ -499,7 +499,7 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 - Alamat pengirim **tidak** ditulis di Mailable/Notification/Controller; diambil dari `config/mail.php` (`mail.from`). Ganti lewat `.env` + `php artisan config:clear`.
 - `notifikasi@` khusus email keluar; tanpa record MX, jadi balasan akan memantul (footer memuat "Jangan balas email ini").
-- **Fallback pengembangan**: `AppServiceProvider::boot()` mengalihkan mailer ke `log` bila `MAIL_MAILER=resend` tetapi `RESEND_API_KEY` kosong, sehingga alur login/reset tetap bisa diuji. Log ditulis ke `storage/logs/laravel.log`.
+- **Fallback pengembangan**: `AppServiceProvider::boot()` mengalihkan mailer ke `log` bila di lokal `MAIL_MAILER` masih `resend` tetapi `RESEND_API_KEY` kosong, sehingga alur login/reset tetap bisa diuji tanpa Mailpit. Log ditulis ke `storage/logs/laravel.log`.
 - Notifikasi in-app memakai tabel `notifications` lewat `AppNotification`; kanal diatur `users.notification_channel` (`in_app` atau `email_and_in_app`).
 
 ---
@@ -583,7 +583,7 @@ Pengembangan: `npm run dev` + `php artisan serve`. Ada juga `composer setup` (in
 | `SESSION_DRIVER` | `database` |
 | `QUEUE_CONNECTION` | `database` |
 | `CACHE_STORE` | `database` |
-| `MAIL_MAILER` | `resend` (otomatis jadi `log` tanpa API key) |
+| `MAIL_MAILER` | `resend` produksi / `smtp` lokal via Mailpit (`127.0.0.1:1025`) |
 | `MAIL_FROM_ADDRESS` | `notifikasi@sadar-diri.my.id` |
 | `APP_TIMEZONE` (via settings) | `Asia/Jakarta` |
 
@@ -660,7 +660,7 @@ Hal-hal berikut sudah diputuskan dan jangan diubah tanpa persetujuan pemilik pro
 
 - 2FA hanya tersedia untuk superadmin; siswa dan Guru BK mengandalkan sandi + pembatasan percobaan.
 - Ganti sandi siswa belum memaksa logout sesi lain yang masih aktif.
-- Notifikasi email bergantung pada Resend; tanpa API key, email hanya masuk log.
+- Notifikasi email memakai Resend khusus produksi; lokal via Mailpit (fallback `log` bila mailer masih `resend` tanpa API key).
 - Lampiran dan CSV impor memakai disk `SADAR_UPLOAD_DISK` (NevaObjects S3 `sadar-diri-lokal` di produksi); belum ada pemindaian malware atau pembatasan kuota per pengguna selain pencatatan `size_bytes`.
 - Belum ada antrean worker nyata untuk impor: `QUEUE_CONNECTION=database`, tetapi pemrosesan impor berjalan sinkron di request.
 - `tests/Unit/ExampleTest.php` masih placeholder.

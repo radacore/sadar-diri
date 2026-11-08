@@ -63,16 +63,9 @@ Balasan jurnal dan perubahan profil oleh Guru BK tercatat di audit log. Siswa da
 - **Konfirmasi aksi** (`useConfirm` dari `Components/UI.jsx`): semua aksi yang mengubah data atau mengakhiri sesi melewati dialog konfirmasi. `requireReason` menggantikan `window.prompt` untuk aksi yang dicatat di audit log; nilainya tersedia sebagai `decision.reason`.
 - **Warna tombol**: `primary` (simpan/buat), `success` (verifikasi/setujui/selesaikan), `danger` (hapus/tolak/cabut), `warning` (aksi massal & tak dapat dibatalkan), `info` (ekspor/unduh), `outline`/`soft`/`ghost` untuk aksi sekunder. Aksi baris tabel memakai `IconButton` agar tidak membungkus.
 
-## Email (Resend)
+## Email (Resend produksi, Mailpit lokal)
 
-Semua email transaksional dikirim lewat [Resend](https://resend.com):
-
-| Email | Pemicu |
-|---|---|
-| `LoginOtpMail` | Login Superadmin — kode OTP 6 digit |
-| `PasswordResetMail` | Lupa kata sandi (siswa, Guru BK, Superadmin) dan reset oleh admin |
-
-Konfigurasi di `.env`:
+Semua email transaksional — `LoginOtpMail` (OTP login Superadmin) dan `PasswordResetMail` (lupa/reset kata sandi semua peran) — dikirim lewat [Resend](https://resend.com) **hanya di produksi**:
 
 ```dotenv
 MAIL_MAILER=resend
@@ -81,15 +74,24 @@ MAIL_FROM_ADDRESS="notifikasi@sadar-diri.my.id"
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-Domain `sadar-diri.my.id` sudah terverifikasi di Resend (region `ap-northeast-1`), sehingga pengiriman bisa dilakukan ke alamat mana pun, bukan hanya email pemilik akun Resend.
+Domain `sadar-diri.my.id` sudah terverifikasi di Resend (region `ap-northeast-1`), sehingga pengiriman bisa dilakukan ke alamat mana pun, bukan hanya email pemilik akun Resend. Bila `APP_ENV=production` tetapi mailer bukan `resend` atau API key kosong, aplikasi menolak boot dengan pesan `Konfigurasi email produksi belum lengkap.`
 
-Alamat pengirim **tidak** ditulis di Mailable, Notification, maupun Controller. Kedua Mailable (`LoginOtpMail`, `PasswordResetMail`) hanya menetapkan subjek, sehingga `from` selalu diambil dari `mail.from` di `config/mail.php`. Untuk mengganti pengirim cukup ubah `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` di `.env` lalu jalankan `php artisan config:clear`.
+**Pengembangan lokal** memakai [Mailpit](https://mailpit.axllent.org/) lewat `docker compose`:
+
+```bash
+docker compose up -d mailpit
+# UI: http://localhost:8025 — OTP dan tautan reset dibaca di sini
+```
+
+`.env` lokal memakai `MAIL_MAILER=smtp` ke `127.0.0.1:1025` dan `RESEND_API_KEY` **dikosongkan** agar tidak ada email yang keluar via Resend. Kode tetap `SADAR_DEV_OTP_CODE` tetap berlaku bila diisi.
+
+Alamat pengirim **tidak** ditulis di Mailable, Notification, maupun Controller. Kedua Mailable hanya menetapkan subjek, sehingga `from` selalu diambil dari `mail.from` di `config/mail.php`. Untuk mengganti pengirim cukup ubah `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` di `.env` lalu jalankan `php artisan config:clear`.
 
 Alamat `notifikasi@` khusus untuk email keluar (kode verifikasi dan tautan reset kata sandi). Footer setiap email memuat keterangan "Jangan balas email ini" karena kotak masuk alamat tersebut tidak dipantau; email yang masuk ke sana akan memantul (domain belum punya record MX).
 
 Kalau memakai domain lain, verifikasi dulu di dashboard Resend (record SPF/DKIM), lalu ganti `MAIL_FROM_ADDRESS` ke alamat di domain tersebut.
 
-Selama `RESEND_API_KEY` kosong, `AppServiceProvider` otomatis mengalihkan mailer ke `log` supaya alur login dan reset tetap bisa diuji tanpa mengirim email.
+Selama `RESEND_API_KEY` kosong **dan** mailer masih `resend` di lokal, `AppServiceProvider` otomatis mengalihkan mailer ke `log` supaya alur login dan reset tetap bisa diuji tanpa Mailpit.
 
 ## Privasi & keamanan
 

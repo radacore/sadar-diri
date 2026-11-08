@@ -29,6 +29,32 @@ class EmailAuthTest extends TestCase
         ]);
     }
 
+    public function test_production_boot_requires_resend_configuration(): void
+    {
+        $provider = new \App\Providers\AppServiceProvider($this->app);
+
+        $this->app->detectEnvironment(fn () => 'production');
+        config(['mail.default' => 'smtp', 'services.resend.key' => null]);
+
+        try {
+            $provider->boot();
+            $this->fail('Boot produksi tanpa Resend harus gagal.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Konfigurasi email produksi belum lengkap.', $e->getMessage());
+        } finally {
+            $this->app->detectEnvironment(fn () => 'testing');
+        }
+
+        config(['mail.default' => 'resend', 'services.resend.key' => 'test-key']);
+        $this->app->detectEnvironment(fn () => 'production');
+        try {
+            $provider->boot();
+            $this->addToAssertionCount(1);
+        } finally {
+            $this->app->detectEnvironment(fn () => 'testing');
+        }
+    }
+
     public function test_superadmin_login_sends_otp_to_email(): void
     {
         Mail::fake();

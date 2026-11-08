@@ -14,14 +14,23 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Tanpa API key, Resend akan melempar error pada setiap email.
-        // Saat pengembangan, email ditulis ke log agar alur tetap bisa diuji.
+        // Produksi wajib memakai Resend dengan API key terisi; gagal cepat
+        // saat boot agar tidak ada email yang terkirim diam-diam via mailer lain.
+        if ($this->app->environment('production')) {
+            if (config('mail.default') !== 'resend' || blank(config('services.resend.key'))) {
+                Log::warning('Konfigurasi email produksi belum lengkap.');
+
+                throw new \RuntimeException('Konfigurasi email produksi belum lengkap.');
+            }
+
+            return;
+        }
+
+        // Lokal: tanpa API key, Resend akan melempar error pada setiap email.
+        // Alihkan ke log agar alur tetap bisa diuji tanpa Mailpit.
         if (config('mail.default') === 'resend' && blank(config('services.resend.key'))) {
             config(['mail.default' => 'log']);
-
-            if ($this->app->environment('local')) {
-                Log::warning('RESEND_API_KEY belum diisi. Email dialihkan ke driver log.');
-            }
+            Log::warning('RESEND_API_KEY belum diisi. Email dialihkan ke driver log.');
         }
     }
 }

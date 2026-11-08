@@ -50,7 +50,7 @@ export default function Forgot() {
                 ) : null}
                 <Button type="submit" variant="mauve" className="w-full" disabled={busy}>{busy ? 'Mengirim…' : 'Kirim tautan reset'}</Button>
                 <p className="text-[11px] text-[#5b6b7f]">
-                    Di lingkungan lokal, email ditulis ke <code>storage/logs/laravel.log</code>.
+                    Di lingkungan lokal, baca email di Mailpit (<code>http://localhost:8025</code>).
                 </p>
             </form>
         </AuthLayout>
