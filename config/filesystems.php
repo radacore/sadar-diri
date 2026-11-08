@@ -13,7 +13,8 @@ return [
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 'local'),
+    'upload_disk' => env('SADAR_UPLOAD_DISK', 'local'),
+
 
     /*
     |--------------------------------------------------------------------------

@@ -6,6 +6,9 @@ use App\Models\Attachment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\UnableToCheckFileExistence;
+use League\Flysystem\UnableToReadFile;
+use League\Flysystem\UnableToRetrieveMetadata;
 
 class AttachmentController extends Controller
 {
@@ -23,10 +26,14 @@ class AttachmentController extends Controller
 
         abort_unless($allowed, 403);
 
-        abort_unless(Storage::disk($attachment->disk)->exists($attachment->path), 404);
+        try {
+            abort_unless(Storage::disk($attachment->disk)->exists($attachment->path), 404);
 
-        return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name, [
-            'Content-Type' => $attachment->mime_type,
-        ]);
+            return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name, [
+                'Content-Type' => $attachment->mime_type,
+            ]);
+        } catch (UnableToCheckFileExistence | UnableToReadFile | UnableToRetrieveMetadata $e) {
+            abort(404);
+        }
     }
 }

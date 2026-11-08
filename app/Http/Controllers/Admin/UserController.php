@@ -326,7 +326,22 @@ class UserController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->storeAs('private/imports', Str::uuid().'.csv', 'local');
+
+        try {
+            $path = $file->storeAs('private/imports', Str::uuid().'.csv', config('filesystems.upload_disk', 'local'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            $path = false;
+        }
+
+        if ($path === false) {
+            return response()->json([
+                'success' => false,
+                'error' => 'STORAGE_UNAVAILABLE',
+                'message' => 'Penyimpanan berkas sedang bermasalah. Coba lagi beberapa saat.',
+            ], 503);
+        }
 
         $batch = ImportBatch::create([
             'filename' => $file->getClientOriginalName(),
@@ -338,14 +353,14 @@ class UserController extends Controller
         $batch = $this->imports->handle($batch, $request->user());
 
         return response()->json([
-            'success' => true,
+            'success' => $batch->status !== 'failed',
             'data' => [
                 'batch_id' => $batch->id,
                 'status' => $batch->status,
                 'total_rows' => $batch->total_rows,
             ],
-            'message' => 'Impor selesai diproses',
-        ], 202);
+            'message' => $batch->status === 'failed' ? 'Berkas impor tidak dapat dibaca dari penyimpanan.' : 'Impor selesai diproses',
+        ], $batch->status === 'failed' ? 422 : 202);
     }
 
     public function importBatch(ImportBatch $batch)

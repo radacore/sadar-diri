@@ -110,16 +110,32 @@ class AchievementController extends Controller
         }
 
         $file = $request->file('file');
-        $path = $file->storeAs(
-            'private/achievements/'.$request->user()->id,
-            Str::uuid().'.'.$file->getClientOriginalExtension(),
-            'local',
-        );
+        $disk = $this->uploadDisk();
+
+        try {
+            $path = $file->storeAs(
+                'private/achievements/'.$request->user()->id,
+                Str::uuid().'.'.$file->getClientOriginalExtension(),
+                $disk,
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            $path = false;
+        }
+
+        if ($path === false) {
+            return response()->json([
+                'success' => false,
+                'error' => 'STORAGE_UNAVAILABLE',
+                'message' => 'Penyimpanan berkas sedang bermasalah. Coba lagi beberapa saat.',
+            ], 503);
+        }
 
         $attachment = Attachment::create([
             'achievement_id' => $achievement->id,
             'uploaded_by' => $request->user()->id,
-            'disk' => 'local',
+            'disk' => $disk,
             'path' => $path,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
@@ -180,6 +196,11 @@ class AchievementController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'is_competition' => ['sometimes', 'boolean'],
         ]);
+    }
+
+    private function uploadDisk(): string
+    {
+        return config('filesystems.upload_disk', 'local');
     }
 
     private function authorizeOwnership(Request $request, Achievement $achievement): void

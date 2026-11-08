@@ -413,7 +413,7 @@ Setiap alert memakai `dedupe_key` berformat `{student_id}:{trigger_type}:{YYYY-M
 
 - Siswa mengunggah prestasi → `pending`; Guru BK memverifikasi (`verified`) atau menolak dengan alasan (`rejected`).
 - Prestasi yang dibuat Guru BK langsung `verified`.
-- Lampiran disimpan di disk `local` dengan `checksum`; unduhan hanya lewat signed URL sementara.
+- Lampiran disimpan di disk `config('filesystems.upload_disk')` (`local`|default atau `s3` NevaObjects) dengan `checksum`; kolom `attachments.disk` mencatat disk tiap berkas; unduhan hanya lewat signed URL sementara yang di-proxy `AttachmentController`.
 - Ekspor portofolio tersedia untuk siswa.
 
 ### 7.8 Catatan konseling
@@ -661,7 +661,7 @@ Hal-hal berikut sudah diputuskan dan jangan diubah tanpa persetujuan pemilik pro
 - 2FA hanya tersedia untuk superadmin; siswa dan Guru BK mengandalkan sandi + pembatasan percobaan.
 - Ganti sandi siswa belum memaksa logout sesi lain yang masih aktif.
 - Notifikasi email bergantung pada Resend; tanpa API key, email hanya masuk log.
-- Lampiran disimpan di disk `local` (bukan S3); belum ada pemindaian malware atau pembatasan kuota per pengguna selain pencatatan `size_bytes`.
+- Lampiran dan CSV impor memakai disk `SADAR_UPLOAD_DISK` (NevaObjects S3 `sadar-diri-lokal` di produksi); belum ada pemindaian malware atau pembatasan kuota per pengguna selain pencatatan `size_bytes`.
 - Belum ada antrean worker nyata untuk impor: `QUEUE_CONNECTION=database`, tetapi pemrosesan impor berjalan sinkron di request.
 - `tests/Unit/ExampleTest.php` masih placeholder.
 - Dokumentasi ini tidak menggantikan `README.md` (ringkas, untuk pengguna baru) maupun `AGENTS.md` (panduan agen).

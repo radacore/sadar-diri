@@ -20,7 +20,17 @@ class ImportService
     {
         $batch->update(['status' => 'processing']);
 
-        $stream = Storage::disk('local')->readStream($batch->disk_path);
+        $stream = Storage::disk(config('filesystems.upload_disk', 'local'))->readStream($batch->disk_path);
+        if (! is_resource($stream)) {
+            $batch->update(['status' => 'failed', 'finished_at' => now()]);
+            $this->audit->record('user.imported', 'import_batches', $batch->id, null, null, [
+                'success' => 0,
+                'failed' => 0,
+                'error' => 'Berkas impor tidak dapat dibaca dari penyimpanan.',
+            ], $actor);
+
+            return $batch->fresh();
+        }
         $header = null;
         $rowNumber = 0;
         $success = 0;
