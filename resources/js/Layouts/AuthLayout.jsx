@@ -1,4 +1,3 @@
-import { Link } from '@inertiajs/react';
 import { BrandLockup } from '../Components/Icons';
 
 export default function AuthLayout({ title, subtitle, children, footer }) {
@@ -34,9 +33,6 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
                     {subtitle ? <p className="mt-1 text-[13px] text-[#475569]">{subtitle}</p> : null}
                     <div className="mt-6">{children}</div>
                     {footer ? <div className="mt-6 text-[12px] text-[#475569]">{footer}</div> : null}
-                    <p className="mt-8 text-[11px] text-[#5b6b7f]">
-                        <Link href="/" className="hover:text-[#3f51b5]">Kembali ke beranda</Link>
-                    </p>
                 </div>
             </div>
         </div>
