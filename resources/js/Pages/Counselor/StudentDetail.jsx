@@ -46,6 +46,8 @@ const emptyAchievement = {
 const emptyBiodata = {
     birth_date: '',
     birth_place: '',
+    nickname: '',
+    ethnicity: '',
     religion: '',
     family_status: '',
     gender: '',
@@ -61,6 +63,9 @@ const emptyBiodata = {
     nisn: '',
     birth_order: '',
     previous_school: '',
+    favorite_subject: '',
+    hobby: '',
+    dream: '',
     admission_class: '',
     admission_date: '',
     father_phone: '',
@@ -68,6 +73,8 @@ const emptyBiodata = {
     father_name: '',
     mother_name: '',
     parent_address: '',
+    father_address: '',
+    mother_address: '',
     father_occupation: '',
     mother_occupation: '',
     guardian_name: '',
@@ -142,6 +149,8 @@ export default function StudentDetail({ studentId }) {
             birth_place: biodata.birth_place ?? '',
             religion: biodata.religion ?? '',
             family_status: biodata.family_status ?? '',
+            nickname: biodata.nickname ?? '',
+            ethnicity: biodata.ethnicity ?? '',
             gender: biodata.gender ?? '',
             address: biodata.address ?? '',
             phone: biodata.phone ?? '',
@@ -155,6 +164,9 @@ export default function StudentDetail({ studentId }) {
             nisn: biodata.nisn ?? '',
             birth_order: biodata.birth_order ?? '',
             previous_school: biodata.previous_school ?? '',
+            favorite_subject: biodata.favorite_subject ?? '',
+            hobby: biodata.hobby ?? '',
+            dream: biodata.dream ?? '',
             admission_class: biodata.admission_class ?? '',
             admission_date: biodata.admission_date ?? '',
             father_phone: biodata.father_phone ?? '',
@@ -162,8 +174,8 @@ export default function StudentDetail({ studentId }) {
             father_name: biodata.father_name ?? '',
             mother_name: biodata.mother_name ?? '',
             parent_address: biodata.parent_address ?? '',
-            father_occupation: biodata.father_occupation ?? '',
-            mother_occupation: biodata.mother_occupation ?? '',
+            father_address: biodata.father_address ?? '',
+            mother_address: biodata.mother_address ?? '',
             guardian_name: biodata.guardian_name ?? '',
             guardian_phone: biodata.guardian_phone ?? '',
             guardian_address: biodata.guardian_address ?? '',
@@ -697,6 +709,8 @@ export default function StudentDetail({ studentId }) {
                             </CardTitle>
                             <dl className="space-y-2.5 text-[12.5px]">
                                 <div><dt className="font-semibold">Tempat, tanggal lahir</dt><dd className="text-[#475569]">{[biodataForm.birth_place, biodataForm.birth_date ? formatDate(biodataForm.birth_date) : null].filter(Boolean).join(', ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Nama panggilan</dt><dd className="break-words text-[#475569]">{biodataForm.nickname || '—'}</dd></div>
+                                <div><dt className="font-semibold">Suku</dt><dd className="break-words text-[#475569]">{biodataForm.ethnicity || '—'}</dd></div>
                                 <div><dt className="font-semibold">Agama</dt><dd className="text-[#475569]">{biodataForm.religion ? label('religion', biodataForm.religion) : '—'}</dd></div>
                                 <div><dt className="font-semibold">Status dalam keluarga</dt><dd className="text-[#475569]">{biodataForm.family_status ? label('familyStatus', biodataForm.family_status) : '—'}</dd></div>
                                 <div><dt className="font-semibold">Anak ke-</dt><dd className="text-[#475569]">{biodataForm.birth_order || '—'}</dd></div>
@@ -707,10 +721,14 @@ export default function StudentDetail({ studentId }) {
                                 <div><dt className="font-semibold">Telepon ayah</dt><dd className="break-words text-[#475569]">{biodataForm.father_phone || '—'}</dd></div>
                                 <div><dt className="font-semibold">Telepon ibu</dt><dd className="break-words text-[#475569]">{biodataForm.mother_phone || '—'}</dd></div>
                                 <div><dt className="font-semibold">Sekolah asal</dt><dd className="break-words text-[#475569]">{biodataForm.previous_school || '—'}</dd></div>
+                                <div><dt className="font-semibold">Mapel favorit</dt><dd className="break-words text-[#475569]">{biodataForm.favorite_subject || '—'}</dd></div>
+                                <div><dt className="font-semibold">Hobi</dt><dd className="break-words text-[#475569]">{biodataForm.hobby || '—'}</dd></div>
+                                <div><dt className="font-semibold">Cita-cita</dt><dd className="break-words text-[#475569]">{biodataForm.dream || '—'}</dd></div>
                                 <div><dt className="font-semibold">Diterima</dt><dd className="break-words text-[#475569]">{[biodataForm.admission_class, biodataForm.admission_date ? formatDate(biodataForm.admission_date) : null].filter(Boolean).join(' · ') || '—'}</dd></div>
                                 <div><dt className="font-semibold">Ayah</dt><dd className="break-words text-[#475569]">{[biodataForm.father_name, biodataForm.father_occupation].filter(Boolean).join(' · ') || '—'}</dd></div>
+                                <div><dt className="font-semibold">Alamat ayah</dt><dd className="break-words text-[#475569]">{(biodataForm.father_address ?? biodataForm.parent_address) || '—'}</dd></div>
                                 <div><dt className="font-semibold">Ibu</dt><dd className="break-words text-[#475569]">{[biodataForm.mother_name, biodataForm.mother_occupation].filter(Boolean).join(' · ') || '—'}</dd></div>
-                                <div><dt className="font-semibold">Alamat orang tua</dt><dd className="break-words text-[#475569]">{biodataForm.parent_address || '—'}</dd></div>
+                                <div><dt className="font-semibold">Alamat ibu</dt><dd className="break-words text-[#475569]">{(biodataForm.mother_address ?? biodataForm.parent_address) || '—'}</dd></div>
                                 <div><dt className="font-semibold">Wali</dt><dd className="break-words text-[#475569]">{[biodataForm.guardian_name, biodataForm.guardian_phone, biodataForm.guardian_occupation].filter(Boolean).join(' · ') || '—'}</dd></div>
                                 <div><dt className="font-semibold">Alamat wali</dt><dd className="break-words text-[#475569]">{biodataForm.guardian_address || '—'}</dd></div>
                                 {SOCIAL_PLATFORMS.filter((platform) => biodataForm.social_media?.[platform.key]).length > 0 ? (
@@ -831,6 +849,12 @@ export default function StudentDetail({ studentId }) {
                 <form id="profile-form" onSubmit={saveProfile} className="space-y-3">
                     <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Identitas</p>
                     <div className="grid grid-cols-2 gap-3">
+                        <Field label="Nama panggilan" htmlFor="bio-nickname">
+                            <Input id="bio-nickname" value={biodataForm.nickname} onChange={(event) => setBiodataForm({ ...biodataForm, nickname: event.target.value })} />
+                        </Field>
+                        <Field label="Suku" htmlFor="bio-ethnicity">
+                            <Input id="bio-ethnicity" value={biodataForm.ethnicity} onChange={(event) => setBiodataForm({ ...biodataForm, ethnicity: event.target.value })} />
+                        </Field>
                         <Field label="Tempat lahir" htmlFor="bio-birth-place">
                             <Input id="bio-birth-place" value={biodataForm.birth_place} onChange={(event) => setBiodataForm({ ...biodataForm, birth_place: event.target.value })} />
                         </Field>
@@ -909,6 +933,17 @@ export default function StudentDetail({ studentId }) {
                         <Input id="bio-school" value={biodataForm.previous_school} onChange={(event) => setBiodataForm({ ...biodataForm, previous_school: event.target.value })} />
                     </Field>
                     <div className="grid grid-cols-2 gap-3">
+                        <Field label="Mapel favorit" htmlFor="bio-subject">
+                            <Input id="bio-subject" value={biodataForm.favorite_subject} onChange={(event) => setBiodataForm({ ...biodataForm, favorite_subject: event.target.value })} />
+                        </Field>
+                        <Field label="Hobi" htmlFor="bio-hobby">
+                            <Input id="bio-hobby" value={biodataForm.hobby} onChange={(event) => setBiodataForm({ ...biodataForm, hobby: event.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Cita-cita" htmlFor="bio-dream">
+                        <Input id="bio-dream" value={biodataForm.dream} onChange={(event) => setBiodataForm({ ...biodataForm, dream: event.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
                         <Field label="Diterima di kelas" htmlFor="bio-admission-class">
                             <Input id="bio-admission-class" value={biodataForm.admission_class} onChange={(event) => setBiodataForm({ ...biodataForm, admission_class: event.target.value })} />
                         </Field>
@@ -926,6 +961,9 @@ export default function StudentDetail({ studentId }) {
                             <Input id="bio-father-job" value={biodataForm.father_occupation} onChange={(event) => setBiodataForm({ ...biodataForm, father_occupation: event.target.value })} />
                         </Field>
                     </div>
+                    <Field label="Alamat ayah" htmlFor="bio-father-address">
+                        <Textarea id="bio-father-address" rows={2} value={biodataForm.father_address ?? biodataForm.parent_address} onChange={(event) => setBiodataForm({ ...biodataForm, father_address: event.target.value })} />
+                    </Field>
                     <Field label="Telepon ayah" htmlFor="bio-father">
                         <Input id="bio-father" inputMode="tel" value={biodataForm.father_phone} onChange={(event) => setBiodataForm({ ...biodataForm, father_phone: event.target.value })} />
                     </Field>
@@ -937,11 +975,11 @@ export default function StudentDetail({ studentId }) {
                             <Input id="bio-mother-job" value={biodataForm.mother_occupation} onChange={(event) => setBiodataForm({ ...biodataForm, mother_occupation: event.target.value })} />
                         </Field>
                     </div>
+                    <Field label="Alamat ibu" htmlFor="bio-mother-address">
+                        <Textarea id="bio-mother-address" rows={2} value={biodataForm.mother_address ?? biodataForm.parent_address} onChange={(event) => setBiodataForm({ ...biodataForm, mother_address: event.target.value })} />
+                    </Field>
                     <Field label="Telepon ibu" htmlFor="bio-mother">
                         <Input id="bio-mother" inputMode="tel" value={biodataForm.mother_phone} onChange={(event) => setBiodataForm({ ...biodataForm, mother_phone: event.target.value })} />
-                    </Field>
-                    <Field label="Alamat orang tua" htmlFor="bio-parent-address">
-                        <Textarea id="bio-parent-address" rows={2} value={biodataForm.parent_address} onChange={(event) => setBiodataForm({ ...biodataForm, parent_address: event.target.value })} />
                     </Field>
 
                     <p className="pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Wali (opsional)</p>

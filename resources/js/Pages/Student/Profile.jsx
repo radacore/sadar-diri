@@ -201,6 +201,12 @@ export default function Profile() {
                                     <form onSubmit={saveBiodata} className="space-y-3">
                                         <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Identitas</p>
                                         <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Nama panggilan" htmlFor="nickname">
+                                                <Input id="nickname" className="h-11" value={biodata.nickname ?? ''} onChange={(e) => setBiodata({ ...biodata, nickname: e.target.value })} placeholder="mis. Ayu" />
+                                            </Field>
+                                            <Field label="Suku" htmlFor="ethnicity">
+                                                <Input id="ethnicity" className="h-11" value={biodata.ethnicity ?? ''} onChange={(e) => setBiodata({ ...biodata, ethnicity: e.target.value })} placeholder="mis. Bugis" />
+                                            </Field>
                                             <Field label="Tempat lahir" htmlFor="birth_place">
                                                 <Input id="birth_place" className="h-11" value={biodata.birth_place ?? ''} onChange={(e) => setBiodata({ ...biodata, birth_place: e.target.value })} placeholder="mis. Bulukumba" />
                                             </Field>
@@ -280,6 +286,17 @@ export default function Profile() {
                                             <Input id="previous_school" className="h-11" value={biodata.previous_school ?? ''} onChange={(e) => setBiodata({ ...biodata, previous_school: e.target.value })} placeholder="mis. SMP Negeri 1 Bulukumba" />
                                         </Field>
                                         <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Mapel favorit" htmlFor="favorite_subject">
+                                                <Input id="favorite_subject" className="h-11" value={biodata.favorite_subject ?? ''} onChange={(e) => setBiodata({ ...biodata, favorite_subject: e.target.value })} placeholder="mis. Matematika" />
+                                            </Field>
+                                            <Field label="Hobi" htmlFor="hobby">
+                                                <Input id="hobby" className="h-11" value={biodata.hobby ?? ''} onChange={(e) => setBiodata({ ...biodata, hobby: e.target.value })} placeholder="mis. Membaca" />
+                                            </Field>
+                                        </div>
+                                        <Field label="Cita-cita" htmlFor="dream">
+                                            <Input id="dream" className="h-11" value={biodata.dream ?? ''} onChange={(e) => setBiodata({ ...biodata, dream: e.target.value })} placeholder="mis. Dokter" />
+                                        </Field>
+                                        <div className="grid grid-cols-2 gap-3">
                                             <Field label="Diterima di kelas" htmlFor="admission_class">
                                                 <Input id="admission_class" className="h-11" value={biodata.admission_class ?? ''} onChange={(e) => setBiodata({ ...biodata, admission_class: e.target.value })} placeholder="mis. X IPA 1" />
                                             </Field>
@@ -297,6 +314,9 @@ export default function Profile() {
                                                 <Input id="father_occupation" className="h-11" value={biodata.father_occupation ?? ''} onChange={(e) => setBiodata({ ...biodata, father_occupation: e.target.value })} />
                                             </Field>
                                         </div>
+                                        <Field label="Alamat ayah" htmlFor="father_address">
+                                            <Textarea id="father_address" rows={2} value={biodata.father_address ?? biodata.parent_address ?? ''} onChange={(e) => setBiodata({ ...biodata, father_address: e.target.value })} placeholder="Kosongkan bila sama dengan alamat Anda" />
+                                        </Field>
                                         <Field label="Telepon ayah" htmlFor="father_phone">
                                             <Input id="father_phone" className="h-11" inputMode="tel" value={biodata.father_phone ?? ''} onChange={(e) => setBiodata({ ...biodata, father_phone: e.target.value })} placeholder="08xxxxxxxxxx" />
                                         </Field>
@@ -308,11 +328,11 @@ export default function Profile() {
                                                 <Input id="mother_occupation" className="h-11" value={biodata.mother_occupation ?? ''} onChange={(e) => setBiodata({ ...biodata, mother_occupation: e.target.value })} />
                                             </Field>
                                         </div>
+                                        <Field label="Alamat ibu" htmlFor="mother_address">
+                                            <Textarea id="mother_address" rows={2} value={biodata.mother_address ?? biodata.parent_address ?? ''} onChange={(e) => setBiodata({ ...biodata, mother_address: e.target.value })} placeholder="Kosongkan bila sama dengan alamat Anda" />
+                                        </Field>
                                         <Field label="Telepon ibu" htmlFor="mother_phone">
                                             <Input id="mother_phone" className="h-11" inputMode="tel" value={biodata.mother_phone ?? ''} onChange={(e) => setBiodata({ ...biodata, mother_phone: e.target.value })} placeholder="08xxxxxxxxxx" />
-                                        </Field>
-                                        <Field label="Alamat orang tua" htmlFor="parent_address">
-                                            <Textarea id="parent_address" rows={2} value={biodata.parent_address ?? ''} onChange={(e) => setBiodata({ ...biodata, parent_address: e.target.value })} placeholder="Kosongkan bila sama dengan alamat Anda" />
                                         </Field>
 
                                         <p className="pt-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#64748b]">Wali (opsional)</p>
