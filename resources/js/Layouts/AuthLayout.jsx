@@ -8,7 +8,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
                     <BrandLockup size={40} textSize={18} tone="light" gap={10} />
                     <div>
                         <p className="text-[24px] font-bold leading-tight tracking-tight">
-                            Media pendukung kesejahteraan psikologi siswa.
+                            Media pendukung kesejahteraan psikologis siswa.
                         </p>
                         <p className="mt-3 text-[13px] leading-relaxed text-[#cbd5e1]">
                             Catat emosi, refleksikan pekanmu, dan susun rencana. Data pribadimu terenkripsi dan hanya
@@ -18,7 +18,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
                     <div className="space-y-2 text-[12px] text-[#cbd5e1]">
                         <p>Enam aspek kesejahteraan psikologis Ryff</p>
                         <div className="flex flex-wrap gap-1.5">
-                            {['Penerimaan diri', 'Relasi positif', 'Kemandirian', 'Penguasaan diri', 'Tujuan hidup', 'Pertumbuhan'].map((tag) => (
+                            {['Penerimaan diri', 'Relasi positif', 'Kemandirian', 'Penguasaan Lingkungan', 'Tujuan hidup', 'Pertumbuhan'].map((tag) => (
                                 <span key={tag} className="rounded-full bg-white/10 px-2.5 py-1">{tag}</span>
                             ))}
                         </div>
