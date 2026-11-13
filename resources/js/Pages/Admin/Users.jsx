@@ -173,7 +173,7 @@ export default function Users() {
             details: [
                 { label: 'Pengguna', value: user.name },
                 { label: 'Kata sandi baru', value: user.identity_number },
-                { label: 'Catatan', value: 'Wajib diganti saat pengguna masuk berikutnya.' },
+                { label: 'Catatan', value: user.role === 'student' ? 'Siswa wajib menggantinya saat masuk berikutnya.' : 'Guru BK langsung bisa masuk dengan kata sandi baru.' },
             ],
             confirmLabel: 'Reset kata sandi',
             tone: 'warning',
@@ -403,7 +403,7 @@ export default function Users() {
                         <Input id="email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
                     </Field>
                     {form.role === 'counselor' ? (
-                        <Field label="Kata sandi awal" required htmlFor="password" hint="Minimal 10 karakter, memuat huruf besar, huruf kecil, dan angka. Wajib diganti saat Guru BK masuk pertama.">
+                        <Field label="Kata sandi awal" required htmlFor="password" hint="Minimal 10 karakter, memuat huruf besar, huruf kecil, dan angka. Guru BK langsung bisa masuk dengan kata sandi ini.">
                             <PasswordInput id="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required minLength={10} />
                             <button
                                 type="button"

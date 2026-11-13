@@ -166,6 +166,7 @@ class UserManagementTest extends TestCase
         $user = User::where('identity_number', '198801012021')->firstOrFail();
 
         $this->assertTrue(Hash::check('Password123', $user->password));
+        $this->assertFalse($user->must_change_password);
     }
 
     public function test_counselor_can_be_created_with_class_assignments(): void
@@ -190,6 +191,7 @@ class UserManagementTest extends TestCase
         $counselor = User::where('identity_number', '198801012020')->firstOrFail();
 
         $this->assertSame(2, CounselorClass::where('counselor_id', $counselor->id)->count());
+        $this->assertFalse($counselor->must_change_password);
 
         $this->actingAs($admin)
             ->withSession(['two_factor_passed' => true])
@@ -208,6 +210,41 @@ class UserManagementTest extends TestCase
                 'identity_number' => '2024101',
                 'role' => 'counselor',
                 'password' => 'rahasia',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('password');
+    }
+
+    public function test_counselor_login_skips_password_change_page(): void
+    {
+        $this->actingAs($this->admin())
+            ->withSession(['two_factor_passed' => true])
+            ->postJson('/api/admin/users', [
+                'name' => 'Guru BK Masuk',
+                'identity_number' => '198801012022',
+                'role' => 'counselor',
+                'password' => 'Password123',
+            ])
+            ->assertCreated();
+
+        $this->app['auth']->forgetGuards();
+
+        $this->postJson('/api/auth/login', [
+            'identity' => '198801012022',
+            'password' => 'Password123',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.redirect_to', '/bk/dashboard');
+    }
+
+    public function test_counselor_without_password_is_rejected(): void
+    {
+        $this->actingAs($this->admin())
+            ->withSession(['two_factor_passed' => true])
+            ->postJson('/api/admin/users', [
+                'name' => 'BK Tanpa Sandi',
+                'identity_number' => '198801012023',
+                'role' => 'counselor',
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('password');
@@ -254,6 +291,7 @@ class UserManagementTest extends TestCase
             ->assertOk();
 
         $this->assertTrue(Hash::check('198801012099', $counselor->fresh()->password));
+        $this->assertFalse($counselor->fresh()->must_change_password);
     }
 
     public function test_superadmin_password_cannot_be_reset_from_user_page(): void

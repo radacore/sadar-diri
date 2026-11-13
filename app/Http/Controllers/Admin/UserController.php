@@ -101,7 +101,7 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'regex:/^[0-9]{8,15}$/'],
             'identity_number' => ['required', 'string', 'max:30', 'unique:users,identity_number'],
             'role' => ['required', Rule::in(['student', 'counselor'])],
-            'password' => ['nullable', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
+            'password' => ['nullable', 'required_if:role,counselor', 'string', 'min:10', 'regex:/[a-z]/', 'regex:/[A-Z]/', 'regex:/[0-9]/'],
             'class_id' => ['nullable', 'exists:classes,id', 'required_if:role,student'],
             'class_ids' => ['nullable', 'array'],
             'class_ids.*' => ['integer', 'exists:classes,id'],
@@ -120,7 +120,7 @@ class UserController extends Controller
                 'password' => $data['password'] ?? $data['identity_number'],
                 'role' => $data['role'],
                 'status' => 'active',
-                'must_change_password' => true,
+                'must_change_password' => $data['role'] === 'student',
             ]);
 
             if (($data['class_id'] ?? null) && $user->isStudent()) {
@@ -259,7 +259,7 @@ class UserController extends Controller
 
         $user->forceFill([
             'password' => $user->identity_number,
-            'must_change_password' => true,
+            'must_change_password' => $user->isStudent(),
             'remember_token' => null,
         ])->save();
 
