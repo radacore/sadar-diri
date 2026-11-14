@@ -13,13 +13,15 @@ function randomPassword() {
     return `Sadar${digits}!`;
 }
 
+const classIdFromUrl = () => (typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('class_id') ?? '');
+
 export default function Users() {
     const toast = useToast();
     const confirm = useConfirm();
     const [users, setUsers] = useState([]);
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ search: '', role: '', status: '' });
+    const [filters, setFilters] = useState({ search: '', role: '', status: '', class_id: classIdFromUrl() });
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0, from: null, to: null });
@@ -60,6 +62,15 @@ export default function Users() {
         setFilters((current) => ({ ...current, [key]: value }));
         setPage(1);
     };
+    const changeClassFilter = (value) => {
+        setFilters((current) => ({ ...current, class_id: value }));
+        setPage(1);
+
+        if (typeof window !== 'undefined') {
+            window.history.replaceState({}, '', value ? `/admin/pengguna?class_id=${encodeURIComponent(value)}` : '/admin/pengguna');
+        }
+    };
+
 
     const toggleClass = (classId) => {
         setForm((current) => ({
@@ -285,8 +296,22 @@ export default function Users() {
                             <option value="inactive">Nonaktif</option>
                             <option value="alumni">Alumni</option>
                         </select>
+                        <select className="sd-input h-9 w-[170px] flex-none px-3 pr-10 text-[12px]" aria-label="Filter kelas" value={filters.class_id} onChange={(event) => changeClassFilter(event.target.value)}>
+                            <option value="">Semua kelas</option>
+                            {classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                            {filters.class_id && !classes.some((item) => String(item.id) === String(filters.class_id)) ? (
+                                <option value={filters.class_id}>Kelas #{filters.class_id}</option>
+                            ) : null}
+                        </select>
                     </div>
                 </div>
+
+                {filters.class_id ? (
+                    <div className="mx-4 mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-[#eef2ff] px-3 py-2 text-[12px] text-[#303f9f] sm:mx-0">
+                        <span>Menampilkan siswa kelas <strong>{classes.find((item) => String(item.id) === String(filters.class_id))?.name ?? `#${filters.class_id}`}</strong></span>
+                        <button type="button" className="font-semibold underline" onClick={() => changeClassFilter('')}>Hapus filter</button>
+                    </div>
+                ) : null}
 
                 {importResult ? (
                     <div className="mx-4 mb-4 rounded-xl bg-[#f1f5f9] p-3 text-[12px] sm:mx-0">

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\ClassStudent;
 use App\Models\CounselorClass;
 use App\Models\SchoolClass;
 use App\Models\User;
@@ -235,6 +236,30 @@ class UserManagementTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('data.redirect_to', '/bk/dashboard');
+    }
+
+    public function test_user_list_filters_by_class_id(): void
+    {
+        $classA = $this->schoolClass('X IPA 1');
+        $classB = $this->schoolClass('X IPA 2');
+
+        foreach ([[$classA, 'S-A'], [$classB, 'S-B']] as [$class, $identity]) {
+            $student = $this->user('student', $identity);
+            ClassStudent::create([
+                'class_id' => $class->id,
+                'student_id' => $student->id,
+                'academic_year_id' => $class->academic_year_id,
+                'joined_at' => now()->toDateString(),
+                'status' => 'active',
+            ]);
+        }
+
+        $this->actingAs($this->admin())
+            ->withSession(['two_factor_passed' => true])
+            ->getJson('/api/admin/users?class_id='.$classA->id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.identity_number', 'S-A');
     }
 
     public function test_counselor_without_password_is_rejected(): void
