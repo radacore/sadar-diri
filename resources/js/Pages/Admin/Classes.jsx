@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, EmptyState, Field, Input, Modal, Select, Skeleton, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
@@ -19,6 +19,7 @@ export default function Classes() {
     const [editing, setEditing] = useState(null);
     const [editForm, setEditForm] = useState({ name: '', level: 'X', homeroom_teacher_name: '', is_active: true });
     const [busy, setBusy] = useState(false);
+    const [filters, setFilters] = useState({ level: '', year: '', sort: 'asc' });
 
     const load = useCallback(async () => {
         try {
@@ -219,6 +220,19 @@ export default function Classes() {
         }
     };
 
+    const visibleClasses = useMemo(() => {
+        const filtered = classes.filter((item) => {
+            if (filters.level && item.level !== filters.level) return false;
+            if (filters.year && item.academic_year !== filters.year) return false;
+
+            return true;
+        });
+
+        const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'id', { numeric: true, sensitivity: 'base' }));
+
+        return filters.sort === 'desc' ? sorted.reverse() : sorted;
+    }, [classes, filters]);
+
     const hasMultipleYears = new Set(classes.map((item) => item.academic_year)).size > 1;
 
     return (
@@ -232,11 +246,53 @@ export default function Classes() {
                 </div>
             }
         >
+            {!loading && classes.length > 0 ? (
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <select
+                        className="sd-input h-9 w-[150px] flex-none px-3 pr-10 text-[12px]"
+                        aria-label="Filter tingkat"
+                        value={filters.level}
+                        onChange={(event) => setFilters({ ...filters, level: event.target.value })}
+                    >
+                        <option value="">Semua tingkat</option>
+                        <option value="X">X</option>
+                        <option value="XI">XI</option>
+                        <option value="XII">XII</option>
+                    </select>
+                    <select
+                        className="sd-input h-9 w-[150px] flex-none px-3 pr-10 text-[12px]"
+                        aria-label="Filter angkatan"
+                        value={filters.year}
+                        onChange={(event) => setFilters({ ...filters, year: event.target.value })}
+                    >
+                        <option value="">Semua angkatan</option>
+                        {years.map((year) => <option key={year.id} value={year.name}>{year.name}</option>)}
+                    </select>
+                    <select
+                        className="sd-input h-9 w-[150px] flex-none px-3 pr-10 text-[12px]"
+                        aria-label="Urutkan nama"
+                        value={filters.sort}
+                        onChange={(event) => setFilters({ ...filters, sort: event.target.value })}
+                    >
+                        <option value="asc">A → Z</option>
+                        <option value="desc">Z → A</option>
+                    </select>
+                    <span className="text-[11.5px] text-[#475569]">{visibleClasses.length} dari {classes.length} kelas</span>
+                </div>
+            ) : null}
+
             {loading ? <Skeleton rows={5} /> : classes.length === 0 ? (
                 <Card><EmptyState title="Belum ada kelas" description="Buat tahun ajaran lalu tambahkan kelas." /></Card>
+            ) : visibleClasses.length === 0 ? (
+                <Card>
+                    <EmptyState title="Tidak ada kelas yang cocok" description="Ubah atau reset filter tingkat/angkatan." />
+                    <div className="mt-3 flex justify-center">
+                        <Button variant="outline" onClick={() => setFilters({ level: '', year: '', sort: 'asc' })}>Reset filter</Button>
+                    </div>
+                </Card>
             ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {classes.map((item) => (
+                    {visibleClasses.map((item) => (
                         <Card key={item.id}>
                             <div className="mb-2 flex items-start justify-between gap-2">
                                 <div>
