@@ -50,7 +50,7 @@ class ActionPlanController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:190'],
-            'success_indicator' => ['required', 'string', 'max:1000'],
+            'success_indicator' => ['nullable', 'string', 'max:1000'],
             'basis' => ['nullable', Rule::in(['general', 'reflection', 'future_plan'])],
             'status' => ['nullable', Rule::in(['not_started', 'in_progress', 'achieved', 'not_achieved'])],
             'steps' => ['nullable', 'array', 'max:10'],
@@ -59,7 +59,7 @@ class ActionPlanController extends Controller
 
         $target = $plan->targets()->create([
             'title' => $data['title'],
-            'success_indicator' => $data['success_indicator'],
+            'success_indicator' => filled($data['success_indicator'] ?? null) ? $data['success_indicator'] : null,
             'basis' => $data['basis'] ?? 'general',
             'status' => $data['status'] ?? 'not_started',
             'sort_order' => $plan->targets()->count() + 1,

@@ -211,7 +211,7 @@ export default function Dashboard() {
                                         </span>
                                     }
                                     title={target.title}
-                                    subtitle={target.success_indicator}
+                                    subtitle={target.success_indicator || 'Tanpa indikator'}
                                     meta={<Badge tone={target.status === 'achieved' ? 'success' : 'neutral'}>{label('targetStatus', target.status)}</Badge>}
                                 />
                             ))}

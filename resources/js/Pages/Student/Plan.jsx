@@ -419,8 +419,8 @@ export default function Plan() {
                     <Field label="Target" required htmlFor="title">
                         <Input id="title" className="h-11" value={targetForm.title} onChange={(event) => setTargetForm({ ...targetForm, title: event.target.value })} required />
                     </Field>
-                    <Field label="Indikator keberhasilan" required htmlFor="indicator">
-                        <Textarea id="indicator" rows={3} value={targetForm.success_indicator} onChange={(event) => setTargetForm({ ...targetForm, success_indicator: event.target.value })} required />
+                    <Field label="Indikator keberhasilan (opsional)" htmlFor="indicator">
+                        <Textarea id="indicator" rows={3} value={targetForm.success_indicator} onChange={(event) => setTargetForm({ ...targetForm, success_indicator: event.target.value })} />
                     </Field>
                     <Field label="Dasar target" htmlFor="basis" hint="Pilih dari mana target ini berasal.">
                         <Select id="basis" value={targetForm.basis} onChange={(event) => setTargetForm({ ...targetForm, basis: event.target.value })}>

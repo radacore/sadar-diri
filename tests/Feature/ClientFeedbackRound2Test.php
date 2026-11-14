@@ -350,6 +350,25 @@ class ClientFeedbackRound2Test extends TestCase
         $this->assertSame(1, ActionTargetStep::where('action_target_id', $target->id)->count());
     }
 
+    public function test_target_can_be_created_without_success_indicator(): void
+    {
+        $plan = ActionPlan::create([
+            'student_id' => $this->student->id,
+            'period_start' => '2026-10-01',
+            'period_end' => '2026-10-31',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->student)
+            ->postJson('/api/student/action-plans/'.$plan->id.'/targets', [
+                'title' => 'Bangun pagi',
+                'basis' => 'general',
+            ])
+            ->assertCreated();
+
+        $this->assertNull(ActionTarget::findOrFail($response->json('data.id'))->success_indicator);
+    }
+
     public function test_counselor_sees_steps_and_missing_reflection_filter(): void
     {
         $plan = ActionPlan::create([
