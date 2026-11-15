@@ -9,12 +9,16 @@ use App\Models\CounselorClass;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\UserDeletionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ClassController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly UserDeletionService $deletions,
+    ) {}
 
     public function index(Request $request)
     {
@@ -120,22 +124,40 @@ class ClassController extends Controller
         ]);
     }
 
-    public function destroy(SchoolClass $class)
+    public function destroy(Request $request, SchoolClass $class)
     {
-        $active = $class->activeMemberships()->count();
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
 
-        if ($active > 0) {
-            return response()->json([
-                'success' => false,
-                'error' => 'CONFLICT',
-                'message' => 'Kelas masih memiliki '.$active.' siswa aktif. Pindahkan siswa terlebih dahulu.',
-            ], 409);
-        }
+        $studentIds = $class->activeMemberships()->pluck('student_id')->unique();
+        $name = $class->name;
+        $level = $class->level;
+        $yearName = $class->academicYear?->name;
+        $classId = $class->id;
 
-        $class->update(['is_active' => false]);
-        $this->audit->record('class.archived', 'classes', $class->id);
+        DB::transaction(function () use ($studentIds, $class, $data, $request) {
+            foreach ($studentIds as $studentId) {
+                $this->deletions->delete(User::findOrFail($studentId), $data['reason'], $request->user());
+            }
 
-        return response()->json(['success' => true, 'data' => ['id' => $class->id, 'is_active' => false]]);
+            ClassStudent::where('class_id', $class->id)->delete();
+            CounselorClass::where('class_id', $class->id)->delete();
+            $class->delete();
+        });
+
+        $this->audit->record('class.deleted', 'classes', $classId, null, $data['reason'], [
+            'name' => $name,
+            'level' => $level,
+            'academic_year' => $yearName,
+            'students_deleted' => $studentIds->count(),
+        ], $request->user());
+
+        return response()->json([
+            'success' => true,
+            'data' => ['id' => $classId, 'students_deleted' => $studentIds->count()],
+            'message' => 'Kelas dan '.$studentIds->count().' siswa dihapus permanen.',
+        ]);
     }
 
     public function assignStudents(Request $request, SchoolClass $class)

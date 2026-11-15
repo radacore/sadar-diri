@@ -10,6 +10,7 @@ use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\ImportService;
+use App\Services\UserDeletionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +22,7 @@ class UserController extends Controller
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly ImportService $imports,
+        private readonly UserDeletionService $deletions,
     ) {}
 
     public function index(Request $request)
@@ -316,6 +318,33 @@ class UserController extends Controller
             'success' => true,
             'data' => ['id' => $user->id, 'anonymized_at' => $user->anonymized_at?->toIso8601String()],
             'message' => 'Data dianonimkan; audit log dipertahankan',
+        ]);
+    }
+
+    public function destroy(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        if ($user->isSuperadmin()) {
+            return response()->json(['success' => false, 'error' => 'CONFLICT', 'message' => 'Akun Superadmin tidak dapat dihapus.'], 409);
+        }
+
+        if ($request->user()->id === $user->id) {
+            return response()->json(['success' => false, 'error' => 'CONFLICT', 'message' => 'Anda tidak dapat menghapus akun sendiri.'], 409);
+        }
+
+        if (! $user->isStudent()) {
+            return response()->json(['success' => false, 'error' => 'CONFLICT', 'message' => 'Hanya akun siswa yang dapat dihapus dari halaman ini.'], 409);
+        }
+
+        $this->deletions->delete($user, $data['reason'], $request->user());
+
+        return response()->json([
+            'success' => true,
+            'data' => ['id' => $user->id],
+            'message' => 'Akun siswa dihapus permanen.',
         ]);
     }
 

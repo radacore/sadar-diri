@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Input, Modal, Select, Skeleton, useConfirm, useToast } from '../../Components/UI';
+import { Badge, Button, Card, EmptyState, Field, IconButton, Input, Modal, Select, Skeleton, useConfirm, useToast } from '../../Components/UI';
 import AppShell from '../../Layouts/AppShell';
 import { api } from '../../lib/api';
 
@@ -197,6 +197,31 @@ export default function Classes() {
         }
     };
 
+    const deleteClass = async (classItem) => {
+        const decision = await confirm({
+            title: 'Hapus kelas permanen?',
+            description: 'Semua siswa aktif di kelas ini ikut dihapus permanen beserta datanya. Tindakan tidak dapat dibatalkan.',
+            details: [
+                { label: 'Kelas', value: classItem.name },
+                { label: 'Tahun', value: classItem.academic_year ?? '—' },
+                { label: 'Siswa aktif', value: `${classItem.students_count} siswa` },
+            ],
+            confirmLabel: 'Hapus kelas',
+            tone: 'danger',
+            icon: 'trash',
+            requireReason: 'Alasan menghapus kelas',
+        });
+        if (!decision) return;
+
+        try {
+            const response = await api.delete(`/api/admin/classes/${classItem.id}`, { reason: decision.reason });
+            toast.push(response.message);
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
+        }
+    };
+
     const detach = async (classItem, counselor) => {
         const decision = await confirm({
             title: 'Lepas penugasan Guru BK?',
@@ -300,7 +325,10 @@ export default function Classes() {
                                     <p className="text-[11px] text-[#475569]">Tahun {item.academic_year} · {item.students_count} siswa</p>
                                     <p className="text-[11px] text-[#475569]">Wali kelas: {item.homeroom_teacher_name || 'belum diisi'}</p>
                                 </div>
-                                <Badge tone={item.is_active ? 'success' : 'neutral'}>{item.is_active ? 'Aktif' : 'Arsip'}</Badge>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <Badge tone={item.is_active ? 'success' : 'neutral'}>{item.is_active ? 'Aktif' : 'Arsip'}</Badge>
+                                    <IconButton icon="trash" label={`Hapus ${item.name}`} variant="danger" size={32} onClick={() => deleteClass(item)} />
+                                </div>
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-1">
                                 <span className="text-[12px] text-[#475569]">Guru BK:</span>

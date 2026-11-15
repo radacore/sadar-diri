@@ -175,6 +175,7 @@ Route::middleware(['auth', 'role:superadmin', 'twofactor'])->prefix('admin')->gr
     Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword']);
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout']);
     Route::post('/users/{user}/anonymize', [AdminUserController::class, 'anonymize']);
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
 
     Route::get('/classes', [ClassController::class, 'index']);
     Route::post('/classes', [ClassController::class, 'store']);

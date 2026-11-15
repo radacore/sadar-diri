@@ -200,6 +200,31 @@ export default function Users() {
         }
     };
 
+    const deleteUser = async (user) => {
+        const decision = await confirm({
+            title: 'Hapus akun siswa permanen?',
+            description: 'Seluruh data siswa (jurnal, refleksi, prestasi, rencana) ikut terhapus dan tidak dapat dikembalikan.',
+            details: [
+                { label: 'Siswa', value: user.name },
+                { label: 'NIS', value: user.identity_number },
+                { label: 'Kelas', value: user.class?.name ?? '—' },
+            ],
+            confirmLabel: 'Hapus permanen',
+            tone: 'danger',
+            icon: 'trash',
+            requireReason: 'Alasan menghapus siswa',
+        });
+        if (!decision) return;
+
+        try {
+            const response = await api.delete(`/api/admin/users/${user.id}`, { reason: decision.reason });
+            toast.push(response.message);
+            await load();
+        } catch (error) {
+            toast.push(error.message, 'error');
+        }
+    };
+
     const forceLogout = async (user) => {
         const decision = await confirm({
             title: 'Putus sesi pengguna?',
@@ -371,6 +396,9 @@ export default function Users() {
                                                     variant={user.status === 'active' ? 'danger' : 'success'}
                                                     onClick={() => changeStatus(user)}
                                                 />
+                                                {user.role === 'student' ? (
+                                                    <IconButton icon="trash" label={`Hapus ${user.name}`} variant="danger" onClick={() => deleteUser(user)} />
+                                                ) : null}
                                             </div>
                                         </td>
                                     </tr>
